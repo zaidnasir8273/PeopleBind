@@ -846,3 +846,37 @@ button:focus-visible {
   border-radius: 8px;
   padding: 10px 12px;
 }
+
+/* ---------- landing header nav ---------- */
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.header-link {
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.header-link:hover {
+  color: var(--ink);
+}
+
+.header-cta {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+  background: var(--teal-deep);
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+}
+
+.header-cta:hover {
+  background: var(--teal);
+}

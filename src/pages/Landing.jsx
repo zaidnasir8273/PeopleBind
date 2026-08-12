@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const payslipRows = [
   { label: 'Basic salary', amount: 'Rs. 100,000', delay: 0.05 },
   { label: 'House allowance', amount: 'Rs. 20,000', delay: 0.15 },
@@ -15,10 +17,10 @@ export default function Landing() {
           <span className="wordmark-mark" aria-hidden="true" />
           PeopleBind
         </div>
-        <div className="status-pill">
-          <span className="status-dot" aria-hidden="true" />
-          In development
-        </div>
+        <nav className="header-nav">
+          <Link to="/login" className="header-link">Sign in</Link>
+          <Link to="/signup" className="header-cta">Sign up</Link>
+        </nav>
       </header>
 
       <main className="hero">
