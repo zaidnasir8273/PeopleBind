@@ -219,6 +219,80 @@ h1 {
   border-top: 1px solid var(--line);
 }
 
+/* ---------- payroll module additions ---------- */
+
+.payslip-drawer .payslip-row {
+  align-items: flex-start;
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+
+.payslip-drawer .payslip-row > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: 12px;
+}
+
+.payslip-note {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.exception-box {
+  border: 1px solid rgba(201, 138, 46, 0.35);
+  background: rgba(201, 138, 46, 0.08);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.exception-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--gold);
+  margin: 0 0 6px;
+}
+
+.exception-box ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.exception-box li {
+  margin-bottom: 2px;
+}
+
+.mini-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mini-card .field-row {
+  gap: 10px;
+}
+
+.mini-card select {
+  font-family: var(--font-body);
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
 /* ---------- philosophy strip ---------- */
 
 .strip {
@@ -777,6 +851,145 @@ button:focus-visible {
 .status-on_leave {
   background: rgba(201, 138, 46, 0.14);
   color: var(--gold);
+}
+
+.status-present,
+.status-approved,
+.status-reimbursed {
+  background: rgba(31, 122, 99, 0.12);
+  color: var(--teal-deep);
+}
+
+.status-absent,
+.status-rejected {
+  background: rgba(176, 71, 63, 0.1);
+  color: #b0473f;
+}
+
+.status-late,
+.status-half_day,
+.status-pending,
+.status-submitted,
+.status-changes_requested {
+  background: rgba(201, 138, 46, 0.14);
+  color: var(--gold);
+}
+
+.status-holiday,
+.status-weekend,
+.status-cancelled {
+  background: var(--line);
+  color: var(--ink-soft);
+}
+
+/* ---------- tabs ---------- */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+
+.tab-button {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 4px;
+  margin-right: 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-button.active {
+  color: var(--ink);
+  border-bottom-color: var(--teal-deep);
+}
+
+.tab-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--gold);
+  color: #fff;
+  border-radius: 100px;
+  padding: 1px 7px;
+}
+
+/* ---------- date nav ---------- */
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.date-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.date-nav-btn:hover {
+  background: var(--paper);
+}
+
+.date-nav-label {
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  min-width: 200px;
+}
+
+.date-nav-label input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ---------- round icon buttons (approve/reject) ---------- */
+
+.btn-icon-round {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 100px;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  cursor: pointer;
+}
+
+.btn-icon-round.approve {
+  color: var(--teal-deep);
+}
+
+.btn-icon-round.approve:hover {
+  background: rgba(31, 122, 99, 0.12);
+}
+
+.btn-icon-round.reject {
+  color: #b0473f;
+}
+
+.btn-icon-round.reject:hover {
+  background: rgba(176, 71, 63, 0.1);
 }
 
 /* ---------- drawer ---------- */

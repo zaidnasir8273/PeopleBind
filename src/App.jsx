@@ -9,6 +9,11 @@ import Onboarding from './pages/Onboarding'
 import AppShell from './pages/AppShell'
 import Home from './pages/Home'
 import People from './pages/People'
+import Attendance from './pages/Attendance'
+import Leave from './pages/Leave'
+import Payroll from './pages/Payroll'
+import Expenses from './pages/Expenses'
+import Recruitment from './pages/Recruitment'
 import ModulePlaceholder from './pages/ModulePlaceholder'
 
 export default function App() {
@@ -37,26 +42,11 @@ export default function App() {
           >
             <Route index element={<Home />} />
             <Route path="people" element={<People />} />
-            <Route
-              path="attendance"
-              element={<ModulePlaceholder title="Attendance" description="Daily attendance, shifts, and corrections." />}
-            />
-            <Route
-              path="leave"
-              element={<ModulePlaceholder title="Leave" description="Leave requests, balances, and policies." />}
-            />
-            <Route
-              path="payroll"
-              element={<ModulePlaceholder title="Payroll" description="Salary structures, payroll runs, and payslips." />}
-            />
-            <Route
-              path="expenses"
-              element={<ModulePlaceholder title="Expenses" description="Employee expense claims and approvals." />}
-            />
-            <Route
-              path="recruitment"
-              element={<ModulePlaceholder title="Recruitment" description="Job openings, candidates, and interviews." />}
-            />
+            <Route path="attendance" element={<Attendance />} />
+            <Route path="leave" element={<Leave />} />
+            <Route path="payroll" element={<Payroll />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="recruitment" element={<Recruitment />} />
             <Route
               path="performance"
               element={<ModulePlaceholder title="Performance" description="Goals, reviews, and feedback." />}
