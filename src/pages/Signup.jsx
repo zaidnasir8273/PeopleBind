@@ -43,7 +43,7 @@ export default function Signup() {
         <div className="auth-card">
           <Link to="/" className="auth-wordmark">
             <span className="wordmark-mark" aria-hidden="true" />
-            PeopleBind
+            <span className="wm-people">People</span><span className="wm-bind">Bind</span>
           </Link>
           <h1 className="auth-title">Check your email</h1>
           <p className="auth-subtitle">
@@ -63,7 +63,7 @@ export default function Signup() {
       <div className="auth-card">
         <Link to="/" className="auth-wordmark">
           <span className="wordmark-mark" aria-hidden="true" />
-          PeopleBind
+          <span className="wm-people">People</span><span className="wm-bind">Bind</span>
         </Link>
 
         <h1 className="auth-title">Create your account</h1>

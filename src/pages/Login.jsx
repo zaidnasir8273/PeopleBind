@@ -31,7 +31,7 @@ export default function Login() {
       <div className="auth-card">
         <Link to="/" className="auth-wordmark">
           <span className="wordmark-mark" aria-hidden="true" />
-          PeopleBind
+          <span className="wm-people">People</span><span className="wm-bind">Bind</span>
         </Link>
 
         <h1 className="auth-title">Sign in</h1>

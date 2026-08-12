@@ -15,7 +15,7 @@ export default function Landing() {
       <header className="header">
         <div className="wordmark">
           <span className="wordmark-mark" aria-hidden="true" />
-          PeopleBind
+          <span className="wm-people">People</span><span className="wm-bind">Bind</span>
         </div>
         <nav className="header-nav">
           <Link to="/login" className="header-link">Sign in</Link>
@@ -78,7 +78,7 @@ export default function Landing() {
       </div>
 
       <footer className="footer">
-        <span>PeopleBind</span>
+        <span><span className="wm-people">People</span><span className="wm-bind">Bind</span></span>
         <span>© 2026</span>
       </footer>
     </div>
