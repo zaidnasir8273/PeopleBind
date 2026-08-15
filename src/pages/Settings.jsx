@@ -37,14 +37,20 @@ export default function Settings() {
         <button className={`tab-button${tab === 'structure' ? ' active' : ''}`} onClick={() => setTab('structure')}>Org structure</button>
         <button className={`tab-button${tab === 'shifts' ? ' active' : ''}`} onClick={() => setTab('shifts')}>Shifts & holidays</button>
         <button className={`tab-button${tab === 'payroll' ? ' active' : ''}`} onClick={() => setTab('payroll')}>Payroll components</button>
+        <button className={`tab-button${tab === 'tax' ? ' active' : ''}`} onClick={() => setTab('tax')}>Tax slabs</button>
         <button className={`tab-button${tab === 'roles' ? ' active' : ''}`} onClick={() => setTab('roles')}>Roles & users</button>
+        <button className={`tab-button${tab === 'audit' ? ' active' : ''}`} onClick={() => setTab('audit')}>Audit log</button>
+        <button className={`tab-button${tab === 'onboarding' ? ' active' : ''}`} onClick={() => setTab('onboarding')}>Onboarding templates</button>
       </div>
 
       {tab === 'company' && <CompanyTab />}
       {tab === 'structure' && <StructureTab />}
       {tab === 'shifts' && <ShiftsTab />}
       {tab === 'payroll' && <PayrollComponentsTab />}
+      {tab === 'tax' && <TaxSlabsTab />}
       {tab === 'roles' && <RolesTab />}
+      {tab === 'audit' && <AuditLogTab />}
+      {tab === 'onboarding' && <OnboardingTemplatesTab />}
     </div>
   )
 }
@@ -623,6 +629,177 @@ function PayrollComponentsTab() {
   )
 }
 
+/* =========================== TAX SLABS =========================== */
+
+function fmtMoney(n) {
+  if (n === null || n === undefined) return 'No cap'
+  return 'Rs. ' + Number(n).toLocaleString('en-PK', { maximumFractionDigits: 0 })
+}
+
+function TaxSlabsTab() {
+  const { company } = useAuth()
+  const [slabs, setSlabs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [form, setForm] = useState({ effective_from: '', effective_to: '', min_annual_income: '', max_annual_income: '', rate_percent: '', fixed_amount: '0' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('tax_slabs')
+      .select('id, effective_from, effective_to, min_annual_income, max_annual_income, rate_percent, fixed_amount')
+      .order('effective_from', { ascending: false })
+      .order('min_annual_income', { ascending: true })
+    setSlabs(data ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const periods = {}
+  for (const s of slabs) {
+    const key = `${s.effective_from}_${s.effective_to ?? 'open'}`
+    if (!periods[key]) periods[key] = { effective_from: s.effective_from, effective_to: s.effective_to, rows: [] }
+    periods[key].rows.push(s)
+  }
+  const periodList = Object.values(periods)
+
+  function openAdd() {
+    setForm({
+      effective_from: periodList[0]?.effective_from || new Date().toISOString().slice(0, 10),
+      effective_to: '',
+      min_annual_income: '',
+      max_annual_income: '',
+      rate_percent: '',
+      fixed_amount: '0',
+    })
+    setError(null)
+    setDrawerOpen(true)
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
+    setSaving(true)
+
+    const { error: saveError } = await supabase.from('tax_slabs').insert({
+      company_id: company.id,
+      effective_from: form.effective_from,
+      effective_to: form.effective_to || null,
+      min_annual_income: Number(form.min_annual_income),
+      max_annual_income: form.max_annual_income ? Number(form.max_annual_income) : null,
+      rate_percent: Number(form.rate_percent),
+      fixed_amount: Number(form.fixed_amount || 0),
+    })
+
+    setSaving(false)
+
+    if (saveError) {
+      setError(saveError.message)
+      return
+    }
+
+    toast.success('Tax bracket added')
+    setDrawerOpen(false)
+    load()
+  }
+
+  if (loading) return <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+
+  return (
+    <>
+      <p className="muted" style={{ marginTop: 0 }}>
+        These brackets are what every payroll run's income tax deduction is calculated from — if a period has no brackets covering an employee's income, their tax silently comes out as zero. Update this whenever FBR publishes new slabs.
+      </p>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <button className="btn-primary btn-icon" onClick={openAdd}>
+          <Plus size={16} /> Add bracket
+        </button>
+      </div>
+
+      {periodList.length === 0 ? (
+        <div className="empty-state" style={{ marginTop: 20 }}>
+          <p>No tax brackets configured.</p>
+          <p className="muted">Payroll can't calculate income tax until at least one bracket set exists.</p>
+        </div>
+      ) : (
+        periodList.map((period) => (
+          <div key={`${period.effective_from}_${period.effective_to}`} style={{ marginBottom: 24 }}>
+            <p className="section-heading" style={{ marginBottom: 8 }}>
+              {formatDate(period.effective_from)} {period.effective_to ? `– ${formatDate(period.effective_to)}` : '(current)'}
+            </p>
+            <table className="data-table">
+              <thead>
+                <tr><th>Annual income from</th><th>Annual income to</th><th>Rate</th><th>Fixed amount</th></tr>
+              </thead>
+              <tbody>
+                {period.rows.map((s) => (
+                  <tr key={s.id} style={{ cursor: 'default' }}>
+                    <td className="mono">{fmtMoney(s.min_annual_income)}</td>
+                    <td className="mono">{fmtMoney(s.max_annual_income)}</td>
+                    <td className="mono">{s.rate_percent}%</td>
+                    <td className="mono">{fmtMoney(s.fixed_amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )}
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Add tax bracket">
+        <form onSubmit={handleSubmit} className="drawer-form">
+          <div className="field-row">
+            <label className="field">
+              <span>Effective from</span>
+              <input type="date" required value={form.effective_from} onChange={(e) => setForm({ ...form, effective_from: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Effective to</span>
+              <input type="date" value={form.effective_to} onChange={(e) => setForm({ ...form, effective_to: e.target.value })} placeholder="Open-ended" />
+            </label>
+          </div>
+
+          <div className="field-row">
+            <label className="field">
+              <span>Annual income from (Rs.)</span>
+              <input type="number" min="0" required value={form.min_annual_income} onChange={(e) => setForm({ ...form, min_annual_income: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Annual income to (Rs.)</span>
+              <input type="number" min="0" value={form.max_annual_income} onChange={(e) => setForm({ ...form, max_annual_income: e.target.value })} placeholder="No cap" />
+            </label>
+          </div>
+
+          <div className="field-row">
+            <label className="field">
+              <span>Rate (%)</span>
+              <input type="number" min="0" max="100" step="0.1" required value={form.rate_percent} onChange={(e) => setForm({ ...form, rate_percent: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Fixed amount (Rs.)</span>
+              <input type="number" min="0" value={form.fixed_amount} onChange={(e) => setForm({ ...form, fixed_amount: e.target.value })} />
+            </label>
+          </div>
+
+          <p className="muted" style={{ margin: 0 }}>
+            Tax for this bracket = fixed amount + rate% × (annual income − "from"). Matches FBR's own slab format.
+          </p>
+
+          {error && <p className="field-error">{error}</p>}
+
+          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Adding…' : 'Add bracket'}</button>
+        </form>
+      </Drawer>
+    </>
+  )
+}
+
 /* =========================== ROLES & USERS =========================== */
 
 function RolesTab() {
@@ -770,6 +947,326 @@ function RolesTab() {
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+/* =========================== AUDIT LOG =========================== */
+
+const AUDIT_TABLES = [
+  'employees', 'departments', 'designations', 'shifts', 'holidays', 'attendance', 'attendance_corrections',
+  'overtime_records', 'leave_types', 'leave_policies', 'leave_balances', 'leave_requests', 'payroll_components',
+  'employee_salary_components', 'tax_slabs', 'statutory_rates', 'loans', 'loan_installments', 'documents', 'assets',
+]
+
+function formatDateTime(ts) {
+  if (!ts) return '—'
+  return new Date(ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+
+function diffFields(oldData, newData) {
+  const keys = new Set([...Object.keys(oldData ?? {}), ...Object.keys(newData ?? {})])
+  const changes = []
+  for (const key of keys) {
+    if (['created_at', 'updated_at'].includes(key)) continue
+    const before = oldData?.[key]
+    const after = newData?.[key]
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      changes.push({ key, before, after })
+    }
+  }
+  return changes
+}
+
+function AuditLogTab() {
+  const [entries, setEntries] = useState([])
+  const [profiles, setProfiles] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [tableFilter, setTableFilter] = useState('all')
+  const [activeEntry, setActiveEntry] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    let query = supabase
+      .from('audit_log')
+      .select('id, table_name, record_id, action, old_data, new_data, user_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(150)
+    if (tableFilter !== 'all') query = query.eq('table_name', tableFilter)
+    const [{ data: logRows }, { data: profileRows }] = await Promise.all([
+      query,
+      supabase.from('profiles').select('id, full_name, email'),
+    ])
+    setEntries(logRows ?? [])
+    setProfiles(profileRows ?? [])
+    setLoading(false)
+  }, [tableFilter])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const changes = activeEntry ? diffFields(activeEntry.old_data, activeEntry.new_data) : []
+
+  return (
+    <>
+      <p className="muted" style={{ marginTop: 0 }}>
+        A record of who changed what, across the tables that matter most — salary, tax, attendance corrections, leave balances, and more.
+      </p>
+
+      <div className="field-row" style={{ maxWidth: 240, marginBottom: 4 }}>
+        <label className="field">
+          <span>Table</span>
+          <select value={tableFilter} onChange={(e) => setTableFilter(e.target.value)}>
+            <option value="all">All tables</option>
+            {AUDIT_TABLES.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+          </select>
+        </label>
+      </div>
+
+      {loading ? (
+        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+      ) : entries.length === 0 ? (
+        <div className="empty-state" style={{ marginTop: 20 }}>
+          <p>No activity recorded yet.</p>
+        </div>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr><th>When</th><th>Table</th><th>Action</th><th>By</th></tr>
+          </thead>
+          <tbody>
+            {entries.map((e) => (
+              <tr key={e.id} onClick={() => setActiveEntry(e)}>
+                <td className="mono">{formatDateTime(e.created_at)}</td>
+                <td>{e.table_name.replace(/_/g, ' ')}</td>
+                <td><span className={`status-badge status-${e.action === 'insert' ? 'approved' : e.action === 'delete' ? 'rejected' : 'pending'}`}>{e.action}</span></td>
+                <td>{profiles.find((p) => p.id === e.user_id)?.full_name ?? '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <Drawer
+        open={!!activeEntry}
+        onClose={() => setActiveEntry(null)}
+        title={activeEntry ? `${activeEntry.table_name.replace(/_/g, ' ')} · ${activeEntry.action}` : ''}
+      >
+        {activeEntry && (
+          <div className="drawer-form">
+            <div className="field-row">
+              <div className="field"><span>When</span><p style={{ margin: 0 }}>{formatDateTime(activeEntry.created_at)}</p></div>
+              <div className="field"><span>By</span><p style={{ margin: 0 }}>{profiles.find((p) => p.id === activeEntry.user_id)?.full_name ?? 'System'}</p></div>
+            </div>
+
+            {activeEntry.action === 'update' ? (
+              changes.length === 0 ? (
+                <p className="muted">No field-level changes recorded.</p>
+              ) : (
+                <div className="history-timeline" style={{ borderLeft: 'none', paddingLeft: 0 }}>
+                  {changes.map((c) => (
+                    <div key={c.key} className="mini-card">
+                      <strong style={{ fontSize: 13 }}>{c.key.replace(/_/g, ' ')}</strong>
+                      <div style={{ fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span className="muted" style={{ textDecoration: 'line-through' }}>{String(c.before ?? '—')}</span>
+                        <span>→</span>
+                        <span>{String(c.after ?? '—')}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              <>
+                <p className="section-heading" style={{ marginTop: 4 }}>{activeEntry.action === 'insert' ? 'Created with' : 'Deleted record'}</p>
+                <div className="mini-card">
+                  {Object.entries((activeEntry.action === 'insert' ? activeEntry.new_data : activeEntry.old_data) ?? {})
+                    .filter(([k]) => !['created_at', 'updated_at'].includes(k))
+                    .map(([k, v]) => (
+                      <div key={k} style={{ fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                        <span className="muted">{k.replace(/_/g, ' ')}</span>
+                        <span className="mono">{String(v ?? '—')}</span>
+                      </div>
+                    ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </Drawer>
+    </>
+  )
+}
+
+/* =========================== ONBOARDING TEMPLATES =========================== */
+
+const TASK_CATEGORY_LABELS = { paperwork: 'Paperwork', it_setup: 'IT setup', training: 'Training', culture: 'Culture', general: 'General' }
+const EMPTY_TEMPLATE_TASK = { title: '', description: '', category: 'general', days_from_joining: '0' }
+
+function OnboardingTemplatesTab() {
+  const { profile, company } = useAuth()
+  const [templates, setTemplates] = useState([])
+  const [selectedId, setSelectedId] = useState(null)
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const [newTemplateName, setNewTemplateName] = useState('')
+  const [creating, setCreating] = useState(false)
+
+  const [taskDrawerOpen, setTaskDrawerOpen] = useState(false)
+  const [taskForm, setTaskForm] = useState(EMPTY_TEMPLATE_TASK)
+  const [savingTask, setSavingTask] = useState(false)
+
+  const loadTemplates = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase.from('onboarding_templates').select('id, name').order('name')
+    setTemplates(data ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    loadTemplates()
+  }, [loadTemplates])
+
+  const loadTasks = useCallback(async (templateId) => {
+    const { data } = await supabase
+      .from('onboarding_template_tasks')
+      .select('id, title, description, category, days_from_joining, sort_order')
+      .eq('template_id', templateId)
+      .order('sort_order')
+    setTasks(data ?? [])
+  }, [])
+
+  function selectTemplate(t) {
+    setSelectedId(t.id)
+    loadTasks(t.id)
+  }
+
+  async function createTemplate() {
+    if (!newTemplateName.trim()) return
+    setCreating(true)
+    const { data, error } = await supabase
+      .from('onboarding_templates')
+      .insert({ company_id: company.id, name: newTemplateName.trim(), created_by: profile.id })
+      .select()
+      .single()
+    setCreating(false)
+    if (!error && data) {
+      setNewTemplateName('')
+      await loadTemplates()
+      selectTemplate(data)
+    }
+  }
+
+  function openAddTask() {
+    setTaskForm({ ...EMPTY_TEMPLATE_TASK })
+    setTaskDrawerOpen(true)
+  }
+
+  async function handleAddTask(e) {
+    e.preventDefault()
+    setSavingTask(true)
+    const { error } = await supabase.from('onboarding_template_tasks').insert({
+      template_id: selectedId,
+      title: taskForm.title,
+      description: taskForm.description || null,
+      category: taskForm.category,
+      days_from_joining: Number(taskForm.days_from_joining || 0),
+      sort_order: tasks.length,
+    })
+    setSavingTask(false)
+    if (!error) {
+      toast.success('Task added to template')
+      setTaskDrawerOpen(false)
+      loadTasks(selectedId)
+    }
+  }
+
+  async function removeTask(taskId) {
+    await supabase.from('onboarding_template_tasks').delete().eq('id', taskId)
+    loadTasks(selectedId)
+  }
+
+  if (loading) return <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24 }}>
+      <div>
+        <p className="section-heading">Templates</p>
+        {templates.map((t) => (
+          <button
+            key={t.id}
+            className={`tab-button${selectedId === t.id ? ' active' : ''}`}
+            style={{ display: 'block', width: '100%', textAlign: 'left', marginRight: 0, borderBottom: 'none', padding: '8px 6px' }}
+            onClick={() => selectTemplate(t)}
+          >
+            {t.name}
+          </button>
+        ))}
+        <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+          <input placeholder="New template" value={newTemplateName} onChange={(e) => setNewTemplateName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && createTemplate()} />
+          <button type="button" className="btn-primary" style={{ padding: '8px 12px' }} disabled={creating} onClick={createTemplate}>
+            <Plus size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div>
+        {!selectedId ? (
+          <p className="muted">Select or create a template to add tasks.</p>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+              <button className="btn-secondary btn-icon" onClick={openAddTask}><Plus size={16} /> Add task</button>
+            </div>
+            {tasks.length === 0 ? (
+              <p className="muted" style={{ marginTop: 16 }}>No tasks in this template yet.</p>
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>Task</th><th>Category</th><th>Due</th><th></th></tr></thead>
+                <tbody>
+                  {tasks.map((t) => (
+                    <tr key={t.id} style={{ cursor: 'default' }}>
+                      <td>{t.title}</td>
+                      <td>{TASK_CATEGORY_LABELS[t.category]}</td>
+                      <td className="mono">Day {t.days_from_joining}</td>
+                      <td><button className="link-button" onClick={() => removeTask(t.id)}>Remove</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </>
+        )}
+      </div>
+
+      <Drawer open={taskDrawerOpen} onClose={() => setTaskDrawerOpen(false)} title="Add template task">
+        <form onSubmit={handleAddTask} className="drawer-form">
+          <label className="field">
+            <span>Title</span>
+            <input required value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} placeholder="e.g. Sign employment contract" />
+          </label>
+          <label className="field">
+            <span>Description</span>
+            <input value={taskForm.description} onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })} placeholder="Optional" />
+          </label>
+          <div className="field-row">
+            <label className="field">
+              <span>Category</span>
+              <select value={taskForm.category} onChange={(e) => setTaskForm({ ...taskForm, category: e.target.value })}>
+                {Object.entries(TASK_CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span>Days from joining date</span>
+              <input type="number" value={taskForm.days_from_joining} onChange={(e) => setTaskForm({ ...taskForm, days_from_joining: e.target.value })} />
+            </label>
+          </div>
+          <p className="muted" style={{ margin: 0 }}>0 = due on their first day. Negative numbers work for pre-joining tasks (e.g. -3 for "prepare laptop").</p>
+          <button type="submit" className="btn-primary" disabled={savingTask}>{savingTask ? 'Adding…' : 'Add task'}</button>
+        </form>
+      </Drawer>
     </div>
   )
 }

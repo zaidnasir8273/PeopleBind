@@ -13,7 +13,10 @@ import Attendance from './pages/Attendance'
 import Leave from './pages/Leave'
 import Payroll from './pages/Payroll'
 import Expenses from './pages/Expenses'
+import Documents from './pages/Documents'
+import Assets from './pages/Assets'
 import Recruitment from './pages/Recruitment'
+import EmployeeOnboardingTasks from './pages/EmployeeOnboardingTasks'
 import Performance from './pages/Performance'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
@@ -61,7 +64,10 @@ export default function App() {
             <Route path="leave" element={<Leave />} />
             <Route path="payroll" element={<Payroll />} />
             <Route path="expenses" element={<Expenses />} />
+            <Route path="documents" element={<Documents />} />
+            <Route path="assets" element={<Assets />} />
             <Route path="recruitment" element={<Recruitment />} />
+            <Route path="onboarding" element={<EmployeeOnboardingTasks />} />
             <Route path="performance" element={<Performance />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />

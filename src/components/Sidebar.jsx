@@ -12,8 +12,13 @@ import {
   Settings,
   LogOut,
   ShieldCheck,
+  FileText,
+  Laptop,
+  ListChecks,
+  PanelLeft,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
 const NAV_ITEMS = [
   { to: '/app', label: 'Home', icon: Home, end: true },
@@ -22,7 +27,10 @@ const NAV_ITEMS = [
   { to: '/app/leave', label: 'Leave', icon: CalendarDays },
   { to: '/app/payroll', label: 'Payroll', icon: Wallet },
   { to: '/app/expenses', label: 'Expenses', icon: Receipt },
+  { to: '/app/documents', label: 'Documents', icon: FileText },
+  { to: '/app/assets', label: 'Assets', icon: Laptop },
   { to: '/app/recruitment', label: 'Recruitment', icon: Briefcase },
+  { to: '/app/onboarding', label: 'Onboarding', icon: ListChecks },
   { to: '/app/performance', label: 'Performance', icon: Target },
   { to: '/app/reports', label: 'Reports', icon: BarChart3 },
   { to: '/app/settings', label: 'Settings', icon: Settings },
@@ -30,15 +38,26 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const { profile, company, signOut } = useAuth()
+  const [collapsed, setCollapsed] = useSidebarCollapse()
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
       <div className="sidebar-company">
         <span className="wordmark-mark" aria-hidden="true" />
-        <div>
-          <div className="sidebar-company-name">{company?.name ?? 'PeopleBind'}</div>
-          {company?.plan && <div className="sidebar-company-plan">{company.plan} plan</div>}
-        </div>
+        {!collapsed && (
+          <div>
+            <div className="sidebar-company-name">{company?.name ?? 'PeopleBind'}</div>
+            {company?.plan && <div className="sidebar-company-plan">{company.plan} plan</div>}
+          </div>
+        )}
+        <button
+          className="sidebar-collapse-btn"
+          onClick={() => setCollapsed((v) => !v)}
+          data-tooltip={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <PanelLeft size={15} strokeWidth={2} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -48,24 +67,37 @@ export function Sidebar() {
             to={to}
             end={end}
             className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+            data-tooltip={collapsed ? label : undefined}
+            aria-label={label}
           >
             <Icon size={17} strokeWidth={2} />
-            {label}
+            {!collapsed && label}
           </NavLink>
         ))}
       </nav>
 
       <div className="sidebar-user">
         {profile?.is_platform_admin && (
-          <NavLink to="/platform-admin" className="sidebar-link" style={{ marginBottom: 6 }}>
+          <NavLink
+            to="/platform-admin"
+            className="sidebar-link"
+            style={{ marginBottom: 6 }}
+            data-tooltip={collapsed ? 'Platform Admin' : undefined}
+            aria-label="Platform Admin"
+          >
             <ShieldCheck size={15} strokeWidth={2} />
-            Platform Admin
+            {!collapsed && 'Platform Admin'}
           </NavLink>
         )}
-        <div className="sidebar-user-name">{profile?.full_name || profile?.email}</div>
-        <button className="sidebar-signout" onClick={signOut}>
+        {!collapsed && <div className="sidebar-user-name">{profile?.full_name || profile?.email}</div>}
+        <button
+          className="sidebar-signout"
+          onClick={signOut}
+          data-tooltip={collapsed ? 'Sign out' : undefined}
+          aria-label="Sign out"
+        >
           <LogOut size={15} strokeWidth={2} />
-          Sign out
+          {!collapsed && 'Sign out'}
         </button>
       </div>
     </aside>

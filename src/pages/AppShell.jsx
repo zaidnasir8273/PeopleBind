@@ -1,12 +1,18 @@
 import { Outlet } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { Sidebar } from '../components/Sidebar'
+import { NotificationBell } from '../components/NotificationBell'
+import { CommandPalette } from '../components/CommandPalette'
 
 export default function AppShell() {
   return (
     <div className="app-shell">
       <Sidebar />
       <div className="app-content">
+        <div className="topbar">
+          <CommandPalette />
+          <NotificationBell portal="app" />
+        </div>
         <Outlet />
       </div>
       <Toaster

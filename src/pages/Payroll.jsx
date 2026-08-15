@@ -52,10 +52,14 @@ export default function Payroll() {
         <button className={`tab-button${tab === 'structures' ? ' active' : ''}`} onClick={() => setTab('structures')}>
           Salary structures
         </button>
+        <button className={`tab-button${tab === 'loans' ? ' active' : ''}`} onClick={() => setTab('loans')}>
+          Loans & overtime
+        </button>
       </div>
 
       {tab === 'runs' && <RunsTab profile={profile} company={company} />}
       {tab === 'structures' && <StructuresTab profile={profile} company={company} />}
+      {tab === 'loans' && <LoansOvertimeTab profile={profile} company={company} />}
     </div>
   )
 }
@@ -631,6 +635,302 @@ function StructuresTab({ profile, company }) {
           </button>
         </form>
       </Drawer>
+    </>
+  )
+}
+
+/* ======================= LOANS & OVERTIME ======================= */
+
+const EMPTY_LOAN_FORM = {
+  employee_id: '',
+  loan_type: 'loan',
+  principal_amount: '',
+  installment_amount: '',
+  start_date: new Date().toISOString().slice(0, 10),
+}
+
+function LoansOvertimeTab({ profile, company }) {
+  const [subTab, setSubTab] = useState('loans')
+  const [employees, setEmployees] = useState([])
+
+  const loadEmployees = useCallback(async () => {
+    const { data } = await supabase.from('employees').select('id, employee_code, full_name').eq('employment_status', 'active').order('full_name')
+    setEmployees(data ?? [])
+  }, [])
+
+  useEffect(() => {
+    loadEmployees()
+  }, [loadEmployees])
+
+  return (
+    <>
+      <div className="tabs" style={{ marginBottom: 16 }}>
+        <button className={`tab-button${subTab === 'loans' ? ' active' : ''}`} onClick={() => setSubTab('loans')}>Loans & advances</button>
+        <button className={`tab-button${subTab === 'overtime' ? ' active' : ''}`} onClick={() => setSubTab('overtime')}>Overtime</button>
+      </div>
+      {subTab === 'loans' ? <LoansSection employees={employees} profile={profile} company={company} /> : <OvertimeSection />}
+    </>
+  )
+}
+
+function LoansSection({ employees, profile, company }) {
+  const [loans, setLoans] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [activeLoan, setActiveLoan] = useState(null)
+  const [installments, setInstallments] = useState([])
+
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [form, setForm] = useState(EMPTY_LOAN_FORM)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('loans')
+      .select('id, loan_type, principal_amount, installment_amount, start_date, status, employees(full_name, employee_code)')
+      .order('created_at', { ascending: false })
+    setLoans(data ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  function openNew() {
+    setForm({ ...EMPTY_LOAN_FORM })
+    setError(null)
+    setDrawerOpen(true)
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
+    setSaving(true)
+
+    const { error: saveError } = await supabase.from('loans').insert({
+      company_id: company.id,
+      employee_id: form.employee_id,
+      loan_type: form.loan_type,
+      principal_amount: Number(form.principal_amount),
+      installment_amount: Number(form.installment_amount),
+      start_date: form.start_date,
+      created_by: profile.id,
+    })
+
+    setSaving(false)
+
+    if (saveError) {
+      setError(saveError.message)
+      return
+    }
+
+    toast.success(form.loan_type === 'advance' ? 'Advance created' : 'Loan created')
+    setDrawerOpen(false)
+    load()
+  }
+
+  async function openLoan(loan) {
+    setActiveLoan(loan)
+    const { data } = await supabase
+      .from('loan_installments')
+      .select('id, installment_number, due_amount, status')
+      .eq('loan_id', loan.id)
+      .order('installment_number')
+    setInstallments(data ?? [])
+  }
+
+  const installmentCount = form.principal_amount && form.installment_amount
+    ? Math.ceil(Number(form.principal_amount) / Number(form.installment_amount))
+    : null
+
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <button className="btn-primary btn-icon" onClick={openNew}>
+          <Plus size={16} /> New loan / advance
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+      ) : loans.length === 0 ? (
+        <div className="empty-state" style={{ marginTop: 20 }}>
+          <p>No loans or advances yet.</p>
+          <p className="muted">Installments are generated automatically and deducted from payroll as they come due.</p>
+        </div>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr><th>Employee</th><th>Type</th><th>Principal</th><th>Installment</th><th>Started</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {loans.map((l) => (
+              <tr key={l.id} onClick={() => openLoan(l)}>
+                <td>{l.employees?.full_name}</td>
+                <td style={{ textTransform: 'capitalize' }}>{l.loan_type}</td>
+                <td className="mono">{fmt(l.principal_amount)}</td>
+                <td className="mono">{fmt(l.installment_amount)}</td>
+                <td className="mono">{formatDate(l.start_date)}</td>
+                <td><span className={`status-badge status-${l.status === 'completed' ? 'approved' : l.status === 'cancelled' ? 'rejected' : 'active'}`}>{l.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="New loan or advance">
+        <form onSubmit={handleSubmit} className="drawer-form">
+          <label className="field">
+            <span>Employee</span>
+            <select required value={form.employee_id} onChange={(e) => setForm({ ...form, employee_id: e.target.value })}>
+              <option value="">— Select —</option>
+              {employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
+            </select>
+          </label>
+
+          <label className="field">
+            <span>Type</span>
+            <select value={form.loan_type} onChange={(e) => setForm({ ...form, loan_type: e.target.value })}>
+              <option value="loan">Loan</option>
+              <option value="advance">Salary advance</option>
+            </select>
+          </label>
+
+          <div className="field-row">
+            <label className="field">
+              <span>Principal amount</span>
+              <input type="number" min="0.01" step="0.01" required value={form.principal_amount} onChange={(e) => setForm({ ...form, principal_amount: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Installment amount</span>
+              <input type="number" min="0.01" step="0.01" required value={form.installment_amount} onChange={(e) => setForm({ ...form, installment_amount: e.target.value })} />
+            </label>
+          </div>
+
+          <label className="field">
+            <span>Start date</span>
+            <input type="date" required value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+          </label>
+
+          {installmentCount && (
+            <p className="muted" style={{ margin: 0 }}>
+              This works out to {installmentCount} installment{installmentCount > 1 ? 's' : ''}, created now and deducted one per payroll run in order as payroll gets calculated.
+            </p>
+          )}
+
+          {error && <p className="field-error">{error}</p>}
+
+          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Creating…' : 'Create'}</button>
+        </form>
+      </Drawer>
+
+      <Drawer open={!!activeLoan} onClose={() => setActiveLoan(null)} title={activeLoan ? `${activeLoan.employees?.full_name} · ${activeLoan.loan_type}` : ''}>
+        {activeLoan && (
+          <div className="drawer-form">
+            <div className="field-row">
+              <div className="field"><span>Principal</span><p style={{ margin: 0 }}>{fmt(activeLoan.principal_amount)}</p></div>
+              <div className="field"><span>Per installment</span><p style={{ margin: 0 }}>{fmt(activeLoan.installment_amount)}</p></div>
+            </div>
+            <p className="section-heading" style={{ marginTop: 8 }}>Installment schedule</p>
+            <table className="data-table">
+              <thead><tr><th>#</th><th>Amount</th><th>Status</th></tr></thead>
+              <tbody>
+                {installments.map((i) => (
+                  <tr key={i.id} style={{ cursor: 'default' }}>
+                    <td className="mono">{i.installment_number}</td>
+                    <td className="mono">{fmt(i.due_amount)}</td>
+                    <td><span className={`status-badge status-${i.status === 'deducted' ? 'approved' : i.status === 'skipped' ? 'rejected' : 'pending'}`}>{i.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Drawer>
+    </>
+  )
+}
+
+function OvertimeSection() {
+  const [records, setRecords] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('pending')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    let query = supabase
+      .from('overtime_records')
+      .select('id, work_date, minutes, rate_multiplier, approval_status, payroll_status, employees(full_name, employee_code)')
+      .order('work_date', { ascending: false })
+    if (filter === 'pending') query = query.eq('approval_status', 'pending')
+    const { data } = await query
+    setRecords(data ?? [])
+    setLoading(false)
+  }, [filter])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  async function review(id, approval_status) {
+    const { error } = await supabase.from('overtime_records').update({ approval_status }).eq('id', id)
+    if (!error) {
+      toast.success(approval_status === 'approved' ? 'Overtime approved' : 'Overtime rejected')
+      load()
+    }
+  }
+
+  return (
+    <>
+      <p className="muted" style={{ marginTop: 0 }}>
+        These are generated automatically from attendance whenever an employee clocks time past their shift. Approved, unpaid records get pulled into the next payroll calculation.
+      </p>
+
+      <div className="field-row" style={{ maxWidth: 200, marginBottom: 4 }}>
+        <label className="field">
+          <span>Show</span>
+          <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <option value="pending">Pending</option>
+            <option value="all">All</option>
+          </select>
+        </label>
+      </div>
+
+      {loading ? (
+        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+      ) : records.length === 0 ? (
+        <div className="empty-state" style={{ marginTop: 20 }}>
+          <p>{filter === 'pending' ? 'Nothing pending.' : 'No overtime recorded yet.'}</p>
+        </div>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr><th>Employee</th><th>Date</th><th>Hours</th><th>Rate</th><th>Approval</th><th>Payroll</th><th></th></tr>
+          </thead>
+          <tbody>
+            {records.map((r) => (
+              <tr key={r.id} style={{ cursor: 'default' }}>
+                <td>{r.employees?.full_name}</td>
+                <td className="mono">{formatDate(r.work_date)}</td>
+                <td className="mono">{(r.minutes / 60).toFixed(1)}h</td>
+                <td className="mono">{r.rate_multiplier}×</td>
+                <td><span className={`status-badge status-${r.approval_status === 'approved' ? 'approved' : r.approval_status === 'rejected' ? 'rejected' : 'pending'}`}>{r.approval_status}</span></td>
+                <td><span className={`status-badge status-${r.payroll_status === 'included' ? 'approved' : ''}`}>{r.payroll_status}</span></td>
+                <td>
+                  {r.approval_status === 'pending' && (
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn-icon-round approve" onClick={() => review(r.id, 'approved')} aria-label="Approve">✓</button>
+                      <button className="btn-icon-round reject" onClick={() => review(r.id, 'rejected')} aria-label="Reject">✕</button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </>
   )
 }

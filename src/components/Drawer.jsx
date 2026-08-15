@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 
 const EXIT_DURATION = 320
 
-export function Drawer({ open, onClose, title, children }) {
+export function Drawer({ open, onClose, title, children, wide = false }) {
   const [mounted, setMounted] = useState(open)
   const [visible, setVisible] = useState(false)
 
@@ -39,7 +39,7 @@ export function Drawer({ open, onClose, title, children }) {
 
   return (
     <div className={`drawer-overlay${visible ? ' visible' : ''}`} onClick={onClose}>
-      <div className={`drawer-panel${visible ? ' visible' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`drawer-panel${visible ? ' visible' : ''}${wide ? ' wide' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="drawer-header">
           <h2 className="drawer-title">{title}</h2>
           <button className="drawer-close" onClick={onClose} aria-label="Close">

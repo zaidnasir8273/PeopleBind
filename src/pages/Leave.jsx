@@ -41,6 +41,8 @@ export default function Leave() {
   const [requestForm, setRequestForm] = useState(EMPTY_REQUEST)
   const [requestSaving, setRequestSaving] = useState(false)
   const [requestError, setRequestError] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
 
   const [balances, setBalances] = useState([])
   const [balancesLoading, setBalancesLoading] = useState(true)
@@ -150,6 +152,36 @@ export default function Leave() {
     }
   }
 
+  function toggleSelect(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAllPending() {
+    const pendingIds = requests.filter((r) => r.status === 'pending').map((r) => r.id)
+    setSelectedIds((prev) => (prev.size === pendingIds.length ? new Set() : new Set(pendingIds)))
+  }
+
+  async function bulkReview(status) {
+    setBulkBusy(true)
+    const ids = [...selectedIds]
+    const { error: bulkError } = await supabase
+      .from('leave_requests')
+      .update({ status, reviewed_by: profile.id, reviewed_at: new Date().toISOString() })
+      .in('id', ids)
+    setBulkBusy(false)
+    if (!bulkError) {
+      toast.success(`${ids.length} request${ids.length > 1 ? 's' : ''} ${status}`)
+      setSelectedIds(new Set())
+      loadRequests()
+      loadBalances()
+    }
+  }
+
   function openSetBalance() {
     setBalanceForm({ ...EMPTY_BALANCE })
     setBalanceError(null)
@@ -226,6 +258,17 @@ export default function Leave() {
             </label>
           </div>
 
+          {selectedIds.size > 0 && (
+            <div className="bulk-action-bar">
+              <span>{selectedIds.size} selected</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-secondary" disabled={bulkBusy} onClick={() => bulkReview('approved')}>Approve selected</button>
+                <button className="btn-secondary" disabled={bulkBusy} onClick={() => bulkReview('rejected')}>Reject selected</button>
+                <button className="link-button" onClick={() => setSelectedIds(new Set())}>Clear</button>
+              </div>
+            </div>
+          )}
+
           {requestsLoading ? (
             <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
           ) : requests.length === 0 ? (
@@ -237,6 +280,13 @@ export default function Leave() {
             <table className="data-table">
               <thead>
                 <tr>
+                  <th style={{ width: 32 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size > 0 && selectedIds.size === requests.filter((r) => r.status === 'pending').length}
+                      onChange={toggleSelectAllPending}
+                    />
+                  </th>
                   <th>Employee</th>
                   <th>Type</th>
                   <th>Dates</th>
@@ -249,6 +299,11 @@ export default function Leave() {
               <tbody>
                 {requests.map((r) => (
                   <tr key={r.id}>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {r.status === 'pending' && (
+                        <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleSelect(r.id)} />
+                      )}
+                    </td>
                     <td>
                       {r.employees?.full_name}
                       <span className="mono" style={{ display: 'block', color: 'var(--ink-soft)', fontSize: 12 }}>

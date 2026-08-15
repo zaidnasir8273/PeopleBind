@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, Upload } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { ImportEmployeesDrawer } from '../components/ImportEmployeesDrawer'
 
 const EMPTY_FORM = {
   full_name: '',
@@ -30,6 +31,8 @@ export default function People() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [history, setHistory] = useState([])
+  const [importOpen, setImportOpen] = useState(false)
 
   const loadEmployees = useCallback(async () => {
     setLoading(true)
@@ -86,6 +89,44 @@ export default function People() {
     })
     setError(null)
     setDrawerOpen(true)
+    loadHistory(emp.id)
+  }
+
+  async function loadHistory(employeeId) {
+    setHistory([])
+    const [{ data: empHistory }, { data: shiftHistory }] = await Promise.all([
+      supabase
+        .from('employment_history')
+        .select('id, effective_from, effective_to, reason, manager_id, departments(name), designations(name), employment_types(name), branches(name)')
+        .eq('employee_id', employeeId)
+        .order('effective_from', { ascending: false }),
+      supabase
+        .from('shift_assignment_history')
+        .select('id, effective_from, effective_to, reason, shifts(name)')
+        .eq('employee_id', employeeId)
+        .order('effective_from', { ascending: false }),
+    ])
+
+    const merged = [
+      ...(empHistory ?? []).map((h) => ({
+        id: `emp-${h.id}`,
+        effective_from: h.effective_from,
+        effective_to: h.effective_to,
+        summary: [h.designations?.name, h.departments?.name].filter(Boolean).join(' · ') || 'Employment details updated',
+        detail: [h.employment_types?.name, h.branches?.name, h.manager_id ? `Reports to ${employees.find((e) => e.id === h.manager_id)?.full_name ?? 'manager'}` : null].filter(Boolean).join(' · '),
+        reason: h.reason,
+      })),
+      ...(shiftHistory ?? []).map((h) => ({
+        id: `shift-${h.id}`,
+        effective_from: h.effective_from,
+        effective_to: h.effective_to,
+        summary: h.shifts?.name ? `Shift: ${h.shifts.name}` : 'Shift changed',
+        detail: null,
+        reason: h.reason,
+      })),
+    ].sort((a, b) => (b.effective_from ?? '').localeCompare(a.effective_from ?? ''))
+
+    setHistory(merged)
   }
 
   async function createLookup(table, name) {
@@ -149,9 +190,14 @@ export default function People() {
           <p className="page-eyebrow">PEOPLE</p>
           <h1 className="page-title">Employees</h1>
         </div>
-        <button className="btn-primary btn-icon" onClick={openAdd}>
-          <Plus size={16} /> Add employee
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-secondary btn-icon" onClick={() => setImportOpen(true)}>
+            <Upload size={16} /> Import
+          </button>
+          <button className="btn-primary btn-icon" onClick={openAdd}>
+            <Plus size={16} /> Add employee
+          </button>
+        </div>
       </div>
 
       <div className="search-bar">
@@ -282,7 +328,33 @@ export default function People() {
             {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add employee'}
           </button>
         </form>
+
+        {editingId && history.length > 0 && (
+          <div style={{ padding: '0 24px 24px' }}>
+            <p className="section-heading" style={{ marginTop: 8 }}>History</p>
+            <div className="history-timeline">
+              {history.map((h) => (
+                <div key={h.id} className="history-item">
+                  <div className="history-item-date">
+                    {formatDate(h.effective_from)}{h.effective_to ? ` – ${formatDate(h.effective_to)}` : ''}
+                  </div>
+                  <div className="history-item-summary">{h.summary}</div>
+                  {h.detail && <div className="muted" style={{ fontSize: 12 }}>{h.detail}</div>}
+                  {h.reason && <div className="muted" style={{ fontSize: 12, fontStyle: 'italic' }}>{h.reason}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Drawer>
+
+      <ImportEmployeesDrawer
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        company={company}
+        lookups={lookups}
+        onImported={loadEmployees}
+      />
     </div>
   )
 }
