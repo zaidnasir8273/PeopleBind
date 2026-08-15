@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
   const [company, setCompany] = useState(null)
+  const [employeeRecord, setEmployeeRecord] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const loadProfile = useCallback(async (userId) => {
@@ -21,13 +22,21 @@ export function AuthProvider({ children }) {
     if (profileRow?.company_id) {
       const { data: companyRow } = await supabase
         .from('companies')
-        .select('id, name, slug, plan, status')
+        .select('*')
         .eq('id', profileRow.company_id)
         .single()
       setCompany(companyRow ?? null)
     } else {
       setCompany(null)
     }
+
+    const { data: employeeRow } = await supabase
+      .from('employees')
+      .select('id, employee_code, full_name, personal_email, phone, address, emergency_contact_name, emergency_contact_phone, bank_name, bank_account_number, bank_iban, joining_date, photo_url, department_id, designation_id, departments(name), designations(name)')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    setEmployeeRecord(employeeRow ?? null)
   }, [])
 
   useEffect(() => {
@@ -50,6 +59,7 @@ export function AuthProvider({ children }) {
       } else {
         setProfile(null)
         setCompany(null)
+        setEmployeeRecord(null)
       }
     })
 
@@ -70,6 +80,7 @@ export function AuthProvider({ children }) {
     user: session?.user ?? null,
     profile,
     company,
+    employeeRecord,
     loading,
     signOut,
     refreshProfile,

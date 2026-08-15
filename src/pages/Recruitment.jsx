@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { toast } from 'sonner'
 import { Plus, ChevronLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -423,7 +424,6 @@ function CandidateDrawer({ application, opening, profile, company, onClose, onCh
   const [offerSaving, setOfferSaving] = useState(false)
 
   const [convertBusy, setConvertBusy] = useState(false)
-  const [convertMessage, setConvertMessage] = useState(null)
   const [convertError, setConvertError] = useState(null)
 
   const loadDetail = useCallback(async () => {
@@ -508,13 +508,13 @@ function CandidateDrawer({ application, opening, profile, company, onClose, onCh
   async function convertToEmployee() {
     setConvertBusy(true)
     setConvertError(null)
-    const { data, error } = await supabase.rpc('convert_candidate_to_employee', { p_application_id: application.id })
+    const { error } = await supabase.rpc('convert_candidate_to_employee', { p_application_id: application.id })
     setConvertBusy(false)
     if (error) {
       setConvertError(error.message)
       return
     }
-    setConvertMessage(`Hired — employee record created (${data}).`)
+    toast.success('Candidate hired', { description: `${application.candidates?.full_name} is now an employee.` })
     setStage('hired')
     onChanged()
   }
@@ -676,7 +676,6 @@ function CandidateDrawer({ application, opening, profile, company, onClose, onCh
                 {convertError && <p className="field-error">{convertError}</p>}
               </>
             )}
-            {convertMessage && <p className="muted">{convertMessage}</p>}
           </>
         )}
       </div>

@@ -11,6 +11,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -55,6 +56,12 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar-user">
+        {profile?.is_platform_admin && (
+          <NavLink to="/platform-admin" className="sidebar-link" style={{ marginBottom: 6 }}>
+            <ShieldCheck size={15} strokeWidth={2} />
+            Platform Admin
+          </NavLink>
+        )}
         <div className="sidebar-user-name">{profile?.full_name || profile?.email}</div>
         <button className="sidebar-signout" onClick={signOut}>
           <LogOut size={15} strokeWidth={2} />

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
 import { Plus, Check, X as XIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -143,6 +144,7 @@ export default function Leave() {
       .eq('id', id)
 
     if (!reviewError) {
+      toast.success(status === 'approved' ? 'Leave approved' : 'Leave rejected')
       loadRequests()
       loadBalances()
     }

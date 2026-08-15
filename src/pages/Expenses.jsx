@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -141,6 +142,8 @@ export default function Expenses() {
     setReviewSaving(false)
 
     if (!reviewError) {
+      const labels = { approved: 'Claim approved', rejected: 'Claim rejected', changes_requested: 'Changes requested' }
+      toast.success(labels[status] ?? 'Claim updated')
       setReviewClaim(null)
       loadClaims()
     }

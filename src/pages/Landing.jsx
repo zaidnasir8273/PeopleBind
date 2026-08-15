@@ -18,6 +18,7 @@ export default function Landing() {
           <span className="wm-people">People</span><span className="wm-bind">Bind</span>
         </div>
         <nav className="header-nav">
+          <Link to="/employee/login" className="header-link">Employee sign in</Link>
           <Link to="/login" className="header-link">Sign in</Link>
           <Link to="/signup" className="header-cta">Sign up</Link>
         </nav>

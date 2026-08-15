@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
 import { ChevronLeft, ChevronRight, Check, X as XIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -161,6 +162,7 @@ export default function Attendance() {
       .eq('id', id)
 
     if (!reviewError) {
+      toast.success(status === 'approved' ? 'Correction approved' : 'Correction rejected')
       loadCorrections()
       loadRoster()
     }

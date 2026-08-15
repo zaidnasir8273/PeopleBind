@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
 import { Plus, ChevronLeft, AlertTriangle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -288,6 +289,7 @@ function RunDetail({ runId, profile, onBack }) {
       setActionError(error.message)
       return
     }
+    toast.success('Payroll calculated')
     load()
   }
 
@@ -300,6 +302,7 @@ function RunDetail({ runId, profile, onBack }) {
       setActionError(error.message)
       return
     }
+    toast.success('Run approved')
     load()
   }
 
@@ -312,6 +315,7 @@ function RunDetail({ runId, profile, onBack }) {
       setActionError(error.message)
       return
     }
+    toast.success('Payroll finalized', { description: 'This run is now locked.' })
     load()
   }
 

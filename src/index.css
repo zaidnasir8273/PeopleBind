@@ -12,6 +12,13 @@
   --font-display: "Space Grotesk", "Segoe UI", sans-serif;
   --font-body: "Inter", "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration: 200ms;
+  --duration-slow: 320ms;
+  --focus-ring: 0 0 0 3px rgba(31, 122, 99, 0.16);
 }
 
 * {
@@ -378,10 +385,42 @@ h1 {
 
 /* ---------- focus visibility ---------- */
 
+a,
+button,
+input,
+select,
+textarea {
+  transition: background-color var(--duration) var(--ease), border-color var(--duration) var(--ease),
+    color var(--duration) var(--ease), box-shadow var(--duration) var(--ease), transform var(--duration-fast) var(--ease),
+    opacity var(--duration) var(--ease);
+}
+
 a:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 2px;
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--teal);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    transition: none !important;
+  }
+  button:active:not(:disabled) {
+    transform: none !important;
+  }
 }
 
 /* ================================================================
@@ -460,7 +499,8 @@ button:focus-visible {
   color: var(--ink-soft);
 }
 
-.field input {
+.field input,
+.field textarea {
   font-family: var(--font-body);
   font-size: 15px;
   color: var(--ink);
@@ -468,12 +508,6 @@ button:focus-visible {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 12px;
-}
-
-.field input:focus-visible {
-  outline: 2px solid var(--teal);
-  outline-offset: 1px;
-  border-color: var(--teal);
 }
 
 .field-error {
@@ -701,6 +735,35 @@ button:focus-visible {
   margin: 0 0 14px;
 }
 
+.report-section {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 20px;
+}
+
+.report-section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.report-section-head .section-heading {
+  margin: 0;
+  flex: 1;
+}
+
+.report-stat {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--teal-deep);
+  background: rgba(31, 122, 99, 0.1);
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+
 .empty-state {
   border: 1px dashed var(--line);
   border-radius: 12px;
@@ -820,6 +883,7 @@ button:focus-visible {
 
 .data-table tbody tr {
   cursor: pointer;
+  transition: background-color var(--duration) var(--ease);
 }
 
 .data-table tbody tr:hover {
@@ -1001,6 +1065,12 @@ button:focus-visible {
   display: flex;
   justify-content: flex-end;
   z-index: 50;
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease);
+}
+
+.drawer-overlay.visible {
+  opacity: 1;
 }
 
 .drawer-panel {
@@ -1011,6 +1081,19 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform var(--duration-slow) var(--ease);
+}
+
+.drawer-panel.visible {
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-overlay,
+  .drawer-panel {
+    transition: none !important;
+  }
 }
 
 .drawer-header {
