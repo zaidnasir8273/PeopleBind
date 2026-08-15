@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { CalendarDays, Receipt, Clock, Wallet, UserCheck, ChevronRight, Cake, PartyPopper } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { SkeletonStatRow } from '../components/Skeleton'
 
 function greeting() {
   const hour = new Date().getHours()
@@ -176,7 +177,7 @@ export default function Home() {
         <h2 className="section-heading">Needs your attention</h2>
 
         {loading ? (
-          <p className="muted">Loading…</p>
+          <SkeletonStatRow count={4} />
         ) : actionItems.length === 0 ? (
           <div className="empty-state">
             <p>Nothing pending right now.</p>

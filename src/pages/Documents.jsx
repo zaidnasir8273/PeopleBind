@@ -4,6 +4,7 @@ import { Plus, Download, Trash2, AlertTriangle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable } from '../components/Skeleton'
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -92,6 +93,7 @@ export default function Documents() {
     if (uploadError) {
       setUploading(false)
       setError(uploadError.message)
+      toast.error(uploadError.message || 'Something went wrong')
       return
     }
 
@@ -108,6 +110,7 @@ export default function Documents() {
 
     if (insertError) {
       setError(insertError.message)
+      toast.error(insertError.message || 'Something went wrong')
       return
     }
 
@@ -178,7 +181,7 @@ export default function Documents() {
           <p>Select an employee to view or upload their documents.</p>
         </div>
       ) : loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={4} />
       ) : docs.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No documents yet.</p>

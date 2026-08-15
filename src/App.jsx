@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { AuthProvider } from './context/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
@@ -38,6 +39,25 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Toaster
+          position="top-right"
+          gap={8}
+          toastOptions={{
+            style: {
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              boxShadow: 'var(--shadow-float)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '13.5px',
+            },
+            classNames: {
+              error: 'toast-error',
+              success: 'toast-success',
+            },
+          }}
+        />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />

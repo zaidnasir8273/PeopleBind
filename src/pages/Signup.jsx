@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export default function Signup() {
@@ -26,14 +28,17 @@ export default function Signup() {
 
     if (signUpError) {
       setError(signUpError.message)
+      toast.error(signUpError.message || 'Failed to create account')
       return
     }
 
     if (data.session) {
+      toast.success('Account created')
       navigate('/onboarding')
     } else {
       // Email confirmation is required before a session exists
       setCheckEmail(true)
+      toast.success('Confirmation email sent')
     }
   }
 
@@ -107,6 +112,7 @@ export default function Signup() {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={submitting}>
+            {submitting && <Loader2 size={14} className="btn-spinner" />}
             {submitting ? 'Creating account…' : 'Continue'}
           </button>
         </form>

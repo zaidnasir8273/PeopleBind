@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { SkeletonBlock } from '../components/Skeleton'
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -29,7 +31,7 @@ export default function EmployeeProfile() {
     }
   }, [employeeRecord])
 
-  if (!form) return <div className="page-inner" style={{ maxWidth: 700 }}><p className="muted" style={{ marginTop: 20 }}>Loading…</p></div>
+  if (!form) return <div className="page-inner" style={{ maxWidth: 700 }}><SkeletonBlock rows={5} /></div>
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -51,6 +53,7 @@ export default function EmployeeProfile() {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message || 'Failed to update profile')
       return
     }
 
@@ -124,6 +127,7 @@ export default function EmployeeProfile() {
         {error && <p className="field-error">{error}</p>}
 
         <button type="submit" className="btn-primary" disabled={saving} style={{ alignSelf: 'flex-start' }}>
+          {saving && <Loader2 size={14} className="btn-spinner" />}
           {saving ? 'Saving…' : 'Save changes'}
         </button>
       </form>

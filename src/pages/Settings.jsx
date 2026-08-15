@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonBlock, SkeletonTable } from '../components/Skeleton'
 
 const DAYS = [
   { code: 'MO', label: 'Mon' },
@@ -76,7 +77,7 @@ function CompanyTab() {
     }
   }, [company])
 
-  if (!form) return <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+  if (!form) return <SkeletonBlock rows={6} />
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -99,6 +100,7 @@ function CompanyTab() {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message)
       return
     }
 
@@ -146,6 +148,7 @@ function CompanyTab() {
       {error && <p className="field-error">{error}</p>}
 
       <button type="submit" className="btn-primary" disabled={saving} style={{ alignSelf: 'flex-start' }}>
+        {saving && <Loader2 size={14} className="btn-spinner" />}
         {saving ? 'Saving…' : 'Save changes'}
       </button>
     </form>
@@ -181,7 +184,7 @@ function StructureTab() {
     load()
   }, [load])
 
-  if (loading) return <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+  if (loading) return <SkeletonBlock rows={6} />
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
@@ -351,8 +354,10 @@ function ShiftsTab() {
     setShiftSaving(false)
     if (saveError) {
       setShiftError(saveError.message)
+      toast.error(saveError.message)
       return
     }
+    toast.success('Shift created')
     setShiftDrawerOpen(false)
     setShiftForm({ name: '', start_time: '09:00', end_time: '18:00', break_minutes: 60, grace_period_minutes: 10, overtime_eligible: true, working_days: ['MO', 'TU', 'WE', 'TH', 'FR', 'SA'] })
     load()
@@ -370,14 +375,16 @@ function ShiftsTab() {
     setHolidaySaving(false)
     if (saveError) {
       setHolidayError(saveError.message)
+      toast.error(saveError.message)
       return
     }
+    toast.success('Holiday added')
     setHolidayDrawerOpen(false)
     setHolidayForm({ name: '', holiday_date: '' })
     load()
   }
 
-  if (loading) return <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+  if (loading) return <SkeletonTable rows={4} columns={6} />
 
   return (
     <>
@@ -484,7 +491,10 @@ function ShiftsTab() {
             Overtime eligible
           </label>
           {shiftError && <p className="field-error">{shiftError}</p>}
-          <button type="submit" className="btn-primary" disabled={shiftSaving}>{shiftSaving ? 'Creating…' : 'Create shift'}</button>
+          <button type="submit" className="btn-primary" disabled={shiftSaving}>
+            {shiftSaving && <Loader2 size={14} className="btn-spinner" />}
+            {shiftSaving ? 'Creating…' : 'Create shift'}
+          </button>
         </form>
       </Drawer>
 
@@ -499,7 +509,10 @@ function ShiftsTab() {
             <input type="date" required value={holidayForm.holiday_date} onChange={(e) => setHolidayForm({ ...holidayForm, holiday_date: e.target.value })} />
           </label>
           {holidayError && <p className="field-error">{holidayError}</p>}
-          <button type="submit" className="btn-primary" disabled={holidaySaving}>{holidaySaving ? 'Adding…' : 'Add holiday'}</button>
+          <button type="submit" className="btn-primary" disabled={holidaySaving}>
+            {holidaySaving && <Loader2 size={14} className="btn-spinner" />}
+            {holidaySaving ? 'Adding…' : 'Add holiday'}
+          </button>
         </form>
       </Drawer>
     </>
@@ -547,14 +560,16 @@ function PayrollComponentsTab() {
     setSaving(false)
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message)
       return
     }
+    toast.success('Payroll component created')
     setDrawerOpen(false)
     setForm({ name: '', component_type: 'earning', calculation_method: 'fixed', percentage: '', taxable: true })
     load()
   }
 
-  if (loading) return <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+  if (loading) return <SkeletonTable rows={5} columns={5} />
 
   return (
     <>
@@ -622,7 +637,10 @@ function PayrollComponentsTab() {
             Taxable
           </label>
           {error && <p className="field-error">{error}</p>}
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Creating…' : 'Create component'}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Creating…' : 'Create component'}
+          </button>
         </form>
       </Drawer>
     </>
@@ -700,6 +718,7 @@ function TaxSlabsTab() {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message)
       return
     }
 
@@ -708,7 +727,7 @@ function TaxSlabsTab() {
     load()
   }
 
-  if (loading) return <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+  if (loading) return <SkeletonTable rows={4} columns={4} />
 
   return (
     <>
@@ -793,7 +812,10 @@ function TaxSlabsTab() {
 
           {error && <p className="field-error">{error}</p>}
 
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Adding…' : 'Add bracket'}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Adding…' : 'Add bracket'}
+          </button>
         </form>
       </Drawer>
     </>
@@ -842,9 +864,12 @@ function RolesTab() {
     const { data, error } = await supabase.from('roles').insert({ company_id: company.id, name: newRoleName.trim() }).select().single()
     setCreatingRole(false)
     if (!error && data) {
+      toast.success('Role created')
       setNewRoleName('')
       await load()
       setSelectedRoleId(data.id)
+    } else if (error) {
+      toast.error(error.message)
     }
   }
 
@@ -867,7 +892,7 @@ function RolesTab() {
     load()
   }
 
-  if (loading) return <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+  if (loading) return <SkeletonBlock rows={8} />
 
   const selectedRole = roles.find((r) => r.id === selectedRoleId)
   const enabledPermissionIds = new Set(rolePermissions.filter((rp) => rp.role_id === selectedRoleId).map((rp) => rp.permission_id))
@@ -1025,7 +1050,7 @@ function AuditLogTab() {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={6} columns={4} />
       ) : entries.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No activity recorded yet.</p>
@@ -1153,9 +1178,12 @@ function OnboardingTemplatesTab() {
       .single()
     setCreating(false)
     if (!error && data) {
+      toast.success('Template created')
       setNewTemplateName('')
       await loadTemplates()
       selectTemplate(data)
+    } else if (error) {
+      toast.error(error.message)
     }
   }
 
@@ -1180,15 +1208,22 @@ function OnboardingTemplatesTab() {
       toast.success('Task added to template')
       setTaskDrawerOpen(false)
       loadTasks(selectedId)
+    } else {
+      toast.error(error.message)
     }
   }
 
   async function removeTask(taskId) {
-    await supabase.from('onboarding_template_tasks').delete().eq('id', taskId)
+    const { error } = await supabase.from('onboarding_template_tasks').delete().eq('id', taskId)
+    if (error) {
+      toast.error(error.message)
+      return
+    }
+    toast.success('Task removed')
     loadTasks(selectedId)
   }
 
-  if (loading) return <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+  if (loading) return <SkeletonBlock rows={8} />
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24 }}>
@@ -1264,7 +1299,10 @@ function OnboardingTemplatesTab() {
             </label>
           </div>
           <p className="muted" style={{ margin: 0 }}>0 = due on their first day. Negative numbers work for pre-joining tasks (e.g. -3 for "prepare laptop").</p>
-          <button type="submit" className="btn-primary" disabled={savingTask}>{savingTask ? 'Adding…' : 'Add task'}</button>
+          <button type="submit" className="btn-primary" disabled={savingTask}>
+            {savingTask && <Loader2 size={14} className="btn-spinner" />}
+            {savingTask ? 'Adding…' : 'Add task'}
+          </button>
         </form>
       </Drawer>
     </div>

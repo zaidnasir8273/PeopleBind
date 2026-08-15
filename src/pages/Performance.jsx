@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus } from 'lucide-react'
+import { toast } from 'sonner'
+import { Plus, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable, SkeletonBlock } from '../components/Skeleton'
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -121,9 +123,11 @@ function GoalsTab({ employees, profile, company }) {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
       return
     }
 
+    toast.success(editingId ? 'Goal updated' : 'Goal created')
     setDrawerOpen(false)
     load()
   }
@@ -137,7 +141,7 @@ function GoalsTab({ employees, profile, company }) {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={4} />
       ) : goals.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No goals yet.</p>
@@ -212,6 +216,7 @@ function GoalsTab({ employees, profile, company }) {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Saving…' : editingId ? 'Save changes' : 'Create goal'}
           </button>
         </form>
@@ -288,8 +293,10 @@ function ReviewsTab({ employees, profile, company }) {
     setCycleSaving(false)
     if (saveError) {
       setCycleError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
       return
     }
+    toast.success('Review cycle created')
     setCycleDrawerOpen(false)
     loadLookups()
   }
@@ -335,9 +342,11 @@ function ReviewsTab({ employees, profile, company }) {
 
     if (saveError) {
       setReviewError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
       return
     }
 
+    toast.success(editingReview ? 'Review updated' : 'Review draft created')
     setReviewDrawerOpen(false)
     loadReviews()
   }
@@ -347,6 +356,7 @@ function ReviewsTab({ employees, profile, company }) {
     if (status === 'submitted') patch.submitted_at = new Date().toISOString()
     if (status === 'acknowledged') patch.acknowledged_at = new Date().toISOString()
     await supabase.from('performance_reviews').update(patch).eq('id', id)
+    toast.success(status === 'submitted' ? 'Review submitted' : 'Review acknowledged')
     loadReviews()
   }
 
@@ -370,7 +380,7 @@ function ReviewsTab({ employees, profile, company }) {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={6} />
       ) : reviews.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No reviews yet.</p>
@@ -432,7 +442,10 @@ function ReviewsTab({ employees, profile, company }) {
             </label>
           </div>
           {cycleError && <p className="field-error">{cycleError}</p>}
-          <button type="submit" className="btn-primary" disabled={cycleSaving}>{cycleSaving ? 'Creating…' : 'Create cycle'}</button>
+          <button type="submit" className="btn-primary" disabled={cycleSaving}>
+            {cycleSaving && <Loader2 size={14} className="btn-spinner" />}
+            {cycleSaving ? 'Creating…' : 'Create cycle'}
+          </button>
         </form>
       </Drawer>
 
@@ -485,6 +498,7 @@ function ReviewsTab({ employees, profile, company }) {
           {reviewError && <p className="field-error">{reviewError}</p>}
 
           <button type="submit" className="btn-primary" disabled={reviewSaving}>
+            {reviewSaving && <Loader2 size={14} className="btn-spinner" />}
             {reviewSaving ? 'Saving…' : editingReview ? 'Save changes' : 'Create draft review'}
           </button>
         </form>
@@ -537,8 +551,10 @@ function FeedbackTab({ employees, profile, company }) {
     setSaving(false)
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
       return
     }
+    toast.success('Feedback note added')
     setDrawerOpen(false)
     load()
   }
@@ -552,7 +568,7 @@ function FeedbackTab({ employees, profile, company }) {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonBlock rows={4} />
       ) : notes.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No feedback notes yet.</p>
@@ -586,7 +602,10 @@ function FeedbackTab({ employees, profile, company }) {
             <input required value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
           </label>
           {error && <p className="field-error">{error}</p>}
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Add note'}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Saving…' : 'Add note'}
+          </button>
         </form>
       </Drawer>
     </>

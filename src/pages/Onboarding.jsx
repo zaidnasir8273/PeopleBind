@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -33,9 +35,11 @@ export default function Onboarding() {
     if (rpcError) {
       setSubmitting(false)
       setError(rpcError.message)
+      toast.error(rpcError.message || 'Something went wrong')
       return
     }
 
+    toast.success('Company created')
     await refreshProfile()
     navigate('/app')
   }
@@ -70,6 +74,7 @@ export default function Onboarding() {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={submitting}>
+            {submitting && <Loader2 size={14} className="btn-spinner" />}
             {submitting ? 'Setting up…' : 'Create company'}
           </button>
         </form>

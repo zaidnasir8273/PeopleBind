@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable } from '../components/Skeleton'
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -84,6 +85,7 @@ export default function Assets() {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
       return
     }
 
@@ -146,7 +148,7 @@ export default function Assets() {
           <p>Select an employee to view or assign their equipment.</p>
         </div>
       ) : loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={6} />
       ) : assets.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No assets assigned yet.</p>
@@ -202,7 +204,10 @@ export default function Assets() {
 
           {error && <p className="field-error">{error}</p>}
 
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Assigning…' : 'Assign'}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Assigning…' : 'Assign'}
+          </button>
         </form>
       </Drawer>
     </div>

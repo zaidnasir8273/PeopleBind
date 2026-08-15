@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Plus, ChevronLeft, AlertTriangle } from 'lucide-react'
+import { Plus, ChevronLeft, AlertTriangle, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable } from '../components/Skeleton'
 
 function fmt(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
@@ -115,6 +116,7 @@ function RunsTab({ profile, company }) {
     if (periodError) {
       setSaving(false)
       setError(periodError.message)
+      toast.error(periodError.message)
       return
     }
 
@@ -126,9 +128,11 @@ function RunsTab({ profile, company }) {
 
     if (runError) {
       setError(runError.message)
+      toast.error(runError.message)
       return
     }
 
+    toast.success('Payroll period created')
     setDrawerOpen(false)
     loadRuns()
   }
@@ -155,7 +159,7 @@ function RunsTab({ profile, company }) {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={6} />
       ) : runs.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No payroll periods yet.</p>
@@ -224,6 +228,7 @@ function RunsTab({ profile, company }) {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Creating…' : 'Create period & run'}
           </button>
         </form>
@@ -291,6 +296,7 @@ function RunDetail({ runId, profile, onBack }) {
     setBusy(false)
     if (error) {
       setActionError(error.message)
+      toast.error(error.message)
       return
     }
     toast.success('Payroll calculated')
@@ -304,6 +310,7 @@ function RunDetail({ runId, profile, onBack }) {
     setBusy(false)
     if (error) {
       setActionError(error.message)
+      toast.error(error.message)
       return
     }
     toast.success('Run approved')
@@ -317,13 +324,14 @@ function RunDetail({ runId, profile, onBack }) {
     setBusy(false)
     if (error) {
       setActionError(error.message)
+      toast.error(error.message)
       return
     }
     toast.success('Payroll finalized', { description: 'This run is now locked.' })
     load()
   }
 
-  if (loading) return <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+  if (loading) return <SkeletonTable rows={4} columns={4} />
   if (!run) return null
 
   const isDraft = run.status === 'draft'
@@ -524,9 +532,11 @@ function StructuresTab({ profile, company }) {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message)
       return
     }
 
+    toast.success('Salary component saved')
     setDrawerOpen(false)
     loadRows()
   }
@@ -555,7 +565,7 @@ function StructuresTab({ profile, company }) {
           <p>Select an employee to view or edit their salary structure.</p>
         </div>
       ) : loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={4} columns={5} />
       ) : rows.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No salary components yet.</p>
@@ -631,6 +641,7 @@ function StructuresTab({ profile, company }) {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Saving…' : 'Save component'}
           </button>
         </form>
@@ -723,6 +734,7 @@ function LoansSection({ employees, profile, company }) {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message)
       return
     }
 
@@ -754,7 +766,7 @@ function LoansSection({ employees, profile, company }) {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={6} />
       ) : loans.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No loans or advances yet.</p>
@@ -822,7 +834,10 @@ function LoansSection({ employees, profile, company }) {
 
           {error && <p className="field-error">{error}</p>}
 
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Creating…' : 'Create'}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Creating…' : 'Create'}
+          </button>
         </form>
       </Drawer>
 
@@ -879,6 +894,8 @@ function OvertimeSection() {
     if (!error) {
       toast.success(approval_status === 'approved' ? 'Overtime approved' : 'Overtime rejected')
       load()
+    } else {
+      toast.error(error.message)
     }
   }
 
@@ -899,7 +916,7 @@ function OvertimeSection() {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={7} />
       ) : records.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>{filter === 'pending' ? 'Nothing pending.' : 'No overtime recorded yet.'}</p>

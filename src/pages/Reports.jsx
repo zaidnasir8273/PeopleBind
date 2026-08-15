@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { supabase } from '../lib/supabase'
+import { SkeletonBlock } from '../components/Skeleton'
 
 const TEAL = '#1f7a63'
 const TEAL_DEEP = '#123f33'
@@ -114,7 +115,9 @@ export default function Reports() {
   if (loading) {
     return (
       <div className="page-inner" style={{ maxWidth: 1020 }}>
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <div className="report-section"><SkeletonBlock rows={5} /></div>
+        <div className="report-section"><SkeletonBlock rows={5} /></div>
+        <div className="report-section"><SkeletonBlock rows={5} /></div>
       </div>
     )
   }

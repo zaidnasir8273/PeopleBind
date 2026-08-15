@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export default function EmployeeSignup() {
@@ -23,12 +25,14 @@ export default function EmployeeSignup() {
     if (signUpError) {
       setSubmitting(false)
       setError(signUpError.message)
+      toast.error(signUpError.message || 'Failed to create account')
       return
     }
 
     if (!data.session) {
       setSubmitting(false)
       setCheckEmail(true)
+      toast.success('Confirmation email sent')
       return
     }
 
@@ -42,9 +46,11 @@ export default function EmployeeSignup() {
 
     if (linkError) {
       setError(`Your account was created, but we couldn't link it yet: ${linkError.message}`)
+      toast.error(linkError.message || 'Failed to link account')
       return
     }
 
+    toast.success('Account created')
     navigate('/employee')
   }
 
@@ -106,6 +112,7 @@ export default function EmployeeSignup() {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={submitting}>
+            {submitting && <Loader2 size={14} className="btn-spinner" />}
             {submitting ? 'Setting up…' : 'Create account'}
           </button>
         </form>

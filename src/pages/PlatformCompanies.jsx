@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
+import { toast } from 'sonner'
 import { supabase } from '../lib/supabase'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable } from '../components/Skeleton'
 
 function formatDate(ts) {
   if (!ts) return '—'
@@ -38,6 +40,7 @@ export default function PlatformCompanies() {
     setSaving(true)
     await supabase.from('companies').update({ status: form.status, plan: form.plan }).eq('id', activeCompany.id)
     setSaving(false)
+    toast.success('Company updated')
     setActiveCompany(null)
     load()
   }
@@ -55,7 +58,7 @@ export default function PlatformCompanies() {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={5} />
       ) : companies.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No companies yet.</p>

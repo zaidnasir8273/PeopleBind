@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable } from '../components/Skeleton'
 
 function fmt(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
@@ -51,7 +52,7 @@ export default function EmployeePayslips() {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={4} />
       ) : runs.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No payslips yet.</p>

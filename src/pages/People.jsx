@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Search, Upload } from 'lucide-react'
+import { toast } from 'sonner'
+import { Plus, Search, Upload, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { ImportEmployeesDrawer } from '../components/ImportEmployeesDrawer'
+import { SkeletonTable } from '../components/Skeleton'
 
 const EMPTY_FORM = {
   full_name: '',
@@ -138,9 +140,12 @@ export default function People() {
       .single()
     if (insertError) {
       setError(insertError.message)
+      toast.error(insertError.message || 'Something went wrong')
       return null
     }
     await loadLookups()
+    const label = table.slice(0, -1)
+    toast.success(`${label.charAt(0).toUpperCase()}${label.slice(1)} added`)
     return data.id
   }
 
@@ -171,9 +176,11 @@ export default function People() {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
       return
     }
 
+    toast.success(editingId ? 'Employee updated' : 'Employee added')
     setDrawerOpen(false)
     loadEmployees()
   }
@@ -211,7 +218,7 @@ export default function People() {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={6} columns={6} />
       ) : filtered.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>{employees.length === 0 ? 'No employees yet.' : 'No matches.'}</p>
@@ -325,6 +332,7 @@ export default function People() {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add employee'}
           </button>
         </form>

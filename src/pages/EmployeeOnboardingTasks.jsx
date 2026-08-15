@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, Check } from 'lucide-react'
+import { Plus, Check, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonBlock } from '../components/Skeleton'
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -80,7 +81,11 @@ export default function EmployeeOnboardingTasks() {
       .from('onboarding_tasks')
       .update({ status: newStatus, completed_at: newStatus === 'completed' ? new Date().toISOString() : null })
       .eq('id', task.id)
-    if (!error) loadTasks()
+    if (!error) {
+      loadTasks()
+    } else {
+      toast.error(error.message || 'Failed to update task')
+    }
   }
 
   function openAddTask() {
@@ -105,6 +110,8 @@ export default function EmployeeOnboardingTasks() {
       toast.success('Task added')
       setDrawerOpen(false)
       loadTasks()
+    } else {
+      toast.error(error.message || 'Failed to add task')
     }
   }
 
@@ -128,9 +135,13 @@ export default function EmployeeOnboardingTasks() {
     }))
 
     if (rows.length > 0) {
-      await supabase.from('onboarding_tasks').insert(rows)
-      toast.success(`${rows.length} tasks added from template`)
-      loadTasks()
+      const { error: insertError } = await supabase.from('onboarding_tasks').insert(rows)
+      if (insertError) {
+        toast.error(insertError.message || 'Failed to apply template')
+      } else {
+        toast.success(`${rows.length} tasks added from template`)
+        loadTasks()
+      }
     }
     setApplying(false)
   }
@@ -183,7 +194,7 @@ export default function EmployeeOnboardingTasks() {
           )}
 
           {loading ? (
-            <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+            <SkeletonBlock rows={4} />
           ) : tasks.length === 0 ? (
             <div className="empty-state" style={{ marginTop: 20 }}>
               <p>No onboarding tasks yet.</p>
@@ -232,7 +243,10 @@ export default function EmployeeOnboardingTasks() {
               <input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
             </label>
           </div>
-          <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Adding…' : 'Add task'}</button>
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Adding…' : 'Add task'}
+          </button>
         </form>
       </Drawer>
     </div>

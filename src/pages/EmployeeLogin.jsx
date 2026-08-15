@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export default function EmployeeLogin() {
@@ -20,9 +22,11 @@ export default function EmployeeLogin() {
 
     if (signInError) {
       setError(signInError.message)
+      toast.error(signInError.message || 'Failed to sign in')
       return
     }
 
+    toast.success('Signed in')
     navigate('/employee')
   }
 
@@ -51,6 +55,7 @@ export default function EmployeeLogin() {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={submitting}>
+            {submitting && <Loader2 size={14} className="btn-spinner" />}
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>

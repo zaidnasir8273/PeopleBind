@@ -4,6 +4,7 @@ import { Plus, Check, X as XIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable } from '../components/Skeleton'
 
 const EMPTY_REQUEST = {
   employee_id: '',
@@ -132,9 +133,11 @@ export default function Leave() {
 
     if (saveError) {
       setRequestError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
       return
     }
 
+    toast.success('Leave request submitted')
     setRequestDrawerOpen(false)
     loadRequests()
   }
@@ -210,9 +213,11 @@ export default function Leave() {
 
     if (saveError) {
       setBalanceError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
       return
     }
 
+    toast.success('Leave balance saved')
     setBalanceDrawerOpen(false)
     loadBalances()
   }
@@ -270,7 +275,7 @@ export default function Leave() {
           )}
 
           {requestsLoading ? (
-            <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+            <SkeletonTable rows={6} columns={8} />
           ) : requests.length === 0 ? (
             <div className="empty-state" style={{ marginTop: 20 }}>
               <p>No leave requests.</p>
@@ -354,7 +359,7 @@ export default function Leave() {
           </div>
 
           {balancesLoading ? (
-            <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+            <SkeletonTable rows={5} columns={5} />
           ) : balances.length === 0 ? (
             <div className="empty-state" style={{ marginTop: 20 }}>
               <p>No balances set for {year}.</p>

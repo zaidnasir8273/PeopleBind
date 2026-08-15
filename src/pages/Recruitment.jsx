@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, ChevronLeft } from 'lucide-react'
+import { Plus, ChevronLeft, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable, SkeletonBlock } from '../components/Skeleton'
 
 function fmt(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
@@ -90,9 +91,11 @@ export default function Recruitment() {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
       return
     }
 
+    toast.success('Job opening created')
     setDrawerOpen(false)
     loadOpenings()
   }
@@ -118,7 +121,7 @@ export default function Recruitment() {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={5} />
       ) : openings.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No job openings yet.</p>
@@ -195,6 +198,7 @@ export default function Recruitment() {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Creating…' : 'Create opening'}
           </button>
         </form>
@@ -271,6 +275,7 @@ function PipelineView({ openingId, profile, company, onBack }) {
       if (candError) {
         setAddSaving(false)
         setAddError(candError.message)
+        toast.error(candError.message || 'Something went wrong')
         return
       }
       finalCandidateId = created.id
@@ -286,9 +291,11 @@ function PipelineView({ openingId, profile, company, onBack }) {
 
     if (appError) {
       setAddError(appError.message)
+      toast.error(appError.message || 'Something went wrong')
       return
     }
 
+    toast.success('Candidate added')
     setAddDrawerOpen(false)
     load()
   }
@@ -310,7 +317,7 @@ function PipelineView({ openingId, profile, company, onBack }) {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={4} />
       ) : applications.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No candidates yet.</p>
@@ -386,6 +393,7 @@ function PipelineView({ openingId, profile, company, onBack }) {
           {addError && <p className="field-error">{addError}</p>}
 
           <button type="submit" className="btn-primary" disabled={addSaving}>
+            {addSaving && <Loader2 size={14} className="btn-spinner" />}
             {addSaving ? 'Adding…' : 'Add to pipeline'}
           </button>
         </form>
@@ -512,6 +520,7 @@ function CandidateDrawer({ application, opening, profile, company, onClose, onCh
     setConvertBusy(false)
     if (error) {
       setConvertError(error.message)
+      toast.error(error.message || 'Something went wrong')
       return
     }
     toast.success('Candidate hired', { description: `${application.candidates?.full_name} is now an employee.` })
@@ -560,7 +569,7 @@ function CandidateDrawer({ application, opening, profile, company, onClose, onCh
 
         <p className="section-heading" style={{ marginBottom: 8 }}>Interviews</p>
         {loadingDetail ? (
-          <p className="muted">Loading…</p>
+          <SkeletonBlock rows={4} />
         ) : (
           <>
             {interviews.map((iv) => (
@@ -626,6 +635,7 @@ function CandidateDrawer({ application, opening, profile, company, onClose, onCh
                 </select>
               </label>
               <button type="submit" className="btn-primary" disabled={interviewSaving} style={{ alignSelf: 'flex-start' }}>
+                {interviewSaving && <Loader2 size={14} className="btn-spinner" />}
                 {interviewSaving ? 'Scheduling…' : 'Schedule interview'}
               </button>
             </form>
@@ -664,6 +674,7 @@ function CandidateDrawer({ application, opening, profile, company, onClose, onCh
                 </label>
               </div>
               <button type="submit" className="btn-primary" disabled={offerSaving} style={{ alignSelf: 'flex-start' }}>
+                {offerSaving && <Loader2 size={14} className="btn-spinner" />}
                 {offerSaving ? 'Creating…' : 'Create offer'}
               </button>
             </form>

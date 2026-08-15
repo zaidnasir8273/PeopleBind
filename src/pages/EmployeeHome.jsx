@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { SkeletonStatRow } from '../components/Skeleton'
 
 function fmt(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
@@ -52,7 +53,7 @@ export default function EmployeeHome() {
   if (loading) {
     return (
       <div className="page-inner" style={{ maxWidth: 900 }}>
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonStatRow count={3} />
       </div>
     )
   }

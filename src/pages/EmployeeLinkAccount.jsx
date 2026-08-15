@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -25,9 +27,11 @@ export default function EmployeeLinkAccount() {
 
     if (linkError) {
       setError(linkError.message)
+      toast.error(linkError.message || 'Failed to link account')
       return
     }
 
+    toast.success('Account linked')
     await refreshProfile()
     navigate('/employee')
   }
@@ -64,6 +68,7 @@ export default function EmployeeLinkAccount() {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={submitting}>
+            {submitting && <Loader2 size={14} className="btn-spinner" />}
             {submitting ? 'Linking…' : 'Link account'}
           </button>
         </form>

@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable } from '../components/Skeleton'
 
 function fmt(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
@@ -89,6 +90,7 @@ export default function Expenses() {
       .single()
     if (insertError) {
       setError(insertError.message)
+      toast.error(insertError.message)
       return null
     }
     await loadLookups()
@@ -114,9 +116,11 @@ export default function Expenses() {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message)
       return
     }
 
+    toast.success('Expense claim submitted')
     setNewDrawerOpen(false)
     loadClaims()
   }
@@ -175,7 +179,7 @@ export default function Expenses() {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={5} columns={5} />
       ) : claims.length === 0 ? (
         <div className="empty-state" style={{ marginTop: 20 }}>
           <p>No expense claims.</p>
@@ -276,6 +280,7 @@ export default function Expenses() {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Saving…' : 'Submit claim'}
           </button>
         </form>

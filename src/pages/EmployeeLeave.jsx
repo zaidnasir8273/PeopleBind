@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable } from '../components/Skeleton'
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -73,6 +74,7 @@ export default function EmployeeLeave() {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message || 'Failed to submit leave request')
       return
     }
 
@@ -94,7 +96,7 @@ export default function EmployeeLeave() {
       </div>
 
       {loading ? (
-        <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+        <SkeletonTable rows={4} columns={4} />
       ) : (
         <>
           <p className="section-heading">Balance this year</p>
@@ -166,6 +168,7 @@ export default function EmployeeLeave() {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Submitting…' : 'Submit request'}
           </button>
         </form>

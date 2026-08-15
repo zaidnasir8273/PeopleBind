@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, Check, X as XIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X as XIcon, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { SkeletonTable } from '../components/Skeleton'
 
 const EMPTY_FORM = {
   status: '',
@@ -148,9 +149,11 @@ export default function Attendance() {
 
     if (saveError) {
       setError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
       return
     }
 
+    toast.success('Attendance saved')
     setDrawerOpen(false)
     loadRoster()
   }
@@ -208,7 +211,7 @@ export default function Attendance() {
           </div>
 
           {loading ? (
-            <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+            <SkeletonTable rows={6} columns={6} />
           ) : employees.length === 0 ? (
             <div className="empty-state" style={{ marginTop: 20 }}>
               <p>No active employees.</p>
@@ -263,7 +266,7 @@ export default function Attendance() {
       {tab === 'corrections' && (
         <>
           {correctionsLoading ? (
-            <p className="muted" style={{ marginTop: 20 }}>Loading…</p>
+            <SkeletonTable rows={5} columns={7} />
           ) : corrections.length === 0 ? (
             <div className="empty-state" style={{ marginTop: 20 }}>
               <p>No correction requests.</p>
@@ -372,6 +375,7 @@ export default function Attendance() {
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Saving…' : 'Save attendance'}
           </button>
         </form>
