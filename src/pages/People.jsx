@@ -39,12 +39,13 @@ export default function People() {
 
   const loadEmployees = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
+    const { data, error: loadError } = await supabase
       .from('employees')
       .select(
-        'id, employee_code, full_name, photo_url, employment_status, joining_date, phone, personal_email, cnic, bank_account_number, department_id, designation_id, employment_type_id, branch_id, manager_id, departments(name), designations(name), branches(name, city), manager:employees!manager_id(full_name)'
+        'id, employee_code, full_name, photo_url, employment_status, joining_date, phone, personal_email, cnic, bank_account_number, department_id, designation_id, employment_type_id, branch_id, manager_id, departments(name), designations(name), branches(name, city), manager:employees!employees_manager_id_fkey(full_name)'
       )
       .order('created_at', { ascending: false })
+    if (loadError) toast.error(loadError.message || 'Failed to load employees')
     setEmployees(data ?? [])
     setLoading(false)
   }, [])
