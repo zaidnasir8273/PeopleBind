@@ -766,6 +766,34 @@ button:active:not(:disabled) {
   cursor: not-allowed;
 }
 
+.btn-danger {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--danger);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn-primary:hover {
   background: var(--teal);
 }
@@ -892,7 +920,7 @@ button:active:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 10px;
+  padding: 11px 12px;
   border-radius: var(--radius);
   border: 1px solid transparent;
   font-size: 14px;
@@ -1564,7 +1592,9 @@ a.attention-item:hover {
 }
 
 .status-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
   font-family: var(--font-mono);
   padding: 2px 8px;
@@ -1572,6 +1602,30 @@ a.attention-item:hover {
   text-transform: capitalize;
   background: var(--line);
   color: var(--ink-soft);
+}
+
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatar-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
 }
 
 .status-active {
@@ -1627,7 +1681,7 @@ a.attention-item:hover {
   gap: 2px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
-  border-radius: 100px;
+  border-radius: var(--radius);
   padding: 4px;
   margin-bottom: 20px;
 }
@@ -1638,25 +1692,26 @@ a.attention-item:hover {
   font-weight: 500;
   color: var(--ink-soft);
   background: none;
-  border: none;
-  border-radius: 100px;
-  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
   margin-right: 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: background-color var(--duration) var(--ease), color var(--duration) var(--ease);
+  transition: background-color var(--duration) var(--ease), color var(--duration) var(--ease), border-color var(--duration) var(--ease);
 }
 
 .tab-button:not(.active):hover {
-  background: var(--paper-raised);
   color: var(--ink);
 }
 
 .tab-button.active {
-  background: var(--accent);
-  color: #fff;
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .tab-count {
@@ -1666,10 +1721,6 @@ a.attention-item:hover {
   color: #fff;
   border-radius: 100px;
   padding: 1px 7px;
-}
-
-.tab-button.active .tab-count {
-  background: rgba(255, 255, 255, 0.25);
 }
 
 /* ---------- date nav ---------- */

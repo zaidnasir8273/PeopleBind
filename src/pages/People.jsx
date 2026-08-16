@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { ImportEmployeesDrawer } from '../components/ImportEmployeesDrawer'
 import { SkeletonTable } from '../components/Skeleton'
+import { Avatar } from '../components/Avatar'
 
 const EMPTY_FORM = {
   full_name: '',
@@ -41,7 +42,7 @@ export default function People() {
     const { data } = await supabase
       .from('employees')
       .select(
-        'id, employee_code, full_name, employment_status, joining_date, phone, personal_email, cnic, bank_account_number, department_id, designation_id, employment_type_id, branch_id, departments(name), designations(name)'
+        'id, employee_code, full_name, photo_url, employment_status, joining_date, phone, personal_email, cnic, bank_account_number, department_id, designation_id, employment_type_id, branch_id, manager_id, departments(name), designations(name), branches(name, city), manager:employees!manager_id(full_name)'
       )
       .order('created_at', { ascending: false })
     setEmployees(data ?? [])
@@ -233,21 +234,31 @@ export default function People() {
           <thead>
             <tr>
               <th>Employee</th>
-              <th>Code</th>
-              <th>Department</th>
               <th>Designation</th>
-              <th>Joined</th>
+              <th>Department</th>
+              <th>Location</th>
+              <th>Manager</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((emp) => (
               <tr key={emp.id} onClick={() => openEdit(emp)}>
-                <td>{emp.full_name}</td>
-                <td className="mono">{emp.employee_code}</td>
-                <td>{emp.departments?.name ?? '—'}</td>
+                <td>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Avatar name={emp.full_name} photoUrl={emp.photo_url} size={32} />
+                    <div>
+                      <div>{emp.full_name}</div>
+                      <span className="mono" style={{ display: 'block', color: 'var(--ink-soft)', fontSize: 12 }}>
+                        {[emp.employee_code, emp.personal_email].filter(Boolean).join(' · ')}
+                      </span>
+                    </div>
+                  </div>
+                </td>
                 <td>{emp.designations?.name ?? '—'}</td>
-                <td>{formatDate(emp.joining_date)}</td>
+                <td>{emp.departments?.name ?? '—'}</td>
+                <td>{emp.branches?.name ?? '—'}</td>
+                <td>{emp.manager?.full_name ?? '—'}</td>
                 <td>
                   <span className={`status-badge status-${emp.employment_status}`}>{emp.employment_status}</span>
                 </td>

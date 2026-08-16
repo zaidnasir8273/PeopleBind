@@ -4,6 +4,7 @@ import { Loader2, CreditCard, Building2, BadgeCheck, CalendarDays } from 'lucide
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { SkeletonBlock } from '../components/Skeleton'
+import { Avatar } from '../components/Avatar'
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -64,9 +65,13 @@ export default function EmployeeProfile() {
   return (
     <div className="page-inner" style={{ maxWidth: 700 }}>
       <div className="page-header-row">
-        <div>
-          <p className="page-eyebrow">EMPLOYEE PORTAL</p>
-          <h1 className="page-title">My profile</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Avatar name={employeeRecord.full_name} photoUrl={employeeRecord.photo_url} size={48} />
+          <div>
+            <p className="page-eyebrow" style={{ marginBottom: 4 }}>EMPLOYEE PORTAL</p>
+            <h1 className="page-title" style={{ marginBottom: 0, fontSize: 24 }}>{employeeRecord.full_name}</h1>
+            <p className="muted" style={{ margin: 0 }}>{employeeRecord.designations?.name ?? 'My profile'}</p>
+          </div>
         </div>
       </div>
 
