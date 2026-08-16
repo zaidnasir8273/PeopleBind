@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, CreditCard, Building2, BadgeCheck, CalendarDays } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { SkeletonBlock } from '../components/Skeleton'
@@ -70,11 +70,35 @@ export default function EmployeeProfile() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 24 }}>
-        <div className="field"><span>Employee code</span><p style={{ margin: 0, color: 'var(--ink)' }}>{employeeRecord.employee_code}</p></div>
-        <div className="field"><span>Department</span><p style={{ margin: 0, color: 'var(--ink)' }}>{employeeRecord.departments?.name ?? '—'}</p></div>
-        <div className="field"><span>Designation</span><p style={{ margin: 0, color: 'var(--ink)' }}>{employeeRecord.designations?.name ?? '—'}</p></div>
-        <div className="field"><span>Joined</span><p style={{ margin: 0, color: 'var(--ink)' }}>{formatDate(employeeRecord.joining_date)}</p></div>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
+        <div className="info-field">
+          <span className="info-field-icon"><CreditCard size={15} /></span>
+          <span className="info-field-body">
+            <span className="info-field-label">Employee code</span>
+            <span className="info-field-value">{employeeRecord.employee_code}</span>
+          </span>
+        </div>
+        <div className="info-field">
+          <span className="info-field-icon"><Building2 size={15} /></span>
+          <span className="info-field-body">
+            <span className="info-field-label">Department</span>
+            <span className="info-field-value">{employeeRecord.departments?.name ?? '—'}</span>
+          </span>
+        </div>
+        <div className="info-field">
+          <span className="info-field-icon"><BadgeCheck size={15} /></span>
+          <span className="info-field-body">
+            <span className="info-field-label">Designation</span>
+            <span className="info-field-value">{employeeRecord.designations?.name ?? '—'}</span>
+          </span>
+        </div>
+        <div className="info-field">
+          <span className="info-field-icon"><CalendarDays size={15} /></span>
+          <span className="info-field-body">
+            <span className="info-field-label">Joined</span>
+            <span className="info-field-value">{formatDate(employeeRecord.joining_date)}</span>
+          </span>
+        </div>
       </div>
 
       <p className="section-heading">Contact & bank details</p>

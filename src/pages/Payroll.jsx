@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Plus, ChevronLeft, AlertTriangle, Loader2 } from 'lucide-react'
+import { Plus, ChevronLeft, AlertTriangle, Loader2, Wallet, Receipt } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -845,8 +845,20 @@ function LoansSection({ employees, profile, company }) {
         {activeLoan && (
           <div className="drawer-form">
             <div className="field-row">
-              <div className="field"><span>Principal</span><p style={{ margin: 0 }}>{fmt(activeLoan.principal_amount)}</p></div>
-              <div className="field"><span>Per installment</span><p style={{ margin: 0 }}>{fmt(activeLoan.installment_amount)}</p></div>
+              <div className="info-field">
+                <span className="info-field-icon"><Wallet size={15} /></span>
+                <span className="info-field-body">
+                  <span className="info-field-label">Principal</span>
+                  <span className="info-field-value">{fmt(activeLoan.principal_amount)}</span>
+                </span>
+              </div>
+              <div className="info-field">
+                <span className="info-field-icon"><Receipt size={15} /></span>
+                <span className="info-field-body">
+                  <span className="info-field-label">Per installment</span>
+                  <span className="info-field-value">{fmt(activeLoan.installment_amount)}</span>
+                </span>
+              </div>
             </div>
             <p className="section-heading" style={{ marginTop: 8 }}>Installment schedule</p>
             <table className="data-table">

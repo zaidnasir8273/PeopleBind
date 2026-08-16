@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, Clock, User } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -905,7 +905,7 @@ function RolesTab() {
           <button
             key={r.id}
             className={`tab-button${selectedRoleId === r.id ? ' active' : ''}`}
-            style={{ display: 'block', width: '100%', textAlign: 'left', marginRight: 0, borderBottom: 'none', padding: '8px 6px' }}
+            style={{ display: 'block', width: '100%', textAlign: 'left', marginRight: 0, borderBottom: 'none', padding: '8px 6px', borderRadius: 'var(--radius)' }}
             onClick={() => setSelectedRoleId(r.id)}
           >
             {r.name}{r.is_system_role ? <span className="muted" style={{ fontSize: 11 }}> · system</span> : ''}
@@ -1081,8 +1081,20 @@ function AuditLogTab() {
         {activeEntry && (
           <div className="drawer-form">
             <div className="field-row">
-              <div className="field"><span>When</span><p style={{ margin: 0 }}>{formatDateTime(activeEntry.created_at)}</p></div>
-              <div className="field"><span>By</span><p style={{ margin: 0 }}>{profiles.find((p) => p.id === activeEntry.user_id)?.full_name ?? 'System'}</p></div>
+              <div className="info-field">
+                <span className="info-field-icon"><Clock size={15} /></span>
+                <span className="info-field-body">
+                  <span className="info-field-label">When</span>
+                  <span className="info-field-value">{formatDateTime(activeEntry.created_at)}</span>
+                </span>
+              </div>
+              <div className="info-field">
+                <span className="info-field-icon"><User size={15} /></span>
+                <span className="info-field-body">
+                  <span className="info-field-label">By</span>
+                  <span className="info-field-value">{profiles.find((p) => p.id === activeEntry.user_id)?.full_name ?? 'System'}</span>
+                </span>
+              </div>
             </div>
 
             {activeEntry.action === 'update' ? (
@@ -1233,7 +1245,7 @@ function OnboardingTemplatesTab() {
           <button
             key={t.id}
             className={`tab-button${selectedId === t.id ? ' active' : ''}`}
-            style={{ display: 'block', width: '100%', textAlign: 'left', marginRight: 0, borderBottom: 'none', padding: '8px 6px' }}
+            style={{ display: 'block', width: '100%', textAlign: 'left', marginRight: 0, borderBottom: 'none', padding: '8px 6px', borderRadius: 'var(--radius)' }}
             onClick={() => selectTemplate(t)}
           >
             {t.name}

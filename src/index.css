@@ -310,8 +310,8 @@ h1 {
 .mini-card {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 12px 14px;
-  margin-bottom: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -664,6 +664,46 @@ button:active:not(:disabled) {
   color: var(--ink-soft);
 }
 
+/* read-only label+value row with a leading icon identifying the field type */
+.info-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.info-field-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+.info-field-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.info-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.info-field-value {
+  font-size: 14px;
+  color: var(--ink);
+}
+
 .field input,
 .field textarea {
   font-family: var(--font-body);
@@ -993,8 +1033,8 @@ button:active:not(:disabled) {
 
 .stat-row {
   display: flex;
-  gap: 16px;
-  margin-bottom: 36px;
+  gap: 12px;
+  margin-bottom: 28px;
 }
 
 /* applied where real content replaces a loading skeleton, so numbers fade in
@@ -1013,8 +1053,8 @@ button:active:not(:disabled) {
   background: var(--paper-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  padding: 16px 20px;
-  min-width: 160px;
+  padding: 14px 16px;
+  min-width: 150px;
 }
 
 .stat-label {
@@ -1043,8 +1083,8 @@ button:active:not(:disabled) {
   background: var(--paper-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  padding: 20px 22px;
-  margin-bottom: 20px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
 }
 
 .report-section-head {
@@ -1582,9 +1622,13 @@ a.attention-item:hover {
 /* ---------- tabs ---------- */
 
 .tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--line);
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 4px;
   margin-bottom: 20px;
 }
 
@@ -1595,27 +1639,37 @@ a.attention-item:hover {
   color: var(--ink-soft);
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  padding: 10px 4px;
-  margin-right: 20px;
+  border-radius: 100px;
+  padding: 8px 16px;
+  margin-right: 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  transition: background-color var(--duration) var(--ease), color var(--duration) var(--ease);
+}
+
+.tab-button:not(.active):hover {
+  background: var(--paper-raised);
+  color: var(--ink);
 }
 
 .tab-button.active {
-  color: var(--ink);
-  border-bottom-color: var(--teal-deep);
+  background: var(--accent);
+  color: #fff;
 }
 
 .tab-count {
   font-family: var(--font-mono);
   font-size: 11px;
-  background: var(--gold);
+  background: var(--warning);
   color: #fff;
   border-radius: 100px;
   padding: 1px 7px;
+}
+
+.tab-button.active .tab-count {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* ---------- date nav ---------- */
