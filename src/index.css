@@ -45,6 +45,7 @@
 
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --duration-fast: 100ms;
   --duration: 180ms;
   --duration-slow: 300ms;
@@ -218,7 +219,7 @@ h1 {
   border-bottom: 1px dashed var(--line);
   opacity: 0;
   transform: translateY(6px);
-  animation: rise 0.5s ease forwards;
+  animation: rise 0.5s var(--ease-out) forwards;
 }
 
 .payslip-row.deduction {
@@ -436,6 +437,10 @@ h1 {
 
 /* ---------- toasts (sonner) ---------- */
 
+[data-sonner-toast] {
+  transition-timing-function: var(--ease-out) !important;
+}
+
 .toast-success [data-icon] {
   color: var(--accent-hover);
 }
@@ -448,6 +453,13 @@ h1 {
   color: var(--danger);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toast] {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 /* ---------- skeleton loading ---------- */
 
 .skeleton {
@@ -455,7 +467,7 @@ h1 {
   border-radius: var(--radius-sm);
   background: linear-gradient(100deg, var(--border) 30%, #eeeeef 50%, var(--border) 70%);
   background-size: 200% 100%;
-  animation: skeleton-sweep 1.4s ease-in-out infinite;
+  animation: skeleton-sweep 1.4s linear infinite;
 }
 
 .skeleton-line {
@@ -507,11 +519,25 @@ h1 {
   }
 }
 
+/* reduced-motion fallback: keep the opacity fade (aids comprehension of what
+   just appeared), drop only the movement/scale */
+@keyframes fade-in-only {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .payslip-row,
   .status-dot {
     animation: none !important;
     opacity: 1 !important;
+  }
+
+  .payslip-row {
+    animation: fade-in-only 0.2s ease !important;
     transform: none !important;
   }
 }
@@ -751,7 +777,7 @@ button:active:not(:disabled) {
   display: flex;
   flex-direction: column;
   padding: 20px 14px;
-  transition: width var(--duration-slow) var(--ease), padding var(--duration-slow) var(--ease);
+  transition: width var(--duration-slow) var(--ease-in-out), padding var(--duration-slow) var(--ease-in-out);
 }
 
 .sidebar.collapsed {
@@ -846,6 +872,10 @@ button:active:not(:disabled) {
   color: var(--ink);
 }
 
+.sidebar-link:active {
+  background: var(--accent-soft);
+}
+
 .sidebar-link.active {
   background: var(--paper-raised);
   color: var(--teal-deep);
@@ -874,7 +904,7 @@ button:active:not(:disabled) {
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration) var(--ease);
+  transition: opacity var(--duration) var(--ease-out);
   z-index: 90;
 }
 
@@ -924,6 +954,7 @@ button:active:not(:disabled) {
 .app-content {
   padding: 40px clamp(24px, 4vw, 56px);
   overflow-y: auto;
+  contain: layout style;
 }
 
 .topbar {
@@ -964,6 +995,18 @@ button:active:not(:disabled) {
   display: flex;
   gap: 16px;
   margin-bottom: 36px;
+}
+
+/* applied where real content replaces a loading skeleton, so numbers fade in
+   instead of teleporting the instant data resolves */
+.content-reveal {
+  animation: fade-in-only 0.25s var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content-reveal {
+    animation: none !important;
+  }
 }
 
 .stat-card {
@@ -1162,6 +1205,7 @@ a.attention-item:hover {
   display: flex;
   flex-direction: column;
   z-index: 60;
+  transform-origin: top right;
   animation: notif-pop var(--duration) var(--ease-out);
 }
 
@@ -1203,6 +1247,26 @@ a.attention-item:hover {
   background: none;
   cursor: pointer;
   font-family: var(--font-body);
+  animation: fade-in-only 0.2s var(--ease-out) backwards;
+}
+
+.notif-item:nth-child(1) {
+  animation-delay: 0ms;
+}
+.notif-item:nth-child(2) {
+  animation-delay: 40ms;
+}
+.notif-item:nth-child(3) {
+  animation-delay: 80ms;
+}
+.notif-item:nth-child(4) {
+  animation-delay: 120ms;
+}
+.notif-item:nth-child(5) {
+  animation-delay: 160ms;
+}
+.notif-item:nth-child(6) {
+  animation-delay: 200ms;
 }
 
 .notif-item:last-child {
@@ -1252,6 +1316,10 @@ a.attention-item:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .notif-panel {
+    animation: fade-in-only 0.2s ease !important;
+  }
+
+  .notif-item {
     animation: none !important;
   }
 }
@@ -1299,7 +1367,6 @@ a.attention-item:hover {
   align-items: flex-start;
   justify-content: center;
   padding-top: 12vh;
-  animation: notif-pop var(--duration) var(--ease-out);
 }
 
 .cmdk-panel {
@@ -1363,12 +1430,6 @@ a.attention-item:hover {
 
 .cmdk-item.active {
   background: var(--paper);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cmdk-overlay {
-    animation: none !important;
-  }
 }
 
 .attention-item:last-child {
@@ -1456,6 +1517,10 @@ a.attention-item:hover {
 
 .data-table tbody tr:hover {
   background: var(--paper-raised);
+}
+
+.data-table tbody tr:active {
+  background: var(--accent-soft);
 }
 
 .status-badge {
@@ -1725,6 +1790,25 @@ a.attention-item:hover {
 .onboarding-task.done .onboarding-check {
   background: var(--teal-deep);
   border-color: var(--teal-deep);
+  animation: check-pop 0.3s var(--ease-out);
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-task.done .onboarding-check {
+    animation: none !important;
+  }
 }
 
 .onboarding-task-title {
@@ -1734,7 +1818,7 @@ a.attention-item:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .bulk-action-bar {
-    animation: none !important;
+    animation: fade-in-only 0.2s ease !important;
   }
 }
 

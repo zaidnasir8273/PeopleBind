@@ -43,6 +43,8 @@ function shiftDate(dateStr, delta) {
   return d.toISOString().slice(0, 10)
 }
 
+const LOADING_DELAY = 150
+
 export default function Attendance() {
   const { profile, company } = useAuth()
   const [tab, setTab] = useState('roster')
@@ -63,7 +65,7 @@ export default function Attendance() {
   const [error, setError] = useState(null)
 
   const loadRoster = useCallback(async () => {
-    setLoading(true)
+    const loadingTimer = setTimeout(() => setLoading(true), LOADING_DELAY)
     const [{ data: emps }, { data: shiftRows }, { data: attendanceRows }] = await Promise.all([
       supabase
         .from('employees')
@@ -76,6 +78,7 @@ export default function Attendance() {
         .select('id, employee_id, status, shift_id, check_in, check_out, worked_minutes, late_minutes, overtime_minutes, notes')
         .eq('attendance_date', date),
     ])
+    clearTimeout(loadingTimer)
 
     setEmployees(emps ?? [])
     setShifts(shiftRows ?? [])
@@ -86,12 +89,13 @@ export default function Attendance() {
   }, [date])
 
   const loadCorrections = useCallback(async () => {
-    setCorrectionsLoading(true)
+    const loadingTimer = setTimeout(() => setCorrectionsLoading(true), LOADING_DELAY)
     const { data } = await supabase
       .from('attendance_corrections')
       .select('id, attendance_date, requested_check_in, requested_check_out, reason, status, created_at, employees(full_name, employee_code)')
       .order('created_at', { ascending: false })
       .limit(100)
+    clearTimeout(loadingTimer)
     setCorrections(data ?? [])
     setCorrectionsLoading(false)
   }, [])

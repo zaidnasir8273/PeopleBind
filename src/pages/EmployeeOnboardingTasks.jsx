@@ -19,6 +19,7 @@ function addDays(dateStr, days) {
 
 const CATEGORY_LABELS = { paperwork: 'Paperwork', it_setup: 'IT setup', training: 'Training', culture: 'Culture', general: 'General' }
 const EMPTY_TASK = { title: '', description: '', category: 'general', due_date: '' }
+const LOADING_DELAY = 150
 
 export default function EmployeeOnboardingTasks() {
   const { profile, company } = useAuth()
@@ -53,12 +54,13 @@ export default function EmployeeOnboardingTasks() {
       setTasks([])
       return
     }
-    setLoading(true)
+    const loadingTimer = setTimeout(() => setLoading(true), LOADING_DELAY)
     const { data } = await supabase
       .from('onboarding_tasks')
       .select('id, title, description, category, due_date, status, completed_at')
       .eq('employee_id', selectedEmployeeId)
       .order('due_date', { ascending: true, nullsFirst: false })
+    clearTimeout(loadingTimer)
     setTasks(data ?? [])
     setLoading(false)
   }, [selectedEmployeeId])

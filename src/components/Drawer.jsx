@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 
-const EXIT_DURATION = 320
 const CLOSE_DISTANCE_RATIO = 0.35
-const CLOSE_VELOCITY = 0.6
+const CLOSE_VELOCITY = 0.15
+const RUBBER_BAND_RESISTANCE = 0.25
+
+function getExitDuration(el) {
+  if (!el) return 300
+  const seconds = parseFloat(getComputedStyle(el).transitionDuration)
+  return Number.isFinite(seconds) ? seconds * 1000 : 300
+}
 
 export function Drawer({ open, onClose, title, children, wide = false }) {
   const [mounted, setMounted] = useState(open)
@@ -25,7 +31,7 @@ export function Drawer({ open, onClose, title, children, wide = false }) {
       exitTimer = setTimeout(() => {
         setMounted(false)
         if (panelRef.current) panelRef.current.style.transform = ''
-      }, EXIT_DURATION)
+      }, getExitDuration(panelRef.current))
     }
 
     return () => {
@@ -53,7 +59,8 @@ export function Drawer({ open, onClose, title, children, wide = false }) {
 
   function handlePointerMove(e) {
     if (!dragRef.current.dragging || !panelRef.current) return
-    const dx = Math.max(0, e.clientX - dragRef.current.startX)
+    const raw = e.clientX - dragRef.current.startX
+    const dx = raw > 0 ? raw : raw * RUBBER_BAND_RESISTANCE
     dragRef.current.dx = dx
     panelRef.current.style.transform = `translateX(${dx}px)`
   }

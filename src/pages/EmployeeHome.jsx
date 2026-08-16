@@ -67,7 +67,7 @@ export default function EmployeeHome() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 8 }}>
+      <div className="content-reveal" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 8 }}>
         <div className="report-section" style={{ marginBottom: 0 }}>
           <p className="section-heading">Leave remaining</p>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, margin: 0 }}>

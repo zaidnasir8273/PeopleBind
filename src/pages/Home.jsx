@@ -154,7 +154,7 @@ export default function Home() {
       </h1>
       <p className="page-subtitle">{company?.name}</p>
 
-      <div className="stat-row">
+      <div className={`stat-row${loading ? '' : ' content-reveal'}`} key={loading ? 'loading' : 'loaded'}>
         <div className="stat-card">
           <span className="stat-label">Team size</span>
           <span className="stat-value">{loading ? '—' : stats.employeeCount}</span>
