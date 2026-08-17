@@ -353,17 +353,19 @@ function BranchesCard({ rows, company, onChanged }) {
           ))}
         </div>
       )}
-      <div className="field-row" style={{ marginTop: 12 }}>
-        <input placeholder="Branch name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+      <div className="lookup-add-group">
+        <div className="field-row" style={{ marginBottom: 0 }}>
+          <input className="input-ghost" placeholder="Branch name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <input className="input-ghost" placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+          <input type="checkbox" checked={form.is_head_office} onChange={(e) => setForm({ ...form, is_head_office: e.target.checked })} />
+          Head office
+        </label>
+        <button type="button" className="btn-primary" style={{ alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
+          {saving ? 'Adding…' : 'Add branch'}
+        </button>
       </div>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, marginTop: 8 }}>
-        <input type="checkbox" checked={form.is_head_office} onChange={(e) => setForm({ ...form, is_head_office: e.target.checked })} />
-        Head office
-      </label>
-      <button type="button" className="btn-primary" style={{ marginTop: 8, alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
-        {saving ? 'Adding…' : 'Add branch'}
-      </button>
     </div>
   )
 }
@@ -1515,29 +1517,32 @@ function ProjectsCard({ rows, clients, company, onChanged }) {
           ))}
         </div>
       )}
-      <div className="field-row" style={{ marginTop: 12 }}>
-        <input placeholder="Project name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        {addingClient ? (
-          <div className="lookup-add" style={{ marginTop: 0, flex: 1 }}>
-            <input autoFocus placeholder="New client" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} />
-            <button type="button" className="lookup-add-btn" onClick={addClient} aria-label="Add client">
-              <Plus size={15} />
-            </button>
-          </div>
-        ) : (
-          <select
-            value={form.client_id}
-            onChange={(e) => (e.target.value === '__new__' ? setAddingClient(true) : setForm({ ...form, client_id: e.target.value }))}
-          >
-            <option value="">— Client (optional) —</option>
-            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            <option value="__new__">+ Add new client…</option>
-          </select>
-        )}
+      <div className="lookup-add-group">
+        <div className="field-row" style={{ marginBottom: 0 }}>
+          <input className="input-ghost" placeholder="Project name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          {addingClient ? (
+            <div className="lookup-add" style={{ marginTop: 0, flex: 1 }}>
+              <input autoFocus placeholder="New client" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} />
+              <button type="button" className="lookup-add-btn" onClick={addClient} aria-label="Add client">
+                <Plus size={15} />
+              </button>
+            </div>
+          ) : (
+            <select
+              className="input-ghost"
+              value={form.client_id}
+              onChange={(e) => (e.target.value === '__new__' ? setAddingClient(true) : setForm({ ...form, client_id: e.target.value }))}
+            >
+              <option value="">— Client (optional) —</option>
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <option value="__new__">+ Add new client…</option>
+            </select>
+          )}
+        </div>
+        <button type="button" className="btn-primary" style={{ alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
+          {saving ? 'Adding…' : 'Add project'}
+        </button>
       </div>
-      <button type="button" className="btn-primary" style={{ marginTop: 8, alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
-        {saving ? 'Adding…' : 'Add project'}
-      </button>
     </div>
   )
 }

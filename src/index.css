@@ -1239,6 +1239,14 @@ button:active:not(:disabled) {
   margin-top: 12px;
 }
 
+.lookup-add-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.input-ghost,
 .lookup-add input {
   flex: 1;
   border: 1px dashed var(--border-strong);
@@ -1249,6 +1257,7 @@ button:active:not(:disabled) {
   transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
 }
 
+.input-ghost:focus,
 .lookup-add input:focus {
   border-style: solid;
   border-color: var(--accent);
