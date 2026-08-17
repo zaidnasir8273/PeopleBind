@@ -794,7 +794,7 @@ button:active:not(:disabled) {
 }
 
 .btn-primary:hover {
-  background: var(--teal);
+  background: color-mix(in srgb, var(--accent) 82%, white);
 }
 
 .btn-primary:disabled {
