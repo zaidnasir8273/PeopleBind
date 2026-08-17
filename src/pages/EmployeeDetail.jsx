@@ -149,7 +149,14 @@ export default function EmployeeDetail() {
       </div>
 
       {tab === 'personal' && <PersonalTab employee={employee} onEdit={() => setEditOpen(true)} />}
-      {tab === 'employment' && <EmploymentTab employee={employee} managerName={managerName} onEdit={() => setEditOpen(true)} />}
+      {tab === 'employment' && (
+        <EmploymentTab
+          employee={employee}
+          managerName={managerName}
+          onEdit={() => setEditOpen(true)}
+          onDeleted={() => navigate('/app/people')}
+        />
+      )}
       {tab === 'salary' && <SalaryTab employee={employee} onEdit={() => setEditOpen(true)} />}
       {tab === 'leaves' && <LeavesTab employeeId={employee.id} />}
       {tab === 'assets' && <AssetsTab employeeId={employee.id} company={company} />}
@@ -212,7 +219,7 @@ function PersonalTab({ employee: e, onEdit }) {
   )
 }
 
-function EmploymentTab({ employee: e, managerName, onEdit }) {
+function EmploymentTab({ employee: e, managerName, onEdit, onDeleted }) {
   const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(true)
 
@@ -272,7 +279,67 @@ function EmploymentTab({ employee: e, managerName, onEdit }) {
           </div>
         </div>
       )}
+
+      <DangerZoneCard employee={e} onDeleted={onDeleted} />
     </>
+  )
+}
+
+function DangerZoneCard({ employee, onDeleted }) {
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [confirmName, setConfirmName] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  const matches = confirmName.trim() === employee.full_name
+
+  async function handleDelete() {
+    setDeleting(true)
+    const { error } = await supabase.from('employees').delete().eq('id', employee.id)
+    setDeleting(false)
+
+    if (error) {
+      if (error.code === '23503') {
+        toast.error("Can't delete — this employee has payroll history. Mark them as Terminated instead.")
+      } else {
+        toast.error(error.message || 'Failed to delete employee')
+      }
+      return
+    }
+
+    toast.success('Employee deleted')
+    onDeleted?.()
+  }
+
+  return (
+    <div className="report-section" style={{ borderColor: 'var(--danger-soft)' }}>
+      <p className="section-heading">Danger zone</p>
+      <p className="muted" style={{ marginTop: 0 }}>
+        If {employee.full_name} has left the company, marking them <strong>Terminated</strong> or <strong>Resigned</strong> from
+        the Edit form keeps their full record — attendance, leave, payroll, performance — intact for reporting and compliance.
+      </p>
+      <p className="muted">
+        Deleting instead permanently removes their attendance, leave, benefits, documents, performance reviews, and
+        timesheet history. This can't be undone. Employees with actual payroll history can't be deleted this way.
+      </p>
+      <button type="button" className="btn-danger" onClick={() => setDrawerOpen(true)}>Delete employee</button>
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Delete employee">
+        <div className="drawer-form">
+          <p style={{ margin: 0 }}>
+            This will permanently delete <strong>{employee.full_name}</strong> and every record tied to them —
+            attendance, leave requests and balances, benefits, documents, performance reviews, goals, and timesheet
+            entries. There is no undo.
+          </p>
+          <label className="field">
+            <span>Type "{employee.full_name}" to confirm</span>
+            <input value={confirmName} onChange={(e) => setConfirmName(e.target.value)} autoComplete="off" />
+          </label>
+          <button type="button" className="btn-danger" disabled={!matches || deleting} onClick={handleDelete}>
+            {deleting ? 'Deleting…' : 'Delete permanently'}
+          </button>
+        </div>
+      </Drawer>
+    </div>
   )
 }
 
