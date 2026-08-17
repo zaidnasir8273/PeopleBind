@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { Drawer } from './Drawer'
 
@@ -342,19 +342,19 @@ function LookupSelect({ label, value, options, onChange, onCreate }) {
     return (
       <div className="field">
         <span>{label}</span>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="lookup-add" style={{ marginTop: 0 }}>
           <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={`New ${label.toLowerCase()}`} />
           <button
             type="button"
-            className="btn-primary"
-            style={{ padding: '8px 12px' }}
+            className="lookup-add-btn"
+            aria-label={`Add ${label.toLowerCase()}`}
             onClick={() => {
               onCreate(newName)
               setNewName('')
               setAdding(false)
             }}
           >
-            Add
+            <Plus size={15} />
           </button>
         </div>
       </div>

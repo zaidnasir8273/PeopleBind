@@ -982,10 +982,10 @@ function RolesTab() {
             {r.name}{r.is_system_role ? <span className="muted" style={{ fontSize: 11 }}> · system</span> : ''}
           </button>
         ))}
-        <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+        <div className="lookup-add">
           <input placeholder="New role" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && createRole()} />
-          <button type="button" className="btn-primary" style={{ padding: '8px 12px' }} disabled={creatingRole} onClick={createRole}>
-            <Plus size={14} />
+          <button type="button" className="lookup-add-btn" disabled={creatingRole} onClick={createRole} aria-label="Add role">
+            <Plus size={15} />
           </button>
         </div>
 
@@ -1322,10 +1322,10 @@ function OnboardingTemplatesTab() {
             {t.name}
           </button>
         ))}
-        <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+        <div className="lookup-add">
           <input placeholder="New template" value={newTemplateName} onChange={(e) => setNewTemplateName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && createTemplate()} />
-          <button type="button" className="btn-primary" style={{ padding: '8px 12px' }} disabled={creating} onClick={createTemplate}>
-            <Plus size={14} />
+          <button type="button" className="lookup-add-btn" disabled={creating} onClick={createTemplate} aria-label="Add template">
+            <Plus size={15} />
           </button>
         </div>
       </div>

@@ -776,9 +776,11 @@ function BenefitTypeSelect({ value, options, onChange, onCreate }) {
     return (
       <div className="field">
         <span>Benefit type</span>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="lookup-add" style={{ marginTop: 0 }}>
           <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="New benefit type" />
-          <button type="button" className="btn-primary" style={{ padding: '8px 12px' }} onClick={() => { onCreate(newName); setNewName(''); setAdding(false) }}>Add</button>
+          <button type="button" className="lookup-add-btn" onClick={() => { onCreate(newName); setNewName(''); setAdding(false) }} aria-label="Add benefit type">
+            <Plus size={15} />
+          </button>
         </div>
       </div>
     )
