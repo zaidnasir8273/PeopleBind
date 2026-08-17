@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  ChevronLeft, Plus, Loader2, Trash2,
+  ChevronLeft, Plus, Loader2, Trash2, Camera,
   Phone, Mail, CalendarDays, Users, User, Heart, PhoneCall, CreditCard, MapPin,
   BadgeCheck, Building2, FileText, CheckCircle2, Clock, CalendarCheck, UserCog,
   Landmark, Hash,
@@ -44,6 +44,8 @@ export default function EmployeeDetail() {
   const [managerName, setManagerName] = useState(null)
   const [lookups, setLookups] = useState({ departments: [], designations: [], teams: [], employmentTypes: [], branches: [] })
   const [employees, setEmployees] = useState([])
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const photoInputRef = useRef(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -101,6 +103,32 @@ export default function EmployeeDetail() {
     return data.id
   }
 
+  async function handlePhotoChange(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    setUploadingPhoto(true)
+    const ext = file.name.split('.').pop()
+    const path = `${company.id}/${employee.id}-${Date.now()}.${ext}`
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file)
+    if (uploadError) {
+      setUploadingPhoto(false)
+      toast.error(uploadError.message || 'Failed to upload photo')
+      return
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+    const { error: updateError } = await supabase.from('employees').update({ photo_url: publicUrl }).eq('id', employee.id)
+    setUploadingPhoto(false)
+    if (updateError) {
+      toast.error(updateError.message)
+      return
+    }
+    toast.success('Photo updated')
+    load()
+  }
+
   if (loading) {
     return (
       <div className="page-inner" style={{ maxWidth: 920 }}>
@@ -128,7 +156,25 @@ export default function EmployeeDetail() {
 
       <div className="page-header-row">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Avatar name={employee.full_name} photoUrl={employee.photo_url} size={48} />
+          <div style={{ position: 'relative' }}>
+            <Avatar name={employee.full_name} photoUrl={employee.photo_url} size={48} />
+            <button
+              type="button"
+              className="avatar-upload-button"
+              onClick={() => photoInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              aria-label="Change photo"
+            >
+              {uploadingPhoto ? <Loader2 size={12} className="btn-spinner" /> : <Camera size={12} />}
+            </button>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handlePhotoChange}
+            />
+          </div>
           <div>
             <p className="page-eyebrow" style={{ marginBottom: 4 }}>PEOPLE</p>
             <h1 className="page-title" style={{ marginBottom: 4, fontSize: 24 }}>{employee.full_name}</h1>

@@ -1648,6 +1648,32 @@ a.attention-item:hover {
   font-weight: 600;
 }
 
+.avatar-upload-button {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--paper);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background var(--duration-fast, 120ms) var(--ease, ease);
+}
+
+.avatar-upload-button:hover {
+  background: var(--accent-hover);
+}
+
+.avatar-upload-button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
 .status-badge::before {
   content: '';
   width: 6px;

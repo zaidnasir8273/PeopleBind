@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { Drawer } from './Drawer'
 
 const EMPTY_FORM = {
+  employee_code: '',
   full_name: '',
   personal_email: '',
   phone: '',
@@ -68,10 +69,18 @@ export function EmployeeFormDrawer({ open, onClose, initialData, company, lookup
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
+
+    if (editingId && !form.employee_code.trim()) {
+      setError('Employee ID is required')
+      setTab('employment')
+      return
+    }
+
     setSaving(true)
 
     const payload = {
       company_id: company.id,
+      employee_code: form.employee_code.trim() || null,
       full_name: form.full_name,
       personal_email: form.personal_email || null,
       phone: form.phone || null,
@@ -204,6 +213,14 @@ export function EmployeeFormDrawer({ open, onClose, initialData, company, lookup
 
         {tab === 'employment' && (
           <>
+            <label className="field">
+              <span>Employee ID</span>
+              <input
+                value={form.employee_code}
+                onChange={set('employee_code')}
+                placeholder={editingId ? '' : 'Leave blank to auto-generate'}
+              />
+            </label>
             <div className="field-row">
               <LookupSelect
                 label="Designation"
