@@ -1,12 +1,13 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { FullPageLoader } from './FullPageLoader'
 
 export function EmployeeProtectedRoute({ children }) {
   const { session, employeeRecord, loading } = useAuth()
   const location = useLocation()
 
   if (loading) {
-    return <div className="centered-loading">Loading…</div>
+    return <FullPageLoader />
   }
 
   if (!session) {

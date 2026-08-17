@@ -623,6 +623,39 @@ button:active:not(:disabled) {
   color: var(--ink-soft);
   font-family: var(--font-mono);
   font-size: 14px;
+  background: var(--paper);
+}
+
+.branded-loading-spinner {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.branded-loading-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--accent-soft);
+  border-top-color: var(--accent);
+  animation: btn-spin 0.9s linear infinite;
+}
+
+.branded-loading-mark {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 24px;
+  height: 24px;
+  background: url('/logo-mark.png') no-repeat center / contain;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .branded-loading-ring,
+  .branded-loading-mark {
+    animation: none !important;
+  }
 }
 
 /* ---------- auth pages ---------- */

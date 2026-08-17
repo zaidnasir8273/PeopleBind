@@ -1,11 +1,12 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { FullPageLoader } from './FullPageLoader'
 
 export function PlatformAdminGate({ children }) {
   const { profile, loading } = useAuth()
 
   if (loading) {
-    return <div className="centered-loading">Loading…</div>
+    return <FullPageLoader />
   }
 
   if (!profile?.is_platform_admin) {

@@ -23,6 +23,10 @@ function fmt(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
 }
 
+function capitalize(str) {
+  return str ? str[0].toUpperCase() + str.slice(1) : str
+}
+
 const TABS = [
   { key: 'personal', label: 'Personal Info' },
   { key: 'employment', label: 'Employment Info' },
@@ -255,9 +259,9 @@ function PersonalTab({ employee: e, onEdit }) {
       <InfoField icon={Phone} label="Contact #" value={e.phone} />
       <InfoField icon={Mail} label="Personal email" value={e.personal_email} />
       <InfoField icon={CalendarDays} label="Date of birth" value={e.date_of_birth ? formatDate(e.date_of_birth) : null} />
-      <InfoField icon={User} label="Gender" value={e.gender} />
+      <InfoField icon={User} label="Gender" value={capitalize(e.gender)} />
       <InfoField icon={User} label="Father name" value={e.father_name} />
-      <InfoField icon={Heart} label="Marital status" value={e.marital_status} />
+      <InfoField icon={Heart} label="Marital status" value={capitalize(e.marital_status)} />
       <InfoField icon={PhoneCall} label="Emergency contact" value={e.emergency_contact_name ? `${e.emergency_contact_name}${e.emergency_contact_phone ? ` · ${e.emergency_contact_phone}` : ''}` : null} />
       <InfoField icon={CreditCard} label="CNIC #" value={e.cnic} />
       <InfoField icon={MapPin} label="Address" value={e.address} />
@@ -295,7 +299,7 @@ function EmploymentTab({ employee: e, managerName, onEdit, onDeleted }) {
         <InfoField icon={Users} label="Team" value={e.teams?.name} />
         <InfoField icon={Building2} label="Department" value={e.departments?.name} />
         <InfoField icon={FileText} label="Employment type" value={e.employment_types?.name} />
-        <InfoField icon={CheckCircle2} label="Employment status" value={e.employment_status} />
+        <InfoField icon={CheckCircle2} label="Employment status" value={capitalize(e.employment_status?.replace('_', ' '))} />
         <InfoField icon={CalendarDays} label="Hire date" value={e.hire_date ? formatDate(e.hire_date) : null} />
         <InfoField icon={CalendarDays} label="Joining date" value={formatDate(e.joining_date)} />
         <InfoField icon={Clock} label="Probation time" value={e.probation_period_months ? `${e.probation_period_months} month${e.probation_period_months > 1 ? 's' : ''}` : null} />
