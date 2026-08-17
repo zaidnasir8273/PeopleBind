@@ -1,5 +1,4 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Toaster } from 'sonner'
 import { Building2, Wallet, LogOut, ArrowLeft, PanelLeftClose, PanelLeftOpen, HeartPulse, LifeBuoy } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
@@ -80,20 +79,6 @@ export default function PlatformAdminShell() {
       <div className="app-content">
         <Outlet />
       </div>
-      <Toaster
-        position="bottom-right"
-        toastOptions={{
-          style: {
-            background: 'var(--paper-raised)',
-            border: '1px solid var(--line)',
-            color: 'var(--ink)',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            borderRadius: '10px',
-            boxShadow: 'var(--shadow)',
-          },
-        }}
-      />
     </div>
   )
 }

@@ -1,5 +1,4 @@
 import { Outlet, useNavigate } from 'react-router-dom'
-import { Toaster } from 'sonner'
 import { ShieldAlert } from 'lucide-react'
 import { Sidebar } from '../components/Sidebar'
 import { NotificationBell } from '../components/NotificationBell'
@@ -36,20 +35,6 @@ export default function AppShell() {
         </div>
         <Outlet />
       </div>
-      <Toaster
-        position="bottom-right"
-        toastOptions={{
-          style: {
-            background: 'var(--paper-raised)',
-            border: '1px solid var(--line)',
-            color: 'var(--ink)',
-            fontFamily: 'var(--font-body)',
-            fontSize: '14px',
-            borderRadius: '10px',
-            boxShadow: 'var(--shadow)',
-          },
-        }}
-      />
     </div>
   )
 }
