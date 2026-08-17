@@ -1,13 +1,13 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { ChevronLeft, ChevronRight, Plus, Loader2, Play, Square, RotateCcw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonBlock } from '../components/Skeleton'
+import { TimesheetWeekGrid } from '../components/TimesheetWeekGrid'
 
 const EMPTY_FORM = { project_id: '', task_id: '', hours: '', notes: '' }
-const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
@@ -51,8 +51,6 @@ export default function EmployeeTimesheet() {
   const [date, setDate] = useState(todayStr())
 
   const [entries, setEntries] = useState([])
-  const [weekEntries, setWeekEntries] = useState([])
-  const [weekTotal, setWeekTotal] = useState(0)
   const [loading, setLoading] = useState(true)
 
   const [projects, setProjects] = useState([])
@@ -91,24 +89,13 @@ export default function EmployeeTimesheet() {
   const load = useCallback(async () => {
     if (!employeeRecord) return
     setLoading(true)
-    const { start, end } = weekRange(date)
-    const [{ data: dayRows }, { data: weekRows }] = await Promise.all([
-      supabase
-        .from('time_entries')
-        .select('id, project_id, task_id, hours, notes, status, projects(name, clients(name)), timesheet_tasks(name)')
-        .eq('employee_id', employeeRecord.id)
-        .eq('entry_date', date)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('time_entries')
-        .select('id, entry_date, hours, project_id, task_id, projects(name), timesheet_tasks(name)')
-        .eq('employee_id', employeeRecord.id)
-        .gte('entry_date', start)
-        .lte('entry_date', end),
-    ])
+    const { data: dayRows } = await supabase
+      .from('time_entries')
+      .select('id, project_id, task_id, hours, notes, status, projects(name, clients(name)), timesheet_tasks(name)')
+      .eq('employee_id', employeeRecord.id)
+      .eq('entry_date', date)
+      .order('created_at', { ascending: false })
     setEntries(dayRows ?? [])
-    setWeekEntries(weekRows ?? [])
-    setWeekTotal((weekRows ?? []).reduce((sum, r) => sum + Number(r.hours), 0))
     setLoading(false)
   }, [employeeRecord, date])
 
@@ -226,27 +213,6 @@ export default function EmployeeTimesheet() {
     load()
   }
 
-  // Week grid: rows are distinct project+task pairs, columns are Mon..Sun, cells sum same-day hours.
-  const weekGrid = useMemo(() => {
-    const { start } = weekRange(date)
-    const rowMap = new Map()
-    for (const e of weekEntries) {
-      const key = `${e.project_id}:${e.task_id ?? ''}`
-      if (!rowMap.has(key)) {
-        rowMap.set(key, {
-          key,
-          project_id: e.project_id,
-          task_id: e.task_id,
-          label: `${e.projects?.name ?? '—'}${e.timesheet_tasks?.name ? ` · ${e.timesheet_tasks.name}` : ''}`,
-          days: Array(7).fill(0),
-        })
-      }
-      const dayIndex = Math.round((new Date(`${e.entry_date}T00:00:00`) - new Date(`${start}T00:00:00`)) / 86400000)
-      if (dayIndex >= 0 && dayIndex < 7) rowMap.get(key).days[dayIndex] += Number(e.hours)
-    }
-    return [...rowMap.values()]
-  }, [weekEntries, date])
-
   return (
     <div className="page-inner" style={{ maxWidth: 900 }}>
       <div className="page-header-row">
@@ -317,16 +283,14 @@ export default function EmployeeTimesheet() {
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-        <div className="mini-card" style={{ minWidth: 140 }}>
-          <div className="muted" style={{ fontSize: 12 }}>Day total</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{dayTotal}h</div>
+      {view === 'day' && (
+        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+          <div className="mini-card" style={{ minWidth: 140 }}>
+            <div className="muted" style={{ fontSize: 12 }}>Day total</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{dayTotal}h</div>
+          </div>
         </div>
-        <div className="mini-card" style={{ minWidth: 140 }}>
-          <div className="muted" style={{ fontSize: 12 }}>Week total</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>{weekTotal}h</div>
-        </div>
-      </div>
+      )}
 
       {loading ? (
         <SkeletonBlock rows={3} />
@@ -357,36 +321,15 @@ export default function EmployeeTimesheet() {
             </div>
           ))
         )
-      ) : weekGrid.length === 0 ? (
-        <div className="empty-state"><p>No time logged this week.</p></div>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Project · Task</th>
-              {WEEKDAY_LABELS.map((label) => <th key={label} className="mono">{label}</th>)}
-              <th className="mono">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {weekGrid.map((row) => (
-              <tr key={row.key} style={{ cursor: 'default' }}>
-                <td>{row.label}</td>
-                {row.days.map((h, i) => (
-                  <td
-                    key={i}
-                    className="mono"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => openAdd(shiftDate(weekRange(date).start, i))}
-                  >
-                    {h > 0 ? h : '—'}
-                  </td>
-                ))}
-                <td className="mono"><strong>{row.days.reduce((a, b) => a + b, 0)}</strong></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <TimesheetWeekGrid
+          employeeId={employeeRecord?.id}
+          date={date}
+          company={company}
+          profile={profile}
+          projects={projects}
+          tasks={tasks}
+        />
       )}
 
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={`Log time · ${formatDateLong(entryDate)}`}>

@@ -1,10 +1,21 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Plus, Check, X as XIcon } from 'lucide-react'
+import { Plus, Check, X as XIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonTable } from '../components/Skeleton'
+import { TimesheetWeekGrid } from '../components/TimesheetWeekGrid'
+
+function shiftDate(dateStr, delta) {
+  const d = new Date(`${dateStr}T00:00:00`)
+  d.setDate(d.getDate() + delta)
+  return d.toISOString().slice(0, 10)
+}
+
+function formatDateLong(dateStr) {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+}
 
 const EMPTY_ENTRY = {
   employee_id: '',
@@ -29,9 +40,14 @@ export default function Timesheet() {
   const [projects, setProjects] = useState([])
   const [tasks, setTasks] = useState([])
 
+  const [view, setView] = useState('entries')
+
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('pending')
+
+  const [weekEmployeeId, setWeekEmployeeId] = useState('')
+  const [weekDate, setWeekDate] = useState(new Date().toISOString().slice(0, 10))
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_ENTRY)
@@ -164,88 +180,135 @@ export default function Timesheet() {
         </button>
       </div>
 
-      <div className="field-row" style={{ maxWidth: 220, marginBottom: 4 }}>
-        <label className="field">
-          <span>Status</span>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            {STATUS_FILTERS.map((s) => (
-              <option key={s} value={s}>{s === 'all' ? 'All' : s[0].toUpperCase() + s.slice(1)}</option>
-            ))}
-          </select>
-        </label>
+      <div className="tabs" style={{ marginBottom: 20 }}>
+        <button className={`tab-button ${view === 'entries' ? 'active' : ''}`} onClick={() => setView('entries')}>Entries</button>
+        <button className={`tab-button ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>Week view</button>
       </div>
 
-      {selectedIds.size > 0 && (
-        <div className="bulk-action-bar">
-          <span>{selectedIds.size} selected</span>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-secondary" disabled={bulkBusy} onClick={() => bulkReview('approved')}>Approve selected</button>
-            <button className="btn-secondary" disabled={bulkBusy} onClick={() => bulkReview('rejected')}>Reject selected</button>
-            <button className="link-button" onClick={() => setSelectedIds(new Set())}>Clear</button>
+      {view === 'entries' ? (
+        <>
+          <div className="field-row" style={{ maxWidth: 220, marginBottom: 4 }}>
+            <label className="field">
+              <span>Status</span>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                {STATUS_FILTERS.map((s) => (
+                  <option key={s} value={s}>{s === 'all' ? 'All' : s[0].toUpperCase() + s.slice(1)}</option>
+                ))}
+              </select>
+            </label>
           </div>
-        </div>
-      )}
 
-      {loading ? (
-        <SkeletonTable rows={6} columns={7} />
-      ) : entries.length === 0 ? (
-        <div className="empty-state" style={{ marginTop: 20 }}>
-          <p>{pendingCount > 0 ? 'No entries.' : 'Nothing pending.'}</p>
-          <p className="muted">Logged time will show up here for review.</p>
-        </div>
+          {selectedIds.size > 0 && (
+            <div className="bulk-action-bar">
+              <span>{selectedIds.size} selected</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-secondary" disabled={bulkBusy} onClick={() => bulkReview('approved')}>Approve selected</button>
+                <button className="btn-secondary" disabled={bulkBusy} onClick={() => bulkReview('rejected')}>Reject selected</button>
+                <button className="link-button" onClick={() => setSelectedIds(new Set())}>Clear</button>
+              </div>
+            </div>
+          )}
+
+          {loading ? (
+            <SkeletonTable rows={6} columns={7} />
+          ) : entries.length === 0 ? (
+            <div className="empty-state" style={{ marginTop: 20 }}>
+              <p>{pendingCount > 0 ? 'No entries.' : 'Nothing pending.'}</p>
+              <p className="muted">Logged time will show up here for review.</p>
+            </div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 32 }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size > 0 && selectedIds.size === entries.filter((e) => e.status === 'pending').length}
+                      onChange={toggleSelectAllPending}
+                    />
+                  </th>
+                  <th>Employee</th>
+                  <th>Project</th>
+                  <th>Task</th>
+                  <th>Date</th>
+                  <th>Hours</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((e) => (
+                  <tr key={e.id}>
+                    <td onClick={(ev) => ev.stopPropagation()}>
+                      {e.status === 'pending' && (
+                        <input type="checkbox" checked={selectedIds.has(e.id)} onChange={() => toggleSelect(e.id)} />
+                      )}
+                    </td>
+                    <td>
+                      {e.employees?.full_name}
+                      <span className="mono" style={{ display: 'block', color: 'var(--ink-soft)', fontSize: 12 }}>{e.employees?.employee_code}</span>
+                    </td>
+                    <td>{e.projects?.name}{e.projects?.clients?.name ? <span className="muted" style={{ display: 'block', fontSize: 12 }}>{e.projects.clients.name}</span> : null}</td>
+                    <td>{e.timesheet_tasks?.name ?? '—'}</td>
+                    <td className="mono">{formatDate(e.entry_date)}</td>
+                    <td className="mono">{e.hours}</td>
+                    <td><span className={`status-badge status-${e.status}`}>{e.status}</span></td>
+                    <td>
+                      {e.status === 'pending' && (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button className="btn-icon-round approve" onClick={() => review(e.id, 'approved')} aria-label="Approve">
+                            <Check size={14} />
+                          </button>
+                          <button className="btn-icon-round reject" onClick={() => review(e.id, 'rejected')} aria-label="Reject">
+                            <XIcon size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th style={{ width: 32 }}>
-                <input
-                  type="checkbox"
-                  checked={selectedIds.size > 0 && selectedIds.size === entries.filter((e) => e.status === 'pending').length}
-                  onChange={toggleSelectAllPending}
-                />
-              </th>
-              <th>Employee</th>
-              <th>Project</th>
-              <th>Task</th>
-              <th>Date</th>
-              <th>Hours</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((e) => (
-              <tr key={e.id}>
-                <td onClick={(ev) => ev.stopPropagation()}>
-                  {e.status === 'pending' && (
-                    <input type="checkbox" checked={selectedIds.has(e.id)} onChange={() => toggleSelect(e.id)} />
-                  )}
-                </td>
-                <td>
-                  {e.employees?.full_name}
-                  <span className="mono" style={{ display: 'block', color: 'var(--ink-soft)', fontSize: 12 }}>{e.employees?.employee_code}</span>
-                </td>
-                <td>{e.projects?.name}{e.projects?.clients?.name ? <span className="muted" style={{ display: 'block', fontSize: 12 }}>{e.projects.clients.name}</span> : null}</td>
-                <td>{e.timesheet_tasks?.name ?? '—'}</td>
-                <td className="mono">{formatDate(e.entry_date)}</td>
-                <td className="mono">{e.hours}</td>
-                <td><span className={`status-badge status-${e.status}`}>{e.status}</span></td>
-                <td>
-                  {e.status === 'pending' && (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn-icon-round approve" onClick={() => review(e.id, 'approved')} aria-label="Approve">
-                        <Check size={14} />
-                      </button>
-                      <button className="btn-icon-round reject" onClick={() => review(e.id, 'rejected')} aria-label="Reject">
-                        <XIcon size={14} />
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div>
+          <div className="field-row" style={{ maxWidth: 320, marginBottom: 16, alignItems: 'flex-end' }}>
+            <label className="field" style={{ flex: 1 }}>
+              <span>Employee</span>
+              <select value={weekEmployeeId} onChange={(e) => setWeekEmployeeId(e.target.value)}>
+                <option value="">— Select —</option>
+                {employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
+              </select>
+            </label>
+          </div>
+
+          {weekEmployeeId ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <button className="btn-icon-round" onClick={() => setWeekDate((d) => shiftDate(d, -7))} aria-label="Previous week">
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="muted" style={{ fontSize: 13 }}>Week of {formatDateLong(weekDate)}</span>
+                <button className="btn-icon-round" onClick={() => setWeekDate((d) => shiftDate(d, 7))} aria-label="Next week">
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+              <TimesheetWeekGrid
+                employeeId={weekEmployeeId}
+                date={weekDate}
+                company={company}
+                profile={profile}
+                projects={projects}
+                tasks={tasks}
+              />
+            </>
+          ) : (
+            <div className="empty-state" style={{ marginTop: 20 }}>
+              <p>Pick an employee to view their week.</p>
+            </div>
+          )}
+        </div>
       )}
 
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Log time">
