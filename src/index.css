@@ -840,11 +840,16 @@ button:active:not(:disabled) {
 
 .sidebar {
   width: 240px;
-  border-right: 1px solid var(--line);
+  background: var(--accent);
   display: flex;
   flex-direction: column;
   padding: 20px 14px;
   transition: width var(--duration-slow) var(--ease-in-out), padding var(--duration-slow) var(--ease-in-out);
+  --sidebar-text: rgba(255, 255, 255, 0.92);
+  --sidebar-text-soft: rgba(255, 255, 255, 0.58);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.14);
+  --sidebar-border: rgba(255, 255, 255, 0.14);
 }
 
 .sidebar.collapsed {
@@ -857,7 +862,7 @@ button:active:not(:disabled) {
   align-items: center;
   gap: 10px;
   padding: 6px 8px 20px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--sidebar-border);
   margin-bottom: 14px;
 }
 
@@ -881,14 +886,14 @@ button:active:not(:disabled) {
   border-radius: var(--radius-sm);
   border: none;
   background: none;
-  color: var(--ink-soft);
+  color: var(--sidebar-text-soft);
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .sidebar-collapse-btn:hover {
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
 }
 
 .sidebar-company-name {
@@ -896,6 +901,7 @@ button:active:not(:disabled) {
   font-weight: 600;
   font-size: 14px;
   line-height: 1.2;
+  color: var(--sidebar-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -904,7 +910,7 @@ button:active:not(:disabled) {
 .sidebar-company-plan {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--ink-soft);
+  color: var(--sidebar-text-soft);
   text-transform: capitalize;
 }
 
@@ -923,7 +929,7 @@ button:active:not(:disabled) {
   border-radius: var(--radius);
   border: 1px solid transparent;
   font-size: 14px;
-  color: var(--ink-soft);
+  color: var(--sidebar-text-soft);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -935,19 +941,19 @@ button:active:not(:disabled) {
 }
 
 .sidebar-link:hover {
-  background: var(--paper-raised);
-  color: var(--ink);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
 }
 
 .sidebar-link:active {
-  background: var(--accent-soft);
+  background: var(--sidebar-active-bg);
 }
 
 .sidebar-link.active {
-  background: var(--paper-raised);
-  color: var(--teal-deep);
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text);
   font-weight: 600;
-  border: 1px solid var(--border);
+  border: 1px solid var(--sidebar-border);
 }
 
 /* icon-rail tooltips, shown only when the sidebar is collapsed (data-tooltip is only set then) */
@@ -986,7 +992,7 @@ button:active:not(:disabled) {
 }
 
 .sidebar-user {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--sidebar-border);
   padding-top: 14px;
   margin-top: 14px;
 }
@@ -994,6 +1000,7 @@ button:active:not(:disabled) {
 .sidebar-user-name {
   font-size: 13px;
   font-weight: 500;
+  color: var(--sidebar-text);
   padding: 0 8px 8px;
 }
 
@@ -1004,7 +1011,7 @@ button:active:not(:disabled) {
   width: 100%;
   background: none;
   border: none;
-  color: var(--ink-soft);
+  color: var(--sidebar-text-soft);
   font-family: inherit;
   font-size: 13px;
   padding: 8px;
@@ -1014,8 +1021,8 @@ button:active:not(:disabled) {
 }
 
 .sidebar-signout:hover {
-  background: var(--paper-raised);
-  color: var(--ink);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
 }
 
 .app-content {
