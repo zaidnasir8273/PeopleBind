@@ -278,6 +278,29 @@ h1 {
   color: var(--ink-soft);
 }
 
+.impersonation-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(180, 83, 9, 0.35);
+  background: rgba(180, 83, 9, 0.08);
+  color: var(--warning);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.impersonation-banner strong {
+  color: var(--ink);
+}
+
+.impersonation-banner .link-button {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--warning);
+}
+
 .exception-box {
   border: 1px solid rgba(180, 83, 9, 0.35);
   background: rgba(180, 83, 9, 0.08);

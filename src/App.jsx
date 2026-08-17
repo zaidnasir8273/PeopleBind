@@ -25,6 +25,8 @@ import Settings from './pages/Settings'
 import { PlatformAdminGate } from './components/PlatformAdminGate'
 import PlatformAdminShell from './pages/PlatformAdminShell'
 import PlatformCompanies from './pages/PlatformCompanies'
+import PlatformHealth from './pages/PlatformHealth'
+import PlatformTickets from './pages/PlatformTickets'
 import PlatformPayroll from './pages/PlatformPayroll'
 import { EmployeeProtectedRoute } from './components/EmployeeProtectedRoute'
 import EmployeeLogin from './pages/EmployeeLogin'
@@ -105,6 +107,8 @@ export default function App() {
             }
           >
             <Route index element={<PlatformCompanies />} />
+            <Route path="health" element={<PlatformHealth />} />
+            <Route path="tickets" element={<PlatformTickets />} />
             <Route path="payroll" element={<PlatformPayroll />} />
           </Route>
 

@@ -42,6 +42,7 @@ export default function Settings() {
         <button className={`tab-button${tab === 'roles' ? ' active' : ''}`} onClick={() => setTab('roles')}>Roles & users</button>
         <button className={`tab-button${tab === 'audit' ? ' active' : ''}`} onClick={() => setTab('audit')}>Audit log</button>
         <button className={`tab-button${tab === 'onboarding' ? ' active' : ''}`} onClick={() => setTab('onboarding')}>Onboarding templates</button>
+        <button className={`tab-button${tab === 'support' ? ' active' : ''}`} onClick={() => setTab('support')}>Support</button>
       </div>
 
       {tab === 'company' && <CompanyTab />}
@@ -52,6 +53,7 @@ export default function Settings() {
       {tab === 'roles' && <RolesTab />}
       {tab === 'audit' && <AuditLogTab />}
       {tab === 'onboarding' && <OnboardingTemplatesTab />}
+      {tab === 'support' && <SupportTab />}
     </div>
   )
 }
@@ -1388,6 +1390,94 @@ function OnboardingTemplatesTab() {
           </button>
         </form>
       </Drawer>
+    </div>
+  )
+}
+
+/* =========================== SUPPORT =========================== */
+
+function SupportTab() {
+  const { company, profile } = useAuth()
+  const [tickets, setTickets] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [subject, setSubject] = useState('')
+  const [message, setMessage] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('support_tickets')
+      .select('id, subject, message, status, created_at, closed_at')
+      .order('created_at', { ascending: false })
+    setTickets(data ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  async function submit(e) {
+    e.preventDefault()
+    if (!subject.trim()) return
+    setSaving(true)
+    const { error } = await supabase.from('support_tickets').insert({
+      company_id: company.id,
+      created_by: profile.id,
+      subject: subject.trim(),
+      message: message.trim() || null,
+    })
+    setSaving(false)
+    if (error) {
+      toast.error(error.message || 'Failed to submit ticket')
+      return
+    }
+    toast.success('Ticket submitted — the PeopleBind team will follow up')
+    setSubject('')
+    setMessage('')
+    load()
+  }
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div className="report-section" style={{ marginBottom: 0 }}>
+        <p className="section-heading">Contact support</p>
+        <form onSubmit={submit} className="drawer-form">
+          <label className="field">
+            <span>Subject</span>
+            <input required value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="e.g. Payroll calculation looks off" />
+          </label>
+          <label className="field">
+            <span>Message</span>
+            <textarea rows={4} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Optional — add any detail that would help" />
+          </label>
+          <button type="submit" className="btn-primary" disabled={saving} style={{ alignSelf: 'flex-start' }}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Submitting…' : 'Submit ticket'}
+          </button>
+        </form>
+      </div>
+
+      <div className="report-section" style={{ marginBottom: 0 }}>
+        <p className="section-heading">Your tickets</p>
+        {loading ? (
+          <SkeletonBlock rows={3} />
+        ) : tickets.length === 0 ? (
+          <p className="muted">No tickets submitted yet.</p>
+        ) : (
+          tickets.map((t) => (
+            <div key={t.id} className="mini-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <strong style={{ fontSize: 13 }}>{t.subject}</strong>
+                <span className={`status-badge status-${t.status === 'open' ? 'pending' : 'approved'}`}>{t.status}</span>
+              </div>
+              {t.message && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t.message}</p>}
+              <span className="muted mono" style={{ fontSize: 11 }}>{formatDate(t.created_at?.slice(0, 10))}</span>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }

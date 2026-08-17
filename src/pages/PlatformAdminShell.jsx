@@ -1,11 +1,13 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { Building2, Wallet, LogOut, ArrowLeft, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Building2, Wallet, LogOut, ArrowLeft, PanelLeftClose, PanelLeftOpen, HeartPulse, LifeBuoy } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
 const NAV_ITEMS = [
   { to: '/platform-admin', label: 'Companies', icon: Building2, end: true },
+  { to: '/platform-admin/health', label: 'Health', icon: HeartPulse },
+  { to: '/platform-admin/tickets', label: 'Support tickets', icon: LifeBuoy },
   { to: '/platform-admin/payroll', label: 'Payroll monitor', icon: Wallet },
 ]
 

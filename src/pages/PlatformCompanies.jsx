@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { LogIn } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonTable } from '../components/Skeleton'
 
@@ -10,6 +13,8 @@ function formatDate(ts) {
 }
 
 export default function PlatformCompanies() {
+  const navigate = useNavigate()
+  const { enterCompany } = useAuth()
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCompany, setActiveCompany] = useState(null)
@@ -20,7 +25,7 @@ export default function PlatformCompanies() {
     setLoading(true)
     const { data } = await supabase
       .from('companies')
-      .select('id, name, slug, plan, status, timezone, fiscal_year_start, created_at, employees(count)')
+      .select('id, name, slug, plan, status, timezone, fiscal_year_start, created_at, is_demo, employees(count)')
       .order('created_at', { ascending: false })
     setCompanies(data ?? [])
     setLoading(false)
@@ -35,6 +40,12 @@ export default function PlatformCompanies() {
     setForm({ status: c.status, plan: c.plan })
   }
 
+  function viewAs(c, e) {
+    e.stopPropagation()
+    enterCompany(c)
+    navigate('/app')
+  }
+
   async function saveChanges() {
     if (!activeCompany) return
     setSaving(true)
@@ -45,7 +56,8 @@ export default function PlatformCompanies() {
     load()
   }
 
-  const totalEmployees = companies.reduce((sum, c) => sum + (c.employees?.[0]?.count ?? 0), 0)
+  const realCompanies = companies.filter((c) => !c.is_demo)
+  const totalEmployees = realCompanies.reduce((sum, c) => sum + (c.employees?.[0]?.count ?? 0), 0)
 
   return (
     <div className="page-inner" style={{ maxWidth: 1000 }}>
@@ -54,7 +66,7 @@ export default function PlatformCompanies() {
           <p className="page-eyebrow">PLATFORM ADMIN</p>
           <h1 className="page-title">Companies</h1>
         </div>
-        <span className="report-stat">{companies.length} companies · {totalEmployees} employees</span>
+        <span className="report-stat">{realCompanies.length} companies · {totalEmployees} employees</span>
       </div>
 
       {loading ? (
@@ -72,6 +84,7 @@ export default function PlatformCompanies() {
               <th>Status</th>
               <th>Employees</th>
               <th>Created</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -79,6 +92,7 @@ export default function PlatformCompanies() {
               <tr key={c.id} onClick={() => openCompany(c)}>
                 <td>
                   {c.name}
+                  {c.is_demo && <span className="tab-count" style={{ marginLeft: 8, background: 'var(--ink-soft)' }}>demo</span>}
                   <span className="mono" style={{ display: 'block', color: 'var(--ink-soft)', fontSize: 12 }}>{c.slug}</span>
                 </td>
                 <td style={{ textTransform: 'capitalize' }}>{c.plan}</td>
@@ -89,6 +103,11 @@ export default function PlatformCompanies() {
                 </td>
                 <td className="mono">{c.employees?.[0]?.count ?? 0}</td>
                 <td className="mono">{formatDate(c.created_at)}</td>
+                <td>
+                  <button className="btn-icon-round" onClick={(e) => viewAs(c, e)} aria-label={`View as ${c.name}`} data-tooltip={`View as ${c.name}`}>
+                    <LogIn size={13} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

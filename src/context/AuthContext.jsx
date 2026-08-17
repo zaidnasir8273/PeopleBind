@@ -3,12 +3,44 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
+const IMPERSONATION_KEY = 'pb_impersonated_company'
+
+function readStoredImpersonation() {
+  try {
+    const raw = sessionStorage.getItem(IMPERSONATION_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
-  const [company, setCompany] = useState(null)
+  const [ownCompany, setOwnCompany] = useState(null)
+  const [impersonatedCompany, setImpersonatedCompany] = useState(readStoredImpersonation)
   const [employeeRecord, setEmployeeRecord] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  const company = impersonatedCompany ?? ownCompany
+
+  const enterCompany = useCallback((companyRow) => {
+    setImpersonatedCompany(companyRow)
+    try {
+      sessionStorage.setItem(IMPERSONATION_KEY, JSON.stringify(companyRow))
+    } catch {
+      // ignore storage failures (e.g. private browsing) -- impersonation still works for this tab
+    }
+  }, [])
+
+  const exitImpersonation = useCallback(() => {
+    setImpersonatedCompany(null)
+    try {
+      sessionStorage.removeItem(IMPERSONATION_KEY)
+    } catch {
+      // ignore
+    }
+  }, [])
 
   const loadProfile = useCallback(async (userId) => {
     const { data: profileRow } = await supabase
@@ -25,9 +57,9 @@ export function AuthProvider({ children }) {
         .select('*')
         .eq('id', profileRow.company_id)
         .single()
-      setCompany(companyRow ?? null)
+      setOwnCompany(companyRow ?? null)
     } else {
-      setCompany(null)
+      setOwnCompany(null)
     }
 
     const { data: employeeRow, error: employeeError } = await supabase
@@ -59,8 +91,9 @@ export function AuthProvider({ children }) {
         loadProfile(newSession.user.id)
       } else {
         setProfile(null)
-        setCompany(null)
+        setOwnCompany(null)
         setEmployeeRecord(null)
+        exitImpersonation()
       }
     })
 
@@ -74,14 +107,21 @@ export function AuthProvider({ children }) {
     if (session?.user) return loadProfile(session.user.id)
   }, [session, loadProfile])
 
-  const signOut = useCallback(() => supabase.auth.signOut(), [])
+  const signOut = useCallback(() => {
+    exitImpersonation()
+    return supabase.auth.signOut()
+  }, [exitImpersonation])
 
   const value = {
     session,
     user: session?.user ?? null,
     profile,
     company,
-    employeeRecord,
+    isImpersonating: !!impersonatedCompany,
+    enterCompany,
+    exitImpersonation,
+    // a platform admin viewing another company isn't an employee of it
+    employeeRecord: impersonatedCompany ? null : employeeRecord,
     loading,
     signOut,
     refreshProfile,
