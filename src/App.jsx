@@ -10,6 +10,7 @@ import Onboarding from './pages/Onboarding'
 import AppShell from './pages/AppShell'
 import Home from './pages/Home'
 import People from './pages/People'
+import EmployeeDetail from './pages/EmployeeDetail'
 import Attendance from './pages/Attendance'
 import Leave from './pages/Leave'
 import Payroll from './pages/Payroll'
@@ -80,6 +81,7 @@ export default function App() {
           >
             <Route index element={<Home />} />
             <Route path="people" element={<People />} />
+            <Route path="people/:id" element={<EmployeeDetail />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="leave" element={<Leave />} />
             <Route path="payroll" element={<Payroll />} />

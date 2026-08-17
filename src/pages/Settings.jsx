@@ -161,20 +161,23 @@ function StructureTab() {
   const { company } = useAuth()
   const [departments, setDepartments] = useState([])
   const [designations, setDesignations] = useState([])
+  const [teams, setTeams] = useState([])
   const [employmentTypes, setEmploymentTypes] = useState([])
   const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [{ data: d }, { data: des }, { data: et }, { data: b }] = await Promise.all([
+    const [{ data: d }, { data: des }, { data: tm }, { data: et }, { data: b }] = await Promise.all([
       supabase.from('departments').select('id, name, status').order('name'),
       supabase.from('designations').select('id, name, status').order('name'),
+      supabase.from('teams').select('id, name, status').order('name'),
       supabase.from('employment_types').select('id, name').order('name'),
       supabase.from('branches').select('id, name, city, is_head_office').order('name'),
     ])
     setDepartments(d ?? [])
     setDesignations(des ?? [])
+    setTeams(tm ?? [])
     setEmploymentTypes(et ?? [])
     setBranches(b ?? [])
     setLoading(false)
@@ -201,6 +204,14 @@ function StructureTab() {
         rows={designations}
         renderRow={(r) => r.name}
         table="designations"
+        company={company}
+        onChanged={load}
+      />
+      <SimpleLookupCard
+        title="Teams"
+        rows={teams}
+        renderRow={(r) => r.name}
+        table="teams"
         company={company}
         onChanged={load}
       />
