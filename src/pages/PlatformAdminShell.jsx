@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { Building2, Wallet, LogOut, ArrowLeft, PanelLeft } from 'lucide-react'
+import { Building2, Wallet, LogOut, ArrowLeft, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
@@ -30,7 +30,7 @@ export default function PlatformAdminShell() {
             data-tooltip={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            <PanelLeft size={15} strokeWidth={2} />
+            {collapsed ? <PanelLeftOpen size={15} strokeWidth={2} /> : <PanelLeftClose size={15} strokeWidth={2} />}
           </button>
         </div>
 

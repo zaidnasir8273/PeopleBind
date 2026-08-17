@@ -15,7 +15,8 @@ import {
   FileText,
   Laptop,
   ListChecks,
-  PanelLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
@@ -56,7 +57,7 @@ export function Sidebar() {
           data-tooltip={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <PanelLeft size={15} strokeWidth={2} />
+          {collapsed ? <PanelLeftOpen size={15} strokeWidth={2} /> : <PanelLeftClose size={15} strokeWidth={2} />}
         </button>
       </div>
 
