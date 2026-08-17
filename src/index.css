@@ -858,11 +858,14 @@ button:active:not(:disabled) {
   height: 100vh;
   display: grid;
   grid-template-columns: auto 1fr;
+  grid-template-rows: minmax(0, 1fr);
   background: var(--paper);
 }
 
 .sidebar {
   width: 240px;
+  height: 100%;
+  min-height: 0;
   background: var(--accent);
   display: flex;
   flex-direction: column;
@@ -942,6 +945,8 @@ button:active:not(:disabled) {
   flex-direction: column;
   gap: 2px;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .sidebar-link {
