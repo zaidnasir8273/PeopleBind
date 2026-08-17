@@ -268,34 +268,32 @@ function SimpleLookupCard({ title, rows, renderRow, table, company, onChanged })
       {rows.length === 0 ? (
         <p className="muted">None yet.</p>
       ) : (
-        rows.map((r) => (
-          <div
-            key={r.id}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 14 }}
-          >
-            <span>{renderRow(r)}</span>
-            <button
-              type="button"
-              className="link-button"
-              onClick={() => remove(r.id)}
-              disabled={removingId === r.id}
-              aria-label={`Remove`}
-              style={{ color: 'var(--danger)', display: 'flex', flexShrink: 0 }}
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))
+        <div className="lookup-list">
+          {rows.map((r) => (
+            <div key={r.id} className="lookup-row">
+              <span>{renderRow(r)}</span>
+              <button
+                type="button"
+                className="btn-icon-round reject lookup-row-remove"
+                onClick={() => remove(r.id)}
+                disabled={removingId === r.id}
+                aria-label="Remove"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
       )}
-      <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+      <div className="lookup-add">
         <input
           placeholder={`New ${title.toLowerCase().replace(/s$/, '')}`}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && add()}
         />
-        <button type="button" className="btn-primary" style={{ padding: '8px 12px' }} disabled={saving} onClick={add}>
-          <Plus size={14} />
+        <button type="button" className="lookup-add-btn" disabled={saving} onClick={add} aria-label={`Add ${title.toLowerCase().replace(/s$/, '')}`}>
+          <Plus size={15} />
         </button>
       </div>
     </div>
@@ -338,24 +336,22 @@ function BranchesCard({ rows, company, onChanged }) {
       {rows.length === 0 ? (
         <p className="muted">None yet.</p>
       ) : (
-        rows.map((r) => (
-          <div
-            key={r.id}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 14 }}
-          >
-            <span>{r.name}{r.city ? ` · ${r.city}` : ''}{r.is_head_office ? ' · HQ' : ''}</span>
-            <button
-              type="button"
-              className="link-button"
-              onClick={() => remove(r.id)}
-              disabled={removingId === r.id}
-              aria-label="Remove"
-              style={{ color: 'var(--danger)', display: 'flex', flexShrink: 0 }}
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))
+        <div className="lookup-list">
+          {rows.map((r) => (
+            <div key={r.id} className="lookup-row">
+              <span>{r.name}{r.city ? ` · ${r.city}` : ''}{r.is_head_office ? ' · HQ' : ''}</span>
+              <button
+                type="button"
+                className="btn-icon-round reject lookup-row-remove"
+                onClick={() => remove(r.id)}
+                disabled={removingId === r.id}
+                aria-label="Remove"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
       )}
       <div className="field-row" style={{ marginTop: 12 }}>
         <input placeholder="Branch name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -1502,31 +1498,31 @@ function ProjectsCard({ rows, clients, company, onChanged }) {
       {rows.length === 0 ? (
         <p className="muted">None yet.</p>
       ) : (
-        rows.map((r) => (
-          <div
-            key={r.id}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 14 }}
-          >
-            <span>{r.name}{r.clients?.name ? ` · ${r.clients.name}` : ''}</span>
-            <button
-              type="button"
-              className="link-button"
-              onClick={() => remove(r.id)}
-              disabled={removingId === r.id}
-              aria-label="Remove"
-              style={{ color: 'var(--danger)', display: 'flex', flexShrink: 0 }}
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))
+        <div className="lookup-list">
+          {rows.map((r) => (
+            <div key={r.id} className="lookup-row">
+              <span>{r.name}{r.clients?.name ? ` · ${r.clients.name}` : ''}</span>
+              <button
+                type="button"
+                className="btn-icon-round reject lookup-row-remove"
+                onClick={() => remove(r.id)}
+                disabled={removingId === r.id}
+                aria-label="Remove"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
       )}
       <div className="field-row" style={{ marginTop: 12 }}>
         <input placeholder="Project name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         {addingClient ? (
-          <div style={{ display: 'flex', gap: 6, flex: 1 }}>
+          <div className="lookup-add" style={{ marginTop: 0, flex: 1 }}>
             <input autoFocus placeholder="New client" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} />
-            <button type="button" className="btn-primary" style={{ padding: '8px 12px' }} onClick={addClient}>Add</button>
+            <button type="button" className="lookup-add-btn" onClick={addClient} aria-label="Add client">
+              <Plus size={15} />
+            </button>
           </div>
         ) : (
           <select

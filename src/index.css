@@ -1170,6 +1170,83 @@ button:active:not(:disabled) {
   border-radius: 100px;
 }
 
+.lookup-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.lookup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.lookup-row:last-of-type {
+  border-bottom: none;
+}
+
+.lookup-row-remove {
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease);
+}
+
+.lookup-row:hover .lookup-row-remove,
+.lookup-row-remove:focus-visible {
+  opacity: 1;
+}
+
+.lookup-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.lookup-add input {
+  flex: 1;
+  border: 1px dashed var(--border-strong);
+  background: transparent;
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-size: 13.5px;
+  transition: border-color var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
+}
+
+.lookup-add input:focus {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--surface);
+  outline: none;
+}
+
+.lookup-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease);
+}
+
+.lookup-add-btn:hover {
+  background: var(--accent-hover);
+}
+
+.lookup-add-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .empty-state {
   border: 1px dashed var(--line);
   border-radius: var(--radius-lg);
