@@ -179,7 +179,6 @@ export default function Attendance() {
     <div className="page-inner" style={{ maxWidth: 980 }}>
       <div className="page-header-row">
         <div>
-          <p className="page-eyebrow">ATTENDANCE</p>
           <h1 className="page-title">Attendance</h1>
         </div>
       </div>

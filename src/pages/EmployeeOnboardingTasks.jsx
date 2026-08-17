@@ -152,7 +152,6 @@ export default function EmployeeOnboardingTasks() {
     <div className="page-inner" style={{ maxWidth: 900 }}>
       <div className="page-header-row">
         <div>
-          <p className="page-eyebrow">ONBOARDING</p>
           <h1 className="page-title">Onboarding</h1>
         </div>
       </div>

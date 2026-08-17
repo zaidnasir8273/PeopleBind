@@ -226,7 +226,6 @@ export default function Leave() {
     <div className="page-inner" style={{ maxWidth: 980 }}>
       <div className="page-header-row">
         <div>
-          <p className="page-eyebrow">LEAVE</p>
           <h1 className="page-title">Leave</h1>
         </div>
         {tab === 'requests' ? (

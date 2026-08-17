@@ -120,7 +120,6 @@ export default function Assets() {
     <div className="page-inner" style={{ maxWidth: 900 }}>
       <div className="page-header-row">
         <div>
-          <p className="page-eyebrow">ASSETS</p>
           <h1 className="page-title">Assets</h1>
         </div>
         <span className="report-stat">{assignedCount} currently assigned</span>

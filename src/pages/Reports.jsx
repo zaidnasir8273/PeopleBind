@@ -128,7 +128,6 @@ export default function Reports() {
     <div className="page-inner" style={{ maxWidth: 1020 }}>
       <div className="page-header-row">
         <div>
-          <p className="page-eyebrow">REPORTS</p>
           <h1 className="page-title">Reports</h1>
         </div>
       </div>

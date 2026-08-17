@@ -41,7 +41,6 @@ export default function Payroll() {
     <div className="page-inner" style={{ maxWidth: 1020 }}>
       <div className="page-header-row">
         <div>
-          <p className="page-eyebrow">PAYROLL</p>
           <h1 className="page-title">Payroll</h1>
         </div>
       </div>

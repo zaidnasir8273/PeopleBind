@@ -28,7 +28,6 @@ export default function Settings() {
     <div className="page-inner" style={{ maxWidth: 1000 }}>
       <div className="page-header-row">
         <div>
-          <p className="page-eyebrow">SETTINGS</p>
           <h1 className="page-title">Settings</h1>
         </div>
       </div>

@@ -143,7 +143,6 @@ export default function Documents() {
     <div className="page-inner" style={{ maxWidth: 900 }}>
       <div className="page-header-row">
         <div>
-          <p className="page-eyebrow">DOCUMENTS</p>
           <h1 className="page-title">Documents</h1>
         </div>
       </div>

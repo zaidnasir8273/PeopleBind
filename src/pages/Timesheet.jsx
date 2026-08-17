@@ -172,7 +172,6 @@ export default function Timesheet() {
     <div className="page-inner" style={{ maxWidth: 980 }}>
       <div className="page-header-row">
         <div>
-          <p className="page-eyebrow">TIMESHEET</p>
           <h1 className="page-title">Timesheet</h1>
         </div>
         <button className="btn-primary btn-icon" onClick={openNewEntry}>

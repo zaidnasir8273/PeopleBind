@@ -159,7 +159,6 @@ export default function Expenses() {
     <div className="page-inner" style={{ maxWidth: 980 }}>
       <div className="page-header-row">
         <div>
-          <p className="page-eyebrow">EXPENSES</p>
           <h1 className="page-title">Expenses</h1>
         </div>
         <button className="btn-primary btn-icon" onClick={openNew}>
