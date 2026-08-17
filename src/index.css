@@ -832,7 +832,7 @@ button:active:not(:disabled) {
 /* ---------- app shell ---------- */
 
 .app-shell {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-columns: auto 1fr;
   background: var(--paper);
