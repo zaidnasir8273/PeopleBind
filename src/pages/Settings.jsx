@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, Loader2, Clock, User } from 'lucide-react'
+import { Plus, Loader2, Clock, User, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -220,6 +220,7 @@ function StructureTab() {
 function SimpleLookupCard({ title, rows, renderRow, table, company, onChanged }) {
   const [newName, setNewName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [removingId, setRemovingId] = useState(null)
 
   async function add() {
     if (!newName.trim()) return
@@ -230,6 +231,22 @@ function SimpleLookupCard({ title, rows, renderRow, table, company, onChanged })
     onChanged()
   }
 
+  async function remove(id) {
+    setRemovingId(id)
+    const { error } = await supabase.from(table).delete().eq('id', id)
+    setRemovingId(null)
+    if (error) {
+      if (error.code === '23503') {
+        toast.error("Can't remove — still assigned to one or more employees.")
+      } else {
+        toast.error(error.message || 'Failed to remove')
+      }
+      return
+    }
+    toast.success('Removed')
+    onChanged()
+  }
+
   return (
     <div className="report-section" style={{ marginBottom: 0 }}>
       <p className="section-heading">{title}</p>
@@ -237,8 +254,21 @@ function SimpleLookupCard({ title, rows, renderRow, table, company, onChanged })
         <p className="muted">None yet.</p>
       ) : (
         rows.map((r) => (
-          <div key={r.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 14 }}>
-            {renderRow(r)}
+          <div
+            key={r.id}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 14 }}
+          >
+            <span>{renderRow(r)}</span>
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => remove(r.id)}
+              disabled={removingId === r.id}
+              aria-label={`Remove`}
+              style={{ color: 'var(--danger)', display: 'flex', flexShrink: 0 }}
+            >
+              <Trash2 size={14} />
+            </button>
           </div>
         ))
       )}
@@ -260,6 +290,7 @@ function SimpleLookupCard({ title, rows, renderRow, table, company, onChanged })
 function BranchesCard({ rows, company, onChanged }) {
   const [form, setForm] = useState({ name: '', city: '', is_head_office: false })
   const [saving, setSaving] = useState(false)
+  const [removingId, setRemovingId] = useState(null)
 
   async function add() {
     if (!form.name.trim()) return
@@ -270,6 +301,22 @@ function BranchesCard({ rows, company, onChanged }) {
     onChanged()
   }
 
+  async function remove(id) {
+    setRemovingId(id)
+    const { error } = await supabase.from('branches').delete().eq('id', id)
+    setRemovingId(null)
+    if (error) {
+      if (error.code === '23503') {
+        toast.error("Can't remove — still assigned to one or more employees.")
+      } else {
+        toast.error(error.message || 'Failed to remove')
+      }
+      return
+    }
+    toast.success('Removed')
+    onChanged()
+  }
+
   return (
     <div className="report-section" style={{ marginBottom: 0 }}>
       <p className="section-heading">Branches</p>
@@ -277,8 +324,21 @@ function BranchesCard({ rows, company, onChanged }) {
         <p className="muted">None yet.</p>
       ) : (
         rows.map((r) => (
-          <div key={r.id} style={{ padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 14 }}>
-            {r.name}{r.city ? ` · ${r.city}` : ''}{r.is_head_office ? ' · HQ' : ''}
+          <div
+            key={r.id}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 14 }}
+          >
+            <span>{r.name}{r.city ? ` · ${r.city}` : ''}{r.is_head_office ? ' · HQ' : ''}</span>
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => remove(r.id)}
+              disabled={removingId === r.id}
+              aria-label="Remove"
+              style={{ color: 'var(--danger)', display: 'flex', flexShrink: 0 }}
+            >
+              <Trash2 size={14} />
+            </button>
           </div>
         ))
       )}
