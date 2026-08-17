@@ -1400,16 +1400,19 @@ function OnboardingTemplatesTab() {
 
 function TimesheetsSetupTab() {
   const { company } = useAuth()
+  const [clients, setClients] = useState([])
   const [projects, setProjects] = useState([])
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [{ data: p }, { data: t }] = await Promise.all([
-      supabase.from('projects').select('id, name, client_name, status').order('name'),
+    const [{ data: c }, { data: p }, { data: t }] = await Promise.all([
+      supabase.from('clients').select('id, name, status').order('name'),
+      supabase.from('projects').select('id, name, client_id, status, clients(name)').order('name'),
       supabase.from('timesheet_tasks').select('id, name, status').order('name'),
     ])
+    setClients(c ?? [])
     setProjects(p ?? [])
     setTasks(t ?? [])
     setLoading(false)
@@ -1423,7 +1426,15 @@ function TimesheetsSetupTab() {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-      <ProjectsCard rows={projects} company={company} onChanged={load} />
+      <SimpleLookupCard
+        title="Clients"
+        rows={clients}
+        renderRow={(r) => r.name}
+        table="clients"
+        company={company}
+        onChanged={load}
+      />
+      <ProjectsCard rows={projects} clients={clients} company={company} onChanged={load} />
       <SimpleLookupCard
         title="Tasks"
         rows={tasks}
@@ -1436,21 +1447,36 @@ function TimesheetsSetupTab() {
   )
 }
 
-function ProjectsCard({ rows, company, onChanged }) {
-  const [form, setForm] = useState({ name: '', client_name: '' })
+function ProjectsCard({ rows, clients, company, onChanged }) {
+  const [form, setForm] = useState({ name: '', client_id: '' })
   const [saving, setSaving] = useState(false)
   const [removingId, setRemovingId] = useState(null)
+  const [addingClient, setAddingClient] = useState(false)
+  const [newClientName, setNewClientName] = useState('')
 
   async function add() {
     if (!form.name.trim()) return
     setSaving(true)
-    const { error } = await supabase.from('projects').insert({ company_id: company.id, name: form.name.trim(), client_name: form.client_name.trim() || null })
+    const { error } = await supabase.from('projects').insert({ company_id: company.id, name: form.name.trim(), client_id: form.client_id || null })
     setSaving(false)
     if (error) {
       toast.error(error.message || 'Failed to add project')
       return
     }
-    setForm({ name: '', client_name: '' })
+    setForm({ name: '', client_id: '' })
+    onChanged()
+  }
+
+  async function addClient() {
+    if (!newClientName.trim()) return
+    const { data, error } = await supabase.from('clients').insert({ company_id: company.id, name: newClientName.trim() }).select().single()
+    if (error) {
+      toast.error(error.message || 'Failed to add client')
+      return
+    }
+    setNewClientName('')
+    setAddingClient(false)
+    setForm((f) => ({ ...f, client_id: data.id }))
     onChanged()
   }
 
@@ -1481,7 +1507,7 @@ function ProjectsCard({ rows, company, onChanged }) {
             key={r.id}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 14 }}
           >
-            <span>{r.name}{r.client_name ? ` · ${r.client_name}` : ''}</span>
+            <span>{r.name}{r.clients?.name ? ` · ${r.clients.name}` : ''}</span>
             <button
               type="button"
               className="link-button"
@@ -1497,7 +1523,21 @@ function ProjectsCard({ rows, company, onChanged }) {
       )}
       <div className="field-row" style={{ marginTop: 12 }}>
         <input placeholder="Project name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <input placeholder="Client (optional)" value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} />
+        {addingClient ? (
+          <div style={{ display: 'flex', gap: 6, flex: 1 }}>
+            <input autoFocus placeholder="New client" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} />
+            <button type="button" className="btn-primary" style={{ padding: '8px 12px' }} onClick={addClient}>Add</button>
+          </div>
+        ) : (
+          <select
+            value={form.client_id}
+            onChange={(e) => (e.target.value === '__new__' ? setAddingClient(true) : setForm({ ...form, client_id: e.target.value }))}
+          >
+            <option value="">— Client (optional) —</option>
+            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            <option value="__new__">+ Add new client…</option>
+          </select>
+        )}
       </div>
       <button type="button" className="btn-primary" style={{ marginTop: 8, alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
         {saving ? 'Adding…' : 'Add project'}

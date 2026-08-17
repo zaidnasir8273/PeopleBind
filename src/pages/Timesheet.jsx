@@ -43,7 +43,7 @@ export default function Timesheet() {
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: projs }, { data: tsks }] = await Promise.all([
       supabase.from('employees').select('id, employee_code, full_name').eq('employment_status', 'active').order('full_name'),
-      supabase.from('projects').select('id, name, client_name').eq('status', 'active').order('name'),
+      supabase.from('projects').select('id, name, clients(name)').eq('status', 'active').order('name'),
       supabase.from('timesheet_tasks').select('id, name').eq('status', 'active').order('name'),
     ])
     setEmployees(emps ?? [])
@@ -55,7 +55,7 @@ export default function Timesheet() {
     setLoading(true)
     let query = supabase
       .from('time_entries')
-      .select('id, entry_date, hours, notes, status, created_at, employees(full_name, employee_code), projects(name, client_name), timesheet_tasks(name)')
+      .select('id, entry_date, hours, notes, status, created_at, employees(full_name, employee_code), projects(name, clients(name)), timesheet_tasks(name)')
       .order('entry_date', { ascending: false })
     if (statusFilter !== 'all') query = query.eq('status', statusFilter)
     const { data } = await query.limit(200)
@@ -225,7 +225,7 @@ export default function Timesheet() {
                   {e.employees?.full_name}
                   <span className="mono" style={{ display: 'block', color: 'var(--ink-soft)', fontSize: 12 }}>{e.employees?.employee_code}</span>
                 </td>
-                <td>{e.projects?.name}{e.projects?.client_name ? <span className="muted" style={{ display: 'block', fontSize: 12 }}>{e.projects.client_name}</span> : null}</td>
+                <td>{e.projects?.name}{e.projects?.clients?.name ? <span className="muted" style={{ display: 'block', fontSize: 12 }}>{e.projects.clients.name}</span> : null}</td>
                 <td>{e.timesheet_tasks?.name ?? '—'}</td>
                 <td className="mono">{formatDate(e.entry_date)}</td>
                 <td className="mono">{e.hours}</td>
@@ -262,7 +262,7 @@ export default function Timesheet() {
             <span>Project</span>
             <select required value={form.project_id} onChange={(e) => setForm({ ...form, project_id: e.target.value })}>
               <option value="">— Select —</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}{p.client_name ? ` (${p.client_name})` : ''}</option>)}
+              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}{p.clients?.name ? ` (${p.clients.name})` : ''}</option>)}
             </select>
           </label>
 
