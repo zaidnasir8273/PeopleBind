@@ -17,6 +17,7 @@ import {
   ListChecks,
   PanelLeftClose,
   PanelLeftOpen,
+  Timer,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { to: '/app/people', label: 'People', icon: Users },
   { to: '/app/attendance', label: 'Attendance', icon: Clock },
   { to: '/app/leave', label: 'Leave', icon: CalendarDays },
+  { to: '/app/timesheet', label: 'Timesheet', icon: Timer },
   { to: '/app/payroll', label: 'Payroll', icon: Wallet },
   { to: '/app/expenses', label: 'Expenses', icon: Receipt },
   { to: '/app/documents', label: 'Documents', icon: FileText },

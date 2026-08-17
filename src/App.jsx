@@ -13,6 +13,7 @@ import People from './pages/People'
 import EmployeeDetail from './pages/EmployeeDetail'
 import Attendance from './pages/Attendance'
 import Leave from './pages/Leave'
+import Timesheet from './pages/Timesheet'
 import Payroll from './pages/Payroll'
 import Expenses from './pages/Expenses'
 import Documents from './pages/Documents'
@@ -36,6 +37,7 @@ import EmployeeShell from './pages/EmployeeShell'
 import EmployeeHome from './pages/EmployeeHome'
 import EmployeePayslips from './pages/EmployeePayslips'
 import EmployeeLeave from './pages/EmployeeLeave'
+import EmployeeTimesheet from './pages/EmployeeTimesheet'
 import EmployeeProfile from './pages/EmployeeProfile'
 
 export default function App() {
@@ -86,6 +88,7 @@ export default function App() {
             <Route path="people/:id" element={<EmployeeDetail />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="leave" element={<Leave />} />
+            <Route path="timesheet" element={<Timesheet />} />
             <Route path="payroll" element={<Payroll />} />
             <Route path="expenses" element={<Expenses />} />
             <Route path="documents" element={<Documents />} />
@@ -133,6 +136,7 @@ export default function App() {
             <Route index element={<EmployeeHome />} />
             <Route path="payslips" element={<EmployeePayslips />} />
             <Route path="leave" element={<EmployeeLeave />} />
+            <Route path="timesheet" element={<EmployeeTimesheet />} />
             <Route path="profile" element={<EmployeeProfile />} />
           </Route>
         </Routes>

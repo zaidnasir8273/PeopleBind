@@ -42,6 +42,7 @@ export default function Settings() {
         <button className={`tab-button${tab === 'roles' ? ' active' : ''}`} onClick={() => setTab('roles')}>Roles & users</button>
         <button className={`tab-button${tab === 'audit' ? ' active' : ''}`} onClick={() => setTab('audit')}>Audit log</button>
         <button className={`tab-button${tab === 'onboarding' ? ' active' : ''}`} onClick={() => setTab('onboarding')}>Onboarding templates</button>
+        <button className={`tab-button${tab === 'timesheets' ? ' active' : ''}`} onClick={() => setTab('timesheets')}>Timesheets</button>
         <button className={`tab-button${tab === 'support' ? ' active' : ''}`} onClick={() => setTab('support')}>Support</button>
       </div>
 
@@ -53,6 +54,7 @@ export default function Settings() {
       {tab === 'roles' && <RolesTab />}
       {tab === 'audit' && <AuditLogTab />}
       {tab === 'onboarding' && <OnboardingTemplatesTab />}
+      {tab === 'timesheets' && <TimesheetsSetupTab />}
       {tab === 'support' && <SupportTab />}
     </div>
   )
@@ -1390,6 +1392,116 @@ function OnboardingTemplatesTab() {
           </button>
         </form>
       </Drawer>
+    </div>
+  )
+}
+
+/* =========================== TIMESHEETS SETUP =========================== */
+
+function TimesheetsSetupTab() {
+  const { company } = useAuth()
+  const [projects, setProjects] = useState([])
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const [{ data: p }, { data: t }] = await Promise.all([
+      supabase.from('projects').select('id, name, client_name, status').order('name'),
+      supabase.from('timesheet_tasks').select('id, name, status').order('name'),
+    ])
+    setProjects(p ?? [])
+    setTasks(t ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  if (loading) return <SkeletonBlock rows={4} />
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <ProjectsCard rows={projects} company={company} onChanged={load} />
+      <SimpleLookupCard
+        title="Tasks"
+        rows={tasks}
+        renderRow={(r) => r.name}
+        table="timesheet_tasks"
+        company={company}
+        onChanged={load}
+      />
+    </div>
+  )
+}
+
+function ProjectsCard({ rows, company, onChanged }) {
+  const [form, setForm] = useState({ name: '', client_name: '' })
+  const [saving, setSaving] = useState(false)
+  const [removingId, setRemovingId] = useState(null)
+
+  async function add() {
+    if (!form.name.trim()) return
+    setSaving(true)
+    const { error } = await supabase.from('projects').insert({ company_id: company.id, name: form.name.trim(), client_name: form.client_name.trim() || null })
+    setSaving(false)
+    if (error) {
+      toast.error(error.message || 'Failed to add project')
+      return
+    }
+    setForm({ name: '', client_name: '' })
+    onChanged()
+  }
+
+  async function remove(id) {
+    setRemovingId(id)
+    const { error } = await supabase.from('projects').delete().eq('id', id)
+    setRemovingId(null)
+    if (error) {
+      if (error.code === '23503') {
+        toast.error("Can't remove — this project has time entries logged against it.")
+      } else {
+        toast.error(error.message || 'Failed to remove')
+      }
+      return
+    }
+    toast.success('Removed')
+    onChanged()
+  }
+
+  return (
+    <div className="report-section" style={{ marginBottom: 0 }}>
+      <p className="section-heading">Projects</p>
+      {rows.length === 0 ? (
+        <p className="muted">None yet.</p>
+      ) : (
+        rows.map((r) => (
+          <div
+            key={r.id}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--line)', fontSize: 14 }}
+          >
+            <span>{r.name}{r.client_name ? ` · ${r.client_name}` : ''}</span>
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => remove(r.id)}
+              disabled={removingId === r.id}
+              aria-label="Remove"
+              style={{ color: 'var(--danger)', display: 'flex', flexShrink: 0 }}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))
+      )}
+      <div className="field-row" style={{ marginTop: 12 }}>
+        <input placeholder="Project name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <input placeholder="Client (optional)" value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} />
+      </div>
+      <button type="button" className="btn-primary" style={{ marginTop: 8, alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
+        {saving ? 'Adding…' : 'Add project'}
+      </button>
     </div>
   )
 }

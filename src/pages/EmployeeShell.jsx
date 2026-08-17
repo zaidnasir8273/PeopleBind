@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { Home, Wallet, CalendarDays, User, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Home, Wallet, CalendarDays, User, LogOut, PanelLeftClose, PanelLeftOpen, Timer } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { NotificationBell } from '../components/NotificationBell'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/employee', label: 'Home', icon: Home, end: true },
   { to: '/employee/payslips', label: 'Payslips', icon: Wallet },
   { to: '/employee/leave', label: 'Leave', icon: CalendarDays },
+  { to: '/employee/timesheet', label: 'Timesheet', icon: Timer },
   { to: '/employee/profile', label: 'My profile', icon: User },
 ]
 
