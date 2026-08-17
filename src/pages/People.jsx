@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
 import { Plus, Search, Upload, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -42,7 +42,7 @@ export default function People() {
     const { data, error: loadError } = await supabase
       .from('employees')
       .select(
-        'id, employee_code, full_name, photo_url, employment_status, joining_date, phone, personal_email, cnic, bank_account_number, department_id, designation_id, employment_type_id, branch_id, manager_id, departments!employees_department_id_fkey(name), designations(name), branches(name, city), manager:employees!employees_manager_id_fkey(full_name)'
+        'id, employee_code, full_name, photo_url, employment_status, joining_date, phone, personal_email, cnic, bank_account_number, department_id, designation_id, employment_type_id, branch_id, manager_id, departments!employees_department_id_fkey(name), designations(name), branches(name, city)'
       )
       .order('created_at', { ascending: false })
     if (loadError) toast.error(loadError.message || 'Failed to load employees')
@@ -192,6 +192,14 @@ export default function People() {
     e.employee_code?.toLowerCase().includes(search.toLowerCase())
   )
 
+  // Resolved client-side rather than via a manager:employees(...) embed --
+  // PostgREST can't reliably self-join employees to itself on this project.
+  const managerNameById = useMemo(() => {
+    const map = new Map()
+    for (const e of employees) map.set(e.id, e.full_name)
+    return map
+  }, [employees])
+
   return (
     <div className="page-inner" style={{ maxWidth: 920 }}>
       <div className="page-header-row">
@@ -259,7 +267,7 @@ export default function People() {
                 <td>{emp.designations?.name ?? '—'}</td>
                 <td>{emp.departments?.name ?? '—'}</td>
                 <td>{emp.branches?.name ?? '—'}</td>
-                <td>{emp.manager?.full_name ?? '—'}</td>
+                <td>{(emp.manager_id && managerNameById.get(emp.manager_id)) ?? '—'}</td>
                 <td>
                   <span className={`status-badge status-${emp.employment_status}`}>{emp.employment_status}</span>
                 </td>
