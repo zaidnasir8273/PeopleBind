@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, Loader2, Clock, User, Trash2 } from 'lucide-react'
+import { Plus, Loader2, Clock, User, Trash2, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -1400,18 +1400,21 @@ function TimesheetsSetupTab() {
   const [clients, setClients] = useState([])
   const [projects, setProjects] = useState([])
   const [tasks, setTasks] = useState([])
+  const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [{ data: c }, { data: p }, { data: t }] = await Promise.all([
+    const [{ data: c }, { data: p }, { data: t }, { data: e }] = await Promise.all([
       supabase.from('clients').select('id, name, status').order('name'),
       supabase.from('projects').select('id, name, client_id, status, clients(name)').order('name'),
       supabase.from('timesheet_tasks').select('id, name, status').order('name'),
+      supabase.from('employees').select('id, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
     ])
     setClients(c ?? [])
     setProjects(p ?? [])
     setTasks(t ?? [])
+    setEmployees(e ?? [])
     setLoading(false)
   }, [])
 
@@ -1431,7 +1434,7 @@ function TimesheetsSetupTab() {
         company={company}
         onChanged={load}
       />
-      <ProjectsCard rows={projects} clients={clients} company={company} onChanged={load} />
+      <ProjectsCard rows={projects} clients={clients} employees={employees} company={company} onChanged={load} />
       <SimpleLookupCard
         title="Tasks"
         rows={tasks}
@@ -1444,12 +1447,13 @@ function TimesheetsSetupTab() {
   )
 }
 
-function ProjectsCard({ rows, clients, company, onChanged }) {
+function ProjectsCard({ rows, clients, employees, company, onChanged }) {
   const [form, setForm] = useState({ name: '', client_id: '' })
   const [saving, setSaving] = useState(false)
   const [removingId, setRemovingId] = useState(null)
   const [addingClient, setAddingClient] = useState(false)
   const [newClientName, setNewClientName] = useState('')
+  const [membersProject, setMembersProject] = useState(null)
 
   async function add() {
     if (!form.name.trim()) return
@@ -1503,15 +1507,27 @@ function ProjectsCard({ rows, clients, company, onChanged }) {
           {rows.map((r) => (
             <div key={r.id} className="lookup-row">
               <span>{r.name}{r.clients?.name ? ` · ${r.clients.name}` : ''}</span>
-              <button
-                type="button"
-                className="btn-icon-round reject lookup-row-remove"
-                onClick={() => remove(r.id)}
-                disabled={removingId === r.id}
-                aria-label="Remove"
-              >
-                <Trash2 size={14} />
-              </button>
+              <div style={{ display: 'flex', gap: 2 }}>
+                <button
+                  type="button"
+                  className="link-button"
+                  style={{ display: 'flex', padding: 6 }}
+                  onClick={() => setMembersProject(r)}
+                  aria-label="Manage access"
+                  data-tooltip="Who can log time here"
+                >
+                  <Users size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon-round reject lookup-row-remove"
+                  onClick={() => remove(r.id)}
+                  disabled={removingId === r.id}
+                  aria-label="Remove"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -1541,6 +1557,70 @@ function ProjectsCard({ rows, clients, company, onChanged }) {
         <button type="button" className="btn-primary" style={{ alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
           {saving ? 'Adding…' : 'Add project'}
         </button>
+      </div>
+
+      <Drawer open={!!membersProject} onClose={() => setMembersProject(null)} title={membersProject ? `Access · ${membersProject.name}` : ''}>
+        {membersProject && <ProjectMembersEditor project={membersProject} employees={employees} company={company} />}
+      </Drawer>
+    </div>
+  )
+}
+
+function ProjectMembersEditor({ project, employees, company }) {
+  const [memberIds, setMemberIds] = useState(new Set())
+  const [loading, setLoading] = useState(true)
+  const [busyId, setBusyId] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      setLoading(true)
+      const { data } = await supabase.from('project_members').select('employee_id').eq('project_id', project.id)
+      if (active) {
+        setMemberIds(new Set((data ?? []).map((m) => m.employee_id)))
+        setLoading(false)
+      }
+    }
+    load()
+    return () => { active = false }
+  }, [project.id])
+
+  async function toggle(employeeId) {
+    setBusyId(employeeId)
+    if (memberIds.has(employeeId)) {
+      const { error } = await supabase.from('project_members').delete().eq('project_id', project.id).eq('employee_id', employeeId)
+      setBusyId(null)
+      if (error) { toast.error(error.message); return }
+      setMemberIds((prev) => { const next = new Set(prev); next.delete(employeeId); return next })
+    } else {
+      const { error } = await supabase.from('project_members').insert({ company_id: company.id, project_id: project.id, employee_id: employeeId })
+      setBusyId(null)
+      if (error) { toast.error(error.message); return }
+      setMemberIds((prev) => new Set(prev).add(employeeId))
+    }
+  }
+
+  if (loading) return <div style={{ padding: '0 24px 24px' }}><SkeletonBlock rows={3} /></div>
+
+  return (
+    <div style={{ padding: '0 24px 24px' }}>
+      <p className="muted" style={{ margin: '0 0 12px' }}>
+        {memberIds.size === 0
+          ? 'No one is explicitly assigned — every employee can currently log time against this project.'
+          : 'Only the people checked below can log time against this project.'}
+      </p>
+      <div className="lookup-list">
+        {employees.map((emp) => (
+          <label key={emp.id} className="lookup-row" style={{ cursor: 'pointer' }}>
+            <span>{emp.full_name}</span>
+            <input
+              type="checkbox"
+              checked={memberIds.has(emp.id)}
+              disabled={busyId === emp.id}
+              onChange={() => toggle(emp.id)}
+            />
+          </label>
+        ))}
       </div>
     </div>
   )
