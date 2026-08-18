@@ -36,11 +36,12 @@ export default function Documents() {
   const loadExpiring = useCallback(async () => {
     const in30 = new Date()
     in30.setDate(in30.getDate() + 30)
+    const in30Str = `${in30.getFullYear()}-${String(in30.getMonth() + 1).padStart(2, '0')}-${String(in30.getDate()).padStart(2, '0')}`
     const { data } = await supabase
       .from('documents')
       .select('id, doc_type, expiry_date, employees(full_name)')
       .not('expiry_date', 'is', null)
-      .lte('expiry_date', in30.toISOString().slice(0, 10))
+      .lte('expiry_date', in30Str)
       .order('expiry_date')
     setExpiringSoon(data ?? [])
   }, [])

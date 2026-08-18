@@ -14,7 +14,7 @@ function formatDate(dateStr) {
 function addDays(dateStr, days) {
   const d = new Date(`${dateStr}T00:00:00`)
   d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 const CATEGORY_LABELS = { paperwork: 'Paperwork', it_setup: 'IT setup', training: 'Training', culture: 'Culture', general: 'General' }

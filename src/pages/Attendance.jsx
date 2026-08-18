@@ -15,7 +15,8 @@ const EMPTY_FORM = {
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function timeFromTimestamp(ts) {
@@ -40,7 +41,7 @@ function formatDateLong(dateStr) {
 function shiftDate(dateStr, delta) {
   const d = new Date(`${dateStr}T00:00:00`)
   d.setDate(d.getDate() + delta)
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 const LOADING_DELAY = 150
