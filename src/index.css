@@ -1398,6 +1398,197 @@ a.attention-item:hover {
   border-bottom: none;
 }
 
+.today-grid {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.today-card {
+  flex: 1;
+  min-width: 220px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+
+.today-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.today-card-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.today-card-count {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.today-empty {
+  font-size: 13px;
+  color: var(--ink-soft);
+  padding: 4px 0;
+}
+
+.avatar-stack {
+  display: flex;
+  align-items: center;
+}
+
+.avatar-stack-item {
+  position: relative;
+  margin-left: -10px;
+  border-radius: 50%;
+  border: 2px solid var(--paper-raised);
+}
+
+.avatar-stack-item:first-child {
+  margin-left: 0;
+}
+
+.avatar-stack-live-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #16a34a;
+  border: 2px solid var(--paper-raised);
+}
+
+.avatar-stack-more {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--paper-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  margin-left: -10px;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.attendance-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.attendance-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.attendance-bar-label {
+  width: 56px;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+.attendance-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 100px;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.attendance-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+}
+
+.attendance-bar-value {
+  width: 18px;
+  text-align: right;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.activity-row:last-child {
+  border-bottom: none;
+}
+
+.activity-row:hover {
+  color: var(--teal-deep);
+}
+
+.activity-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius);
+  background: rgba(18, 63, 51, 0.08);
+  color: var(--teal-deep);
+  flex-shrink: 0;
+}
+
+.activity-row-time {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.team-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.team-strip-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 58px;
+  text-decoration: none;
+}
+
+.team-strip-name {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
 /* ---------- notification bell ---------- */
 
 .notif-bell-wrap {
