@@ -20,6 +20,9 @@ export default function PlatformCompanies() {
   const [activeCompany, setActiveCompany] = useState(null)
   const [form, setForm] = useState({ status: '', plan: '' })
   const [saving, setSaving] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleteInput, setDeleteInput] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -38,6 +41,28 @@ export default function PlatformCompanies() {
   function openCompany(c) {
     setActiveCompany(c)
     setForm({ status: c.status, plan: c.plan })
+    setConfirmingDelete(false)
+    setDeleteInput('')
+  }
+
+  function closeDrawer() {
+    setActiveCompany(null)
+    setConfirmingDelete(false)
+    setDeleteInput('')
+  }
+
+  async function deleteCompany() {
+    if (!activeCompany || deleteInput !== activeCompany.name) return
+    setDeleting(true)
+    const { error } = await supabase.from('companies').delete().eq('id', activeCompany.id)
+    setDeleting(false)
+    if (error) {
+      toast.error(error.message)
+      return
+    }
+    toast.success(`${activeCompany.name} deleted`)
+    closeDrawer()
+    load()
   }
 
   function viewAs(c, e) {
@@ -114,7 +139,7 @@ export default function PlatformCompanies() {
         </table>
       )}
 
-      <Drawer open={!!activeCompany} onClose={() => setActiveCompany(null)} title={activeCompany?.name}>
+      <Drawer open={!!activeCompany} onClose={closeDrawer} title={activeCompany?.name}>
         {activeCompany && (
           <div className="drawer-form">
             <div className="field-row">
@@ -156,6 +181,43 @@ export default function PlatformCompanies() {
             <button type="button" className="btn-primary" disabled={saving} onClick={saveChanges} style={{ alignSelf: 'flex-start' }}>
               {saving ? 'Saving…' : 'Save changes'}
             </button>
+
+            <div style={{ marginTop: 8, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
+              <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600 }}>Danger zone</p>
+              {!confirmingDelete ? (
+                <button type="button" className="btn-danger" onClick={() => setConfirmingDelete(true)}>
+                  Delete company
+                </button>
+              ) : (
+                <div className="drawer-form" style={{ gap: 10 }}>
+                  <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+                    This permanently deletes <strong>{activeCompany.name}</strong> and everything tied to
+                    it — employees, payroll, attendance, leave, documents, all of it. This cannot be undone.
+                    Type the company name to confirm.
+                  </p>
+                  <input
+                    type="text"
+                    value={deleteInput}
+                    onChange={(e) => setDeleteInput(e.target.value)}
+                    placeholder={activeCompany.name}
+                    autoFocus
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      disabled={deleting || deleteInput !== activeCompany.name}
+                      onClick={deleteCompany}
+                    >
+                      {deleting ? 'Deleting…' : 'Permanently delete'}
+                    </button>
+                    <button type="button" className="btn-secondary" onClick={() => { setConfirmingDelete(false); setDeleteInput('') }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Drawer>
