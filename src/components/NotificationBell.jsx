@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell } from 'lucide-react'
+import { Bell, Check, X as XIcon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -21,6 +21,7 @@ function deriveLink(n, portal) {
   if (n.link) return n.link
   if (n.type?.startsWith('leave_')) return portal === 'employee' ? '/employee/leave' : '/app/leave'
   if (n.type?.startsWith('expense_')) return portal === 'employee' ? null : '/app/expenses'
+  if (n.type?.startsWith('timesheet_')) return portal === 'employee' ? '/employee/timesheet' : '/app/timesheet'
   if (n.type === 'payslip_available') return portal === 'employee' ? '/employee/payslips' : '/app/payroll'
   return null
 }
@@ -74,11 +75,23 @@ export function NotificationBell({ portal = 'app' }) {
     await supabase.from('notifications').update({ read_at: new Date().toISOString() }).is('read_at', null)
   }
 
+  async function markOneRead(id) {
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, read_at: i.read_at ?? new Date().toISOString() } : i)))
+    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id)
+  }
+
+  async function deleteOne(id) {
+    setItems((prev) => prev.filter((i) => i.id !== id))
+    await supabase.from('notifications').delete().eq('id', id)
+  }
+
+  async function clearAll() {
+    setItems([])
+    await supabase.from('notifications').delete().eq('user_id', profile.id)
+  }
+
   async function handleClickItem(n) {
-    if (!n.read_at) {
-      setItems((prev) => prev.map((i) => (i.id === n.id ? { ...i, read_at: new Date().toISOString() } : i)))
-      supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', n.id).then(() => {})
-    }
+    if (!n.read_at) markOneRead(n.id)
     const to = deriveLink(n, portal)
     if (to) {
       navigate(to)
@@ -97,23 +110,38 @@ export function NotificationBell({ portal = 'app' }) {
         <div className="notif-panel">
           <div className="notif-panel-header">
             <span>Notifications</span>
-            {unreadCount > 0 && (
-              <button className="link-button" style={{ fontSize: 12 }} onClick={markAllRead}>Mark all read</button>
-            )}
+            <div style={{ display: 'flex', gap: 10 }}>
+              {unreadCount > 0 && (
+                <button className="link-button" style={{ fontSize: 12 }} onClick={markAllRead}>Mark all read</button>
+              )}
+              {items.length > 0 && (
+                <button className="link-button" style={{ fontSize: 12 }} onClick={clearAll}>Clear all</button>
+              )}
+            </div>
           </div>
           {items.length === 0 ? (
             <p className="muted" style={{ padding: '20px 16px', fontSize: 13 }}>Nothing yet.</p>
           ) : (
             <div className="notif-list">
               {items.map((n) => (
-                <button key={n.id} className={`notif-item${!n.read_at ? ' unread' : ''}`} onClick={() => handleClickItem(n)}>
+                <div key={n.id} className={`notif-item${!n.read_at ? ' unread' : ''}`}>
                   {!n.read_at && <span className="notif-dot" />}
-                  <span className="notif-item-body">
+                  <button className="notif-item-main" onClick={() => handleClickItem(n)}>
                     <span className="notif-item-title">{n.title}</span>
                     {n.body && <span className="notif-item-text">{n.body}</span>}
                     <span className="notif-item-time">{relativeTime(n.created_at)}</span>
-                  </span>
-                </button>
+                  </button>
+                  <div className="notif-item-actions">
+                    {!n.read_at && (
+                      <button type="button" className="link-button" aria-label="Mark as read" data-tooltip="Mark as read" onClick={(e) => { e.stopPropagation(); markOneRead(n.id) }}>
+                        <Check size={13} />
+                      </button>
+                    )}
+                    <button type="button" className="link-button" aria-label="Delete" data-tooltip="Delete" onClick={(e) => { e.stopPropagation(); deleteOne(n.id) }}>
+                      <XIcon size={13} />
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           )}
