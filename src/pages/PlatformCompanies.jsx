@@ -54,7 +54,7 @@ export default function PlatformCompanies() {
   async function deleteCompany() {
     if (!activeCompany || deleteInput !== activeCompany.name) return
     setDeleting(true)
-    const { error } = await supabase.from('companies').delete().eq('id', activeCompany.id)
+    const { error } = await supabase.rpc('platform_delete_company', { p_company_id: activeCompany.id })
     setDeleting(false)
     if (error) {
       toast.error(error.message)
