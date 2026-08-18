@@ -209,7 +209,7 @@ export default function Attendance() {
             </button>
             {date !== todayStr() && (
               <button className="link-button" onClick={() => setDate(todayStr())}>
-                Today
+                Jump to today
               </button>
             )}
           </div>
