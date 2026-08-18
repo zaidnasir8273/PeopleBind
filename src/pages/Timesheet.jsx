@@ -58,7 +58,7 @@ export default function Timesheet() {
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: projs }, { data: tsks }] = await Promise.all([
-      supabase.from('employees').select('id, employee_code, full_name').eq('employment_status', 'active').order('full_name'),
+      supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
       supabase.from('projects').select('id, name, clients(name)').eq('status', 'active').order('name'),
       supabase.from('timesheet_tasks').select('id, name').eq('status', 'active').order('name'),
     ])

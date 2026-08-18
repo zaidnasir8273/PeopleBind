@@ -46,7 +46,7 @@ export default function Expenses() {
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: cats }] = await Promise.all([
-      supabase.from('employees').select('id, employee_code, full_name').eq('employment_status', 'active').order('full_name'),
+      supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
       supabase.from('expense_categories').select('id, name, requires_receipt, max_amount').eq('status', 'active').order('name'),
     ])
     setEmployees(emps ?? [])

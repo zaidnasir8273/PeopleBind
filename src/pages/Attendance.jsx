@@ -70,7 +70,7 @@ export default function Attendance() {
       supabase
         .from('employees')
         .select('id, employee_code, full_name, shift_id, shifts(name)')
-        .eq('employment_status', 'active')
+        .in('employment_status', ['training', 'probation', 'confirmed'])
         .order('full_name'),
       supabase.from('shifts').select('id, name').eq('status', 'active').order('name'),
       supabase

@@ -1807,7 +1807,8 @@ a.attention-item:hover {
   flex-shrink: 0;
 }
 
-.status-active {
+.status-active,
+.status-confirmed {
   background: rgba(18, 63, 51, 0.12);
   color: var(--teal-deep);
 }
@@ -1818,7 +1819,9 @@ a.attention-item:hover {
   color: var(--danger);
 }
 
-.status-on_leave {
+.status-on_leave,
+.status-training,
+.status-probation {
   background: rgba(180, 83, 9, 0.14);
   color: var(--gold);
 }

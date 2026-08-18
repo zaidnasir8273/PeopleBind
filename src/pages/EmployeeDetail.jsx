@@ -5,7 +5,7 @@ import {
   ChevronLeft, Plus, Loader2, Trash2, Camera,
   Phone, Mail, CalendarDays, Users, User, Heart, PhoneCall, CreditCard, MapPin,
   BadgeCheck, Building2, FileText, CheckCircle2, Clock, CalendarCheck, UserCog,
-  Landmark, Hash,
+  Landmark, Hash, LogOut, Wallet, Layers,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -56,7 +56,7 @@ export default function EmployeeDetail() {
     const { data, error } = await supabase
       .from('employees')
       .select(
-        'id, employee_code, full_name, photo_url, phone, personal_email, date_of_birth, gender, father_name, marital_status, emergency_contact_name, emergency_contact_phone, cnic, address, designation_id, team_id, department_id, employment_type_id, branch_id, employment_status, manager_id, hire_date, joining_date, probation_period_months, confirmation_date, bank_name, bank_account_number, bank_iban, designations(name), teams(name), departments!employees_department_id_fkey(name), employment_types(name), branches(name, city)'
+        'id, employee_code, full_name, photo_url, phone, personal_email, date_of_birth, gender, father_name, marital_status, emergency_contact_name, emergency_contact_phone, cnic, address, designation_id, team_id, department_id, employment_type_id, branch_id, employment_status, manager_id, hire_date, joining_date, probation_period_months, confirmation_date, exit_date, bank_name, bank_account_number, bank_iban, basic_salary, salary_level, designations(name), teams(name), departments!employees_department_id_fkey(name), employment_types(name), branches(name, city)'
       )
       .eq('id', id)
       .maybeSingle()
@@ -79,7 +79,7 @@ export default function EmployeeDetail() {
       supabase.from('teams').select('id,name').eq('status', 'active').order('name'),
       supabase.from('employment_types').select('id,name').order('name'),
       supabase.from('branches').select('id,name').order('name'),
-      supabase.from('employees').select('id, full_name').eq('employment_status', 'active').order('full_name'),
+      supabase.from('employees').select('id, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
     ])
     setLookups({
       departments: departments ?? [],
@@ -304,6 +304,7 @@ function EmploymentTab({ employee: e, managerName, onEdit, onDeleted }) {
         <InfoField icon={CalendarDays} label="Joining date" value={formatDate(e.joining_date)} />
         <InfoField icon={Clock} label="Probation time" value={e.probation_period_months ? `${e.probation_period_months} month${e.probation_period_months > 1 ? 's' : ''}` : null} />
         <InfoField icon={CalendarCheck} label="Probation end date" value={e.confirmation_date ? formatDate(e.confirmation_date) : null} />
+        <InfoField icon={LogOut} label="Company exit date" value={e.exit_date ? formatDate(e.exit_date) : null} />
         <InfoField icon={UserCog} label="Reporting manager" value={managerName} />
         <InfoField icon={MapPin} label="Location" value={e.branches?.name} />
       </TabSection>
@@ -419,6 +420,8 @@ function SalaryTab({ employee: e, onEdit }) {
   return (
     <>
       <TabSection title="Salary Info" onEdit={onEdit}>
+        <InfoField icon={Wallet} label="Basic salary" value={e.basic_salary != null ? fmt(e.basic_salary) : null} />
+        <InfoField icon={Layers} label="Salary level" value={e.salary_level} />
         <InfoField icon={Landmark} label="Bank name" value={e.bank_name} />
         <InfoField icon={CreditCard} label="Account number" value={e.bank_account_number} />
         <InfoField icon={Hash} label="IBAN" value={e.bank_iban} />

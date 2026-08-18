@@ -23,16 +23,19 @@ const EMPTY_FORM = {
   department_id: '',
   employment_type_id: '',
   branch_id: '',
-  employment_status: 'active',
+  employment_status: 'probation',
   manager_id: '',
   hire_date: '',
   joining_date: new Date().toISOString().slice(0, 10),
   probation_period_months: '',
   confirmation_date: '',
+  exit_date: '',
 
   bank_name: '',
   bank_account_number: '',
   bank_iban: '',
+  basic_salary: '',
+  salary_level: '',
 }
 
 const TABS = [
@@ -98,16 +101,19 @@ export function EmployeeFormDrawer({ open, onClose, initialData, company, lookup
       department_id: form.department_id || null,
       employment_type_id: form.employment_type_id || null,
       branch_id: form.branch_id || null,
-      employment_status: form.employment_status || 'active',
+      employment_status: form.employment_status || 'probation',
       manager_id: form.manager_id || null,
       hire_date: form.hire_date || null,
       joining_date: form.joining_date,
       probation_period_months: form.probation_period_months ? Number(form.probation_period_months) : null,
       confirmation_date: form.confirmation_date || null,
+      exit_date: form.exit_date || null,
 
       bank_name: form.bank_name || null,
       bank_account_number: form.bank_account_number || null,
       bank_iban: form.bank_iban || null,
+      basic_salary: form.basic_salary ? Number(form.basic_salary) : null,
+      salary_level: form.salary_level || null,
     }
 
     const { error: saveError } = editingId
@@ -257,8 +263,9 @@ export function EmployeeFormDrawer({ open, onClose, initialData, company, lookup
               <label className="field">
                 <span>Employment status</span>
                 <select value={form.employment_status} onChange={set('employment_status')}>
-                  <option value="active">Active</option>
-                  <option value="on_leave">On leave</option>
+                  <option value="training">Training</option>
+                  <option value="probation">Probation</option>
+                  <option value="confirmed">Confirmed</option>
                   <option value="resigned">Resigned</option>
                   <option value="terminated">Terminated</option>
                 </select>
@@ -300,12 +307,26 @@ export function EmployeeFormDrawer({ open, onClose, initialData, company, lookup
                 <input type="date" value={form.confirmation_date} onChange={set('confirmation_date')} />
               </label>
             </div>
+            <label className="field">
+              <span>Company exit date</span>
+              <input type="date" value={form.exit_date} onChange={set('exit_date')} placeholder="If they've left the company" />
+            </label>
           </>
         )}
 
         {tab === 'salary' && (
           <>
-            <p className="muted" style={{ margin: 0 }}>Account & transactional details. Salary structure and components are managed from Payroll.</p>
+            <div className="field-row">
+              <label className="field">
+                <span>Basic salary</span>
+                <input type="number" min="0" step="0.01" value={form.basic_salary} onChange={set('basic_salary')} placeholder="e.g. 150000" />
+              </label>
+              <label className="field">
+                <span>Salary level</span>
+                <input value={form.salary_level} onChange={set('salary_level')} placeholder="e.g. L4, Senior" />
+              </label>
+            </div>
+            <p className="muted" style={{ margin: 0 }}>Account & transactional details. Full salary structure and components are managed from Payroll.</p>
             <label className="field">
               <span>Bank name</span>
               <input value={form.bank_name} onChange={set('bank_name')} />

@@ -39,7 +39,7 @@ export default function EmployeeOnboardingTasks() {
     const { data } = await supabase
       .from('employees')
       .select('id, employee_code, full_name, joining_date')
-      .eq('employment_status', 'active')
+      .in('employment_status', ['training', 'probation', 'confirmed'])
       .order('joining_date', { ascending: false })
     setEmployees(data ?? [])
   }, [])

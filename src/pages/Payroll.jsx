@@ -461,7 +461,7 @@ function StructuresTab({ profile, company }) {
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: comps }] = await Promise.all([
-      supabase.from('employees').select('id, employee_code, full_name').eq('employment_status', 'active').order('full_name'),
+      supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
       supabase.from('payroll_components').select('id, name, component_type').eq('status', 'active').order('component_type').order('name'),
     ])
     setEmployees(emps ?? [])
@@ -664,7 +664,7 @@ function LoansOvertimeTab({ profile, company }) {
   const [employees, setEmployees] = useState([])
 
   const loadEmployees = useCallback(async () => {
-    const { data } = await supabase.from('employees').select('id, employee_code, full_name').eq('employment_status', 'active').order('full_name')
+    const { data } = await supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
     setEmployees(data ?? [])
   }, [])
 

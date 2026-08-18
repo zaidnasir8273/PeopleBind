@@ -27,7 +27,7 @@ export default function Performance() {
   const [employees, setEmployees] = useState([])
 
   const loadEmployees = useCallback(async () => {
-    const { data } = await supabase.from('employees').select('id, employee_code, full_name').eq('employment_status', 'active').order('full_name')
+    const { data } = await supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
     setEmployees(data ?? [])
   }, [])
 

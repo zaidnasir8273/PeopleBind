@@ -56,7 +56,7 @@ export default function Leave() {
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: types }] = await Promise.all([
-      supabase.from('employees').select('id, employee_code, full_name').eq('employment_status', 'active').order('full_name'),
+      supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
       supabase.from('leave_types').select('id, name, is_paid').order('name'),
     ])
     setEmployees(emps ?? [])

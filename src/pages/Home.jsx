@@ -54,14 +54,14 @@ export default function Home() {
       { data: probationRows },
       { data: birthdayRows },
     ] = await Promise.all([
-      supabase.from('employees').select('id', { count: 'exact', head: true }).eq('employment_status', 'active'),
+      supabase.from('employees').select('id', { count: 'exact', head: true }).in('employment_status', ['training', 'probation', 'confirmed']),
       supabase.from('leave_requests').select('id, employees(full_name), leave_types(name), days_requested').eq('status', 'pending'),
       supabase.from('expense_claims').select('id, employees(full_name), amount').eq('status', 'submitted'),
       supabase.from('attendance_corrections').select('id, employees(full_name)').eq('status', 'pending'),
       supabase.from('payroll_runs').select('id, status, payroll_periods(label)').neq('status', 'finalized'),
       supabase.from('job_openings').select('id', { count: 'exact', head: true }).eq('status', 'open'),
-      supabase.from('employees').select('id, full_name, confirmation_date').eq('employment_status', 'active').not('confirmation_date', 'is', null),
-      supabase.from('employees').select('id, full_name, date_of_birth, joining_date').eq('employment_status', 'active'),
+      supabase.from('employees').select('id, full_name, confirmation_date').in('employment_status', ['training', 'probation']).not('confirmation_date', 'is', null),
+      supabase.from('employees').select('id, full_name, date_of_birth, joining_date').in('employment_status', ['training', 'probation', 'confirmed']),
     ])
 
     const items = []
