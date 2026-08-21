@@ -1,3 +1,71 @@
+@import "tailwindcss";
+
+/* Bridges the existing design tokens below into Tailwind's utility
+   namespace so new Tailwind/shadcn components render from the SAME values
+   as the rest of the app, rather than a second competing palette.
+   Deliberately uses --color-* names distinct from the source tokens below
+   (e.g. --color-brand reads var(--accent), never --accent itself) --
+   Tailwind's @theme block compiles into :root, so reusing an identical
+   name would be a self-referential (invalid) custom property. Every
+   existing CSS rule in this file is untouched and keeps reading the
+   original --accent/--ink/etc. names directly, exactly as before.
+
+   --color-accent specifically is NOT bridged to PeopleBind's brand teal
+   here -- shadcn's own component source (Button, etc.) uses bg-accent to
+   mean "neutral hover surface", not "brand color". Mapping it to the brand
+   teal would make every ghost/outline button hover turn solid dark teal.
+   PeopleBind's brand teal is exposed as --color-brand* instead; the
+   shadcn-reserved --color-accent* names get shadcn's actual intended
+   meaning further down. */
+@theme {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-brand: var(--accent);
+  --color-brand-hover: var(--accent-hover);
+  --color-brand-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+
+  /* shadcn/ui's own generated component source expects these exact names
+     (bg-primary, text-muted-foreground, border-input, etc.) -- bridged to
+     the same PeopleBind tokens above so a shadcn Button and a .btn-primary
+     render from the same color, not a parallel shadcn palette. Radius/font
+     are deliberately NOT bridged yet: those existing token names
+     (--radius, --radius-sm, --font-display...) collide with shadcn's own
+     conventional theme key names, and resolving that safely needs more
+     care than this first pass -- shadcn components fall back to
+     Tailwind's own default radius scale for now (close enough visually:
+     Tailwind's rounded-lg is 8px, same as PeopleBind's --radius). */
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--accent);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--surface);
+  --color-secondary-foreground: var(--ink);
+  --color-muted: var(--bg-subtle);
+  --color-muted-foreground: var(--ink-soft);
+  /* shadcn's "accent" = a subtle neutral hover surface (used by ghost/
+     outline button variants, menu item hover, etc.), NOT the brand color. */
+  --color-accent: var(--bg-subtle);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: #ffffff;
+  --color-input: var(--border);
+  --color-ring: var(--accent);
+}
+
 :root {
   /* surfaces */
   --bg: #ffffff;
@@ -340,6 +408,7 @@ h1 {
   padding-left: 20px;
   font-size: 13px;
   color: var(--ink-soft);
+  list-style: disc;
 }
 
 .exception-box li {
