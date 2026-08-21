@@ -1,31 +1,42 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { Plus, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonTable } from '../components/Skeleton'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table'
+import type { Database } from '../lib/database.types'
 
-function formatDate(dateStr) {
+type Asset = Pick<Database['public']['Tables']['assets']['Row'], 'id' | 'asset_type' | 'description' | 'assigned_date' | 'returned_date' | 'status'>
+type EmployeeOption = Pick<Database['public']['Tables']['employees']['Row'], 'id' | 'employee_code' | 'full_name'>
+
+interface AssetForm {
+  asset_type: string
+  description: string
+  assigned_date: string
+}
+
+function formatDate(dateStr: string | null | undefined) {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-const EMPTY_FORM = { asset_type: '', description: '', assigned_date: new Date().toISOString().slice(0, 10) }
+const EMPTY_FORM: AssetForm = { asset_type: '', description: '', assigned_date: new Date().toISOString().slice(0, 10) }
 const COMMON_TYPES = ['Laptop', 'Monitor', 'Phone', 'ID card', 'Vehicle', 'SIM card']
 
 export default function Assets() {
-  const { profile, company } = useAuth()
-  const [employees, setEmployees] = useState([])
+  const { company } = useAuth()
+  const [employees, setEmployees] = useState<EmployeeOption[]>([])
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
-  const [assets, setAssets] = useState([])
+  const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(false)
   const [assignedCount, setAssignedCount] = useState(0)
 
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [form, setForm] = useState(EMPTY_FORM)
+  const [form, setForm] = useState<AssetForm>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   const loadEmployees = useCallback(async () => {
     const { data } = await supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
@@ -67,13 +78,13 @@ export default function Assets() {
     setDrawerOpen(true)
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setSaving(true)
 
     const { error: saveError } = await supabase.from('assets').insert({
-      company_id: company.id,
+      company_id: company!.id,
       employee_id: selectedEmployeeId,
       asset_type: form.asset_type,
       description: form.description || null,
@@ -95,7 +106,7 @@ export default function Assets() {
     loadAssignedCount()
   }
 
-  async function markReturned(asset) {
+  async function markReturned(asset: Asset) {
     const { error } = await supabase
       .from('assets')
       .update({ status: 'returned', returned_date: new Date().toISOString().slice(0, 10) })
@@ -107,7 +118,7 @@ export default function Assets() {
     }
   }
 
-  async function markLost(asset) {
+  async function markLost(asset: Asset) {
     const { error } = await supabase.from('assets').update({ status: 'lost' }).eq('id', asset.id)
     if (!error) {
       toast.success('Marked as lost')
@@ -153,32 +164,39 @@ export default function Assets() {
           <p>No assets assigned yet.</p>
         </div>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr><th>Type</th><th>Description</th><th>Assigned</th><th>Returned</th><th>Status</th><th></th></tr>
-          </thead>
-          <tbody>
+        <Table className="data-table">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Assigned</TableHead>
+              <TableHead>Returned</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {assets.map((a) => (
-              <tr key={a.id} style={{ cursor: 'default' }}>
-                <td>{a.asset_type}</td>
-                <td>{a.description || '—'}</td>
-                <td className="mono">{formatDate(a.assigned_date)}</td>
-                <td className="mono">{a.returned_date ? formatDate(a.returned_date) : '—'}</td>
-                <td>
+              <TableRow key={a.id} style={{ cursor: 'default' }}>
+                <TableCell>{a.asset_type}</TableCell>
+                <TableCell>{a.description || '—'}</TableCell>
+                <TableCell className="mono">{formatDate(a.assigned_date)}</TableCell>
+                <TableCell className="mono">{a.returned_date ? formatDate(a.returned_date) : '—'}</TableCell>
+                <TableCell>
                   <span className={`status-badge status-${a.status === 'assigned' ? 'active' : a.status === 'lost' ? 'rejected' : ''}`}>{a.status}</span>
-                </td>
-                <td>
+                </TableCell>
+                <TableCell>
                   {a.status === 'assigned' && (
                     <div style={{ display: 'flex', gap: 12 }}>
                       <button className="link-button" onClick={() => markReturned(a)}>Mark returned</button>
                       <button className="link-button" onClick={() => markLost(a)}>Mark lost</button>
                     </div>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
 
       <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Assign asset">
