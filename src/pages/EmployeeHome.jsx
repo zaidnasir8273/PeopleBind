@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { SkeletonStatRow } from '../components/Skeleton'
+import { AttendanceClock } from '../components/AttendanceClock'
 
 function fmt(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
@@ -67,7 +68,11 @@ export default function EmployeeHome() {
         </div>
       </div>
 
-      <div className="content-reveal" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 8 }}>
+      <div style={{ marginTop: 8, marginBottom: 16 }}>
+        <AttendanceClock />
+      </div>
+
+      <div className="content-reveal" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
         <div className="report-section" style={{ marginBottom: 0 }}>
           <p className="section-heading">Leave remaining</p>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, margin: 0 }}>

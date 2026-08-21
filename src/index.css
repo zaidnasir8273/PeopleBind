@@ -1980,6 +1980,51 @@ a.attention-item:hover {
   padding: 8px 10px 4px;
 }
 
+.attendance-clock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.attendance-clock-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.attendance-clock-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  background: rgba(18, 63, 51, 0.1);
+  color: var(--teal-deep);
+  flex-shrink: 0;
+}
+
+.attendance-clock-icon.live::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #16a34a;
+  border: 2px solid var(--paper-raised);
+}
+
+.attendance-clock-label {
+  margin: 0 0 2px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
 /* ---------- lucide icon micro-interactions ----------
    lucide-react auto-classes every icon `lucide lucide-<kebab-name>` (e.g.
    <Plus/> -> "lucide lucide-plus"), so these reach every instance of an
