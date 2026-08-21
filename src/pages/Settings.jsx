@@ -1,14 +1,160 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Loader2, Trash2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
+import { ChevronDown, Loader2, Trash2 } from 'lucide-react'
 import { PlusIcon } from '../components/ui/plus'
 import { ClockIcon } from '../components/ui/clock'
 import { UserIcon } from '../components/ui/user'
 import { UsersIcon } from '../components/ui/users'
+import { LayersIcon } from '../components/ui/layers'
+import { WalletIcon } from '../components/ui/wallet'
+import { ClipboardCheckIcon } from '../components/ui/clipboard-check'
+import { ShieldCheckIcon } from '../components/ui/shield-check'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonBlock, SkeletonTable } from '../components/Skeleton'
+
+// Modules group the existing tabs into a real hierarchy instead of one long
+// row that wraps -- the tab keys below are exactly the ones the render
+// switch at the bottom of <Settings> already checks, untouched.
+const SETTINGS_MODULES = [
+  {
+    key: 'org',
+    label: 'Organization',
+    icon: LayersIcon,
+    color: 'forest',
+    submodules: [
+      { key: 'company', label: 'Company' },
+      { key: 'structure', label: 'Org structure' },
+      { key: 'roles', label: 'Roles & users' },
+    ],
+  },
+  {
+    key: 'time',
+    label: 'Time & Attendance',
+    icon: ClockIcon,
+    color: 'moss',
+    submodules: [
+      { key: 'shifts', label: 'Shifts & holidays' },
+      { key: 'leave', label: 'Leave' },
+      { key: 'timesheets', label: 'Timesheets' },
+    ],
+  },
+  {
+    key: 'pay',
+    label: 'Payroll',
+    icon: WalletIcon,
+    color: 'bottle',
+    submodules: [
+      { key: 'payroll', label: 'Payroll components' },
+      { key: 'tax', label: 'Tax slabs' },
+    ],
+  },
+  {
+    key: 'onboard',
+    label: 'Onboarding',
+    icon: ClipboardCheckIcon,
+    color: 'olive',
+    submodules: [
+      { key: 'onboarding', label: 'Onboarding templates' },
+    ],
+  },
+  {
+    key: 'system',
+    label: 'System',
+    icon: ShieldCheckIcon,
+    color: 'sage',
+    submodules: [
+      { key: 'audit', label: 'Audit log' },
+      { key: 'support', label: 'Support' },
+    ],
+  },
+]
+
+function moduleKeyForTab(tabKey) {
+  return SETTINGS_MODULES.find((m) => m.submodules.some((s) => s.key === tabKey))?.key
+}
+
+function SettingsNav({ tab, setTab }) {
+  const [expanded, setExpanded] = useState(() => new Set([moduleKeyForTab(tab)]))
+
+  function toggleModule(key) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function selectSubmodule(moduleKey, submoduleKey) {
+    setTab(submoduleKey)
+    setExpanded((prev) => new Set(prev).add(moduleKey))
+  }
+
+  return (
+    <nav className="settings-nav">
+      {SETTINGS_MODULES.map((mod) => {
+        const Icon = mod.icon
+        const single = mod.submodules.length === 1
+        const isExpanded = expanded.has(mod.key)
+        const isActiveModule = mod.submodules.some((s) => s.key === tab)
+
+        return (
+          <div key={mod.key} className="settings-module">
+            <button
+              type="button"
+              className={`settings-module-header${isActiveModule && single ? ' active' : ''}`}
+              onClick={() => (single ? selectSubmodule(mod.key, mod.submodules[0].key) : toggleModule(mod.key))}
+              aria-expanded={single ? undefined : isExpanded}
+            >
+              <span className={`settings-module-icon settings-module-icon-${mod.color}`}>
+                <Icon size={15} />
+              </span>
+              <span className="settings-module-label">{mod.label}</span>
+              {!single && (
+                <ChevronDown size={14} className={`settings-module-chevron${isExpanded ? ' expanded' : ''}`} />
+              )}
+            </button>
+
+            {!single && (
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.div
+                    className="settings-submodule-list"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    {mod.submodules.map((sub) => (
+                      <button
+                        key={sub.key}
+                        type="button"
+                        className={`settings-submodule-item${tab === sub.key ? ' active' : ''}`}
+                        onClick={() => selectSubmodule(mod.key, sub.key)}
+                      >
+                        {tab === sub.key && (
+                          <motion.span
+                            layoutId="settings-active-pill"
+                            className="settings-submodule-pill"
+                            transition={{ duration: 0.2 }}
+                          />
+                        )}
+                        {sub.label}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            )}
+          </div>
+        )
+      })}
+    </nav>
+  )
+}
 
 const DAYS = [
   { code: 'MO', label: 'Mon' },
@@ -29,38 +175,30 @@ export default function Settings() {
   const [tab, setTab] = useState('company')
 
   return (
-    <div className="page-inner" style={{ maxWidth: 1000 }}>
+    <div className="page-inner" style={{ maxWidth: 1180 }}>
       <div className="page-header-row">
         <div>
           <h1 className="page-title">Settings</h1>
         </div>
       </div>
 
-      <div className="tabs">
-        <button className={`tab-button${tab === 'company' ? ' active' : ''}`} onClick={() => setTab('company')}>Company</button>
-        <button className={`tab-button${tab === 'structure' ? ' active' : ''}`} onClick={() => setTab('structure')}>Org structure</button>
-        <button className={`tab-button${tab === 'shifts' ? ' active' : ''}`} onClick={() => setTab('shifts')}>Shifts & holidays</button>
-        <button className={`tab-button${tab === 'leave' ? ' active' : ''}`} onClick={() => setTab('leave')}>Leave</button>
-        <button className={`tab-button${tab === 'payroll' ? ' active' : ''}`} onClick={() => setTab('payroll')}>Payroll components</button>
-        <button className={`tab-button${tab === 'tax' ? ' active' : ''}`} onClick={() => setTab('tax')}>Tax slabs</button>
-        <button className={`tab-button${tab === 'roles' ? ' active' : ''}`} onClick={() => setTab('roles')}>Roles & users</button>
-        <button className={`tab-button${tab === 'audit' ? ' active' : ''}`} onClick={() => setTab('audit')}>Audit log</button>
-        <button className={`tab-button${tab === 'onboarding' ? ' active' : ''}`} onClick={() => setTab('onboarding')}>Onboarding templates</button>
-        <button className={`tab-button${tab === 'timesheets' ? ' active' : ''}`} onClick={() => setTab('timesheets')}>Timesheets</button>
-        <button className={`tab-button${tab === 'support' ? ' active' : ''}`} onClick={() => setTab('support')}>Support</button>
-      </div>
+      <div className="settings-shell">
+        <SettingsNav tab={tab} setTab={setTab} />
 
-      {tab === 'company' && <CompanyTab />}
-      {tab === 'structure' && <StructureTab />}
-      {tab === 'shifts' && <ShiftsTab />}
-      {tab === 'leave' && <LeaveTab />}
-      {tab === 'payroll' && <PayrollComponentsTab />}
-      {tab === 'tax' && <TaxSlabsTab />}
-      {tab === 'roles' && <RolesTab />}
-      {tab === 'audit' && <AuditLogTab />}
-      {tab === 'onboarding' && <OnboardingTemplatesTab />}
-      {tab === 'timesheets' && <TimesheetsSetupTab />}
-      {tab === 'support' && <SupportTab />}
+        <div className="settings-content">
+          {tab === 'company' && <CompanyTab />}
+          {tab === 'structure' && <StructureTab />}
+          {tab === 'shifts' && <ShiftsTab />}
+          {tab === 'leave' && <LeaveTab />}
+          {tab === 'payroll' && <PayrollComponentsTab />}
+          {tab === 'tax' && <TaxSlabsTab />}
+          {tab === 'roles' && <RolesTab />}
+          {tab === 'audit' && <AuditLogTab />}
+          {tab === 'onboarding' && <OnboardingTemplatesTab />}
+          {tab === 'timesheets' && <TimesheetsSetupTab />}
+          {tab === 'support' && <SupportTab />}
+        </div>
+      </div>
     </div>
   )
 }

@@ -86,6 +86,15 @@
   --accent-hover: #1f7a63;
   --accent-soft: rgba(18, 63, 51, 0.07);
 
+  /* a tonal green family -- distinct shades of the SAME brand hue (never a
+     different color) for spots that want visual variety without breaking
+     from the palette, e.g. Settings' module icon chips */
+  --green-sage: #7fa88f;
+  --green-moss: #4c7c5e;
+  --green-forest: #2c5f45;
+  --green-bottle: #1c3a2e;
+  --green-olive: #5c6b3f;
+
   /* status */
   --danger: #dc2626;
   --danger-soft: rgba(220, 38, 38, 0.08);
@@ -2676,6 +2685,144 @@ a.attention-item:hover {
   border-color: var(--accent);
   color: #fff;
   font-weight: 600;
+}
+
+/* ---------- settings: modules + submodules nav ---------- */
+
+.settings-shell {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+.settings-nav {
+  width: 230px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 20px;
+}
+
+.settings-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-module-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: none;
+  background: none;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--duration-fast) var(--ease);
+}
+
+.settings-module-header:hover {
+  background: var(--bg-subtle);
+}
+
+.settings-module-header.active {
+  background: var(--accent-soft);
+}
+
+.settings-module-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.settings-module-icon-sage { background: rgba(127, 168, 143, 0.22); color: var(--green-sage); }
+.settings-module-icon-moss { background: rgba(76, 124, 94, 0.16); color: var(--green-moss); }
+.settings-module-icon-forest { background: rgba(44, 95, 69, 0.14); color: var(--green-forest); }
+.settings-module-icon-bottle { background: rgba(28, 58, 46, 0.12); color: var(--green-bottle); }
+.settings-module-icon-olive { background: rgba(92, 107, 63, 0.16); color: var(--green-olive); }
+
+.settings-module-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-module-chevron {
+  color: var(--ink-soft);
+  transition: transform var(--duration-fast) var(--ease);
+  flex-shrink: 0;
+}
+
+.settings-module-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.settings-submodule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 6px 36px;
+  overflow: hidden;
+}
+
+.settings-submodule-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 7px 10px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--duration-fast) var(--ease);
+}
+
+.settings-submodule-item:hover {
+  color: var(--ink);
+}
+
+.settings-submodule-item.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.settings-submodule-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 860px) {
+  .settings-shell {
+    flex-direction: column;
+  }
+
+  .settings-nav {
+    width: 100%;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .settings-submodule-list {
+    padding-left: 10px;
+  }
 }
 
 .tab-count {
