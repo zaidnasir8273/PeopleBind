@@ -25,7 +25,7 @@ function slugify(text) {
 
 export default function PlatformCompanies() {
   const navigate = useNavigate()
-  const { enterCompany } = useAuth()
+  const { company, isImpersonating, enterCompany, refreshProfile } = useAuth()
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCompany, setActiveCompany] = useState(null)
@@ -123,8 +123,26 @@ export default function PlatformCompanies() {
   async function saveChanges() {
     if (!activeCompany || !form.name.trim()) return
     setSaving(true)
-    await supabase.from('companies').update({ name: form.name.trim(), status: form.status, plan: form.plan }).eq('id', activeCompany.id)
+    const { error } = await supabase
+      .from('companies')
+      .update({ name: form.name.trim(), status: form.status, plan: form.plan })
+      .eq('id', activeCompany.id)
     setSaving(false)
+    if (error) {
+      toast.error(error.message || 'Failed to update company')
+      return
+    }
+    // The company someone is currently viewing (impersonated, or the
+    // platform admin's own) is held as a separate snapshot in AuthContext/
+    // sessionStorage -- it won't pick up this edit on its own, so refresh
+    // it explicitly when it's the one that just changed.
+    if (company?.id === activeCompany.id) {
+      if (isImpersonating) {
+        enterCompany({ ...activeCompany, name: form.name.trim(), status: form.status, plan: form.plan })
+      } else {
+        refreshProfile()
+      }
+    }
     toast.success('Company updated')
     setActiveCompany(null)
     load()
@@ -184,7 +202,7 @@ export default function PlatformCompanies() {
                 <td className="mono">{c.employees?.[0]?.count ?? 0}</td>
                 <td className="mono">{formatDate(c.created_at)}</td>
                 <td>
-                  <div style={{ display: 'flex', gap: 4 }}>
+                  <div className="icon-actions" style={{ display: 'flex', gap: 4 }}>
                     <button
                       className="btn-icon-round"
                       onClick={(e) => { e.stopPropagation(); openCompany(c) }}

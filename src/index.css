@@ -1302,6 +1302,17 @@ button:active:not(:disabled) {
   opacity: 1;
 }
 
+/* Tooltip-to-the-right (the default above) only works for an isolated icon.
+   Several data-tooltip icons sitting in a row (edit+view-as, mark-read+
+   delete, etc.) need their tooltip above instead, or the left icon's
+   tooltip lands on top of its neighbor. Add this class to the row wrapper. */
+.icon-actions [data-tooltip]::after {
+  left: 50%;
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sidebar {
     transition: none !important;

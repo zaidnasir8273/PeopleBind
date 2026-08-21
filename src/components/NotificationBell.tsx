@@ -144,7 +144,7 @@ export function NotificationBell({ portal = 'app' }: { portal?: string }) {
                     {n.body && <span className="notif-item-text">{n.body}</span>}
                     <span className="notif-item-time">{relativeTime(n.created_at)}</span>
                   </button>
-                  <div className="notif-item-actions">
+                  <div className="notif-item-actions icon-actions">
                     {!n.read_at && (
                       <button type="button" className="link-button" aria-label="Mark as read" data-tooltip="Mark as read" onClick={(e) => { e.stopPropagation(); markOneRead(n.id) }}>
                         <CheckIcon size={13} />
