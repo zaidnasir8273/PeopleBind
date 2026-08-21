@@ -1222,22 +1222,20 @@ button:active:not(:disabled) {
 
 /* ---------- sidebar hover-flyout (portaled to document.body so it can
    escape .sidebar-nav's overflow-y: auto -- position is computed from the
-   trigger's getBoundingClientRect() in Sidebar.tsx, not CSS anchoring) ---------- */
+   trigger's getBoundingClientRect() in Sidebar.tsx, not CSS anchoring).
+   Styled as a light elevated card (matching .notif-panel/.account-menu-panel)
+   rather than the dark sidebar itself, so it reads as a distinct floating
+   surface instead of blending into the rail. ---------- */
 
 .sidebar-flyout {
   position: fixed;
   width: 220px;
-  background: var(--accent);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-float);
   padding: 8px;
   z-index: 100;
-  --sidebar-text: rgba(255, 255, 255, 0.92);
-  --sidebar-text-soft: rgba(255, 255, 255, 0.58);
-  --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
-  --sidebar-active-bg: rgba(255, 255, 255, 0.14);
-  --sidebar-border: rgba(255, 255, 255, 0.14);
-  border: 1px solid var(--sidebar-border);
 }
 
 .sidebar-flyout-header {
@@ -1245,8 +1243,8 @@ button:active:not(:disabled) {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 13px;
-  color: var(--sidebar-text);
-  border-bottom: 1px solid var(--sidebar-border);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
   margin-bottom: 6px;
 }
 
@@ -1256,21 +1254,32 @@ button:active:not(:disabled) {
   gap: 10px;
   padding: 9px 10px;
   border-radius: var(--radius);
-  color: var(--sidebar-text-soft);
+  color: var(--ink-soft);
   text-decoration: none;
   font-size: 13.5px;
   transition: background-color var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
 }
 
 .sidebar-flyout-item:hover {
-  background: var(--sidebar-hover-bg);
-  color: var(--sidebar-text);
+  background: var(--accent-soft);
+  color: var(--ink);
 }
 
 .sidebar-flyout-item.active {
-  background: var(--sidebar-active-bg);
-  color: var(--sidebar-text);
+  background: var(--accent-soft);
+  color: var(--accent);
   font-weight: 600;
+}
+
+/* small connector arrow bridging the rail trigger and the flyout panel,
+   position computed alongside the panel in Sidebar.tsx so it lines up with
+   the trigger's vertical center regardless of panel height */
+.sidebar-flyout-arrow {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  color: var(--ink-soft);
+  pointer-events: none;
 }
 
 /* Tooltips default to appearing ABOVE their trigger. That's the safe

@@ -26,6 +26,7 @@ import { LogoutIcon } from './ui/logout'
 import { ShieldCheckIcon } from './ui/shield-check'
 import { PanelLeftCloseIcon } from './ui/panel-left-close'
 import { PanelLeftOpenIcon } from './ui/panel-left-open'
+import { ChevronRightIcon } from './ui/chevron-right'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
@@ -104,12 +105,18 @@ const NAV_ITEMS: NavItem[] = [
 
 const CLOSE_DELAY = 150
 
+// space reserved between the rail trigger and the flyout panel for the
+// connecting arrow icon: ARROW_GAP px before it, ARROW_SIZE for the icon
+// itself, ARROW_GAP px after it before the panel starts
+const ARROW_GAP = 6
+const ARROW_SIZE = 14
+
 export function Sidebar() {
   const { profile, company, signOut } = useAuth()
   const [collapsed, setCollapsed] = useSidebarCollapse()
   const location = useLocation()
   const navigate = useNavigate()
-  const [openGroup, setOpenGroup] = useState<{ key: string; top: number; left: number } | null>(null)
+  const [openGroup, setOpenGroup] = useState<{ key: string; top: number; left: number; arrowTop: number; arrowLeft: number } | null>(null)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   function cancelClose() {
@@ -124,7 +131,16 @@ export function Sidebar() {
   function openFlyout(key: string, el: HTMLElement) {
     cancelClose()
     const rect = el.getBoundingClientRect()
-    setOpenGroup({ key, top: rect.top, left: rect.right + 8 })
+    setOpenGroup({
+      key,
+      top: rect.top,
+      left: rect.right + ARROW_GAP * 2 + ARROW_SIZE,
+      // pre-centered (not via CSS transform: motion.span already owns the
+      // element's transform for its slide-in animation, so a CSS
+      // translateY here would just get clobbered)
+      arrowTop: rect.top + rect.height / 2 - ARROW_SIZE / 2,
+      arrowLeft: rect.right + ARROW_GAP,
+    })
   }
 
   const openItem = openGroup ? NAV_ITEMS.find((i) => i.key === openGroup.key) : null
@@ -232,6 +248,25 @@ export function Sidebar() {
           {!collapsed && 'Sign out'}
         </button>
       </div>
+
+      {createPortal(
+        <AnimatePresence>
+          {openGroup && openItem && 'submodules' in openItem && (
+            <motion.span
+              key="sidebar-flyout-arrow"
+              className="sidebar-flyout-arrow"
+              style={{ top: openGroup.arrowTop, left: openGroup.arrowLeft }}
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -4 }}
+              transition={{ duration: 0.15 }}
+            >
+              <ChevronRightIcon size={ARROW_SIZE} />
+            </motion.span>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {createPortal(
         <AnimatePresence>
