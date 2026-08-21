@@ -1273,7 +1273,15 @@ button:active:not(:disabled) {
   font-weight: 600;
 }
 
-/* icon-rail tooltips, shown only when the sidebar is collapsed (data-tooltip is only set then) */
+/* Tooltips default to appearing ABOVE their trigger. That's the safe
+   default everywhere data-tooltip is used across the app: avatar stacks,
+   team strips, table cells, icon-button rows -- all horizontal
+   arrangements where a same-row neighbor sits close enough that a
+   to-the-side tooltip would land on top of it. The one exception is the
+   sidebar's collapsed icon-only rail (see the .sidebar override below),
+   where items stack vertically and "above" would overlap the item above
+   instead -- there, "to the right" is the safe direction since nothing
+   sits beside the rail. */
 [data-tooltip] {
   position: relative;
 }
@@ -1281,9 +1289,9 @@ button:active:not(:disabled) {
 [data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
-  left: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
   background: var(--ink);
   color: #fff;
   font-family: var(--font-body);
@@ -1302,15 +1310,13 @@ button:active:not(:disabled) {
   opacity: 1;
 }
 
-/* Tooltip-to-the-right (the default above) only works for an isolated icon.
-   Several data-tooltip icons sitting in a row (edit+view-as, mark-read+
-   delete, etc.) need their tooltip above instead, or the left icon's
-   tooltip lands on top of its neighbor. Add this class to the row wrapper. */
-.icon-actions [data-tooltip]::after {
-  left: 50%;
-  top: auto;
-  bottom: calc(100% + 8px);
-  transform: translateX(-50%);
+/* Collapsed sidebar rail (Sidebar.tsx, EmployeeShell.tsx,
+   PlatformAdminShell.tsx all share the .sidebar class) -- see comment above. */
+.sidebar [data-tooltip]::after {
+  left: calc(100% + 10px);
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 @media (prefers-reduced-motion: reduce) {

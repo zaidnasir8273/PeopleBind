@@ -202,7 +202,7 @@ export default function PlatformCompanies() {
                 <td className="mono">{c.employees?.[0]?.count ?? 0}</td>
                 <td className="mono">{formatDate(c.created_at)}</td>
                 <td>
-                  <div className="icon-actions" style={{ display: 'flex', gap: 4 }}>
+                  <div style={{ display: 'flex', gap: 4 }}>
                     <button
                       className="btn-icon-round"
                       onClick={(e) => { e.stopPropagation(); openCompany(c) }}
