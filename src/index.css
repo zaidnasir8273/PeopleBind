@@ -1952,6 +1952,120 @@ a.attention-item:hover {
   background: var(--line);
 }
 
+/* ---------- calendar ---------- */
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.calendar-month-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  min-width: 160px;
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding-bottom: 6px;
+}
+
+.calendar-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  aspect-ratio: 1;
+  min-height: 56px;
+  padding: 6px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: border-color var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease);
+}
+
+.calendar-cell:hover {
+  border-color: var(--accent);
+}
+
+.calendar-cell.outside {
+  opacity: 0.4;
+}
+
+.calendar-cell.today .calendar-cell-date {
+  background: var(--accent);
+  color: #fff;
+}
+
+.calendar-cell.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.calendar-cell-date {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 100%;
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.calendar-cell-dots {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.calendar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 100%;
+  flex-shrink: 0;
+}
+
+.calendar-dot-holiday { background: var(--gold); }
+.calendar-dot-leave { background: var(--teal-deep); }
+.calendar-dot-birthday { background: #c9578a; }
+.calendar-dot-anniversary { background: #6d4fc2; }
+.calendar-dot-project { background: var(--accent); }
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.calendar-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* ---------- feed (announcements, kudos) ---------- */
 
 .feed-list {

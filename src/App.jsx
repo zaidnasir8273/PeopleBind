@@ -27,6 +27,7 @@ import Settings from './pages/Settings'
 import OrgChart from './pages/OrgChart'
 import Announcements from './pages/Announcements'
 import Kudos from './pages/Kudos'
+import CalendarPage from './pages/Calendar'
 import { PlatformAdminGate } from './components/PlatformAdminGate'
 import PlatformAdminShell from './pages/PlatformAdminShell'
 import PlatformCompanies from './pages/PlatformCompanies'
@@ -107,6 +108,7 @@ export default function App() {
             <Route path="org-chart" element={<OrgChart />} />
             <Route path="announcements" element={<Announcements />} />
             <Route path="kudos" element={<Kudos />} />
+            <Route path="calendar" element={<CalendarPage />} />
           </Route>
           <Route
             path="/platform-admin"

@@ -88,6 +88,7 @@ const NAV_ITEMS: NavItem[] = [
       { to: '/app/kudos', label: 'Celebrate wins', icon: HeartHandshakeIcon },
     ],
   },
+  { key: 'calendar', to: '/app/calendar', label: 'Calendar', icon: CalendarDaysIcon },
   { key: 'reports', to: '/app/reports', label: 'Reports', icon: ChartColumnIncreasingIcon },
   { key: 'settings', to: '/app/settings', label: 'Settings', icon: SettingsIcon },
 ]
