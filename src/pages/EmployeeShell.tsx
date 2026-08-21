@@ -1,17 +1,24 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { Home, Wallet, CalendarDays, User, LogOut, PanelLeftClose, PanelLeftOpen, Timer } from 'lucide-react'
+import { HomeIcon } from '../components/ui/home'
+import { WalletIcon } from '../components/ui/wallet'
+import { CalendarDaysIcon } from '../components/ui/calendar-days'
+import { UserIcon } from '../components/ui/user'
+import { TimerIcon } from '../components/ui/timer'
+import { LogoutIcon } from '../components/ui/logout'
+import { PanelLeftCloseIcon } from '../components/ui/panel-left-close'
+import { PanelLeftOpenIcon } from '../components/ui/panel-left-open'
 import { useAuth } from '../context/AuthContext'
 import { NotificationBell } from '../components/NotificationBell'
 import { PageTransition } from '../components/motion'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
 const NAV_ITEMS = [
-  { to: '/employee', label: 'Home', icon: Home, end: true },
-  { to: '/employee/payslips', label: 'Payslips', icon: Wallet },
-  { to: '/employee/leave', label: 'Leave', icon: CalendarDays },
-  { to: '/employee/timesheet', label: 'Timesheet', icon: Timer },
-  { to: '/employee/profile', label: 'My profile', icon: User },
+  { to: '/employee', label: 'Home', icon: HomeIcon, end: true },
+  { to: '/employee/payslips', label: 'Payslips', icon: WalletIcon },
+  { to: '/employee/leave', label: 'Leave', icon: CalendarDaysIcon },
+  { to: '/employee/timesheet', label: 'Timesheet', icon: TimerIcon },
+  { to: '/employee/profile', label: 'My profile', icon: UserIcon },
 ]
 
 export default function EmployeeShell() {
@@ -45,7 +52,7 @@ export default function EmployeeShell() {
                 transition={{ duration: 0.16 }}
                 style={{ display: 'flex' }}
               >
-                {collapsed ? <PanelLeftOpen size={15} strokeWidth={2} /> : <PanelLeftClose size={15} strokeWidth={2} />}
+                {collapsed ? <PanelLeftOpenIcon size={15} /> : <PanelLeftCloseIcon size={15} />}
               </motion.span>
             </AnimatePresence>
           </button>
@@ -64,7 +71,7 @@ export default function EmployeeShell() {
               {({ isActive }) => (
                 <>
                   {isActive && <motion.span layoutId="employee-nav-active-pill" className="sidebar-active-pill" transition={{ duration: 0.22 }} />}
-                  <Icon size={17} strokeWidth={2} />
+                  <Icon size={17} />
                   {!collapsed && label}
                 </>
               )}
@@ -80,7 +87,7 @@ export default function EmployeeShell() {
             data-tooltip={collapsed ? 'Sign out' : undefined}
             aria-label="Sign out"
           >
-            <LogOut size={15} strokeWidth={2} />
+            <LogoutIcon size={15} />
             {!collapsed && 'Sign out'}
           </button>
         </div>

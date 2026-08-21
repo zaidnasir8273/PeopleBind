@@ -1,10 +1,15 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Check, X as XIcon } from 'lucide-react'
+import { BellIcon, type BellIconHandle } from './ui/bell'
+import { CheckIcon } from './ui/check'
+import { XIcon } from './ui/x'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import type { Database } from '../lib/database.types'
 
-function relativeTime(ts) {
+type Notification = Pick<Database['public']['Tables']['notifications']['Row'], 'id' | 'type' | 'title' | 'body' | 'link' | 'read_at' | 'created_at'>
+
+function relativeTime(ts: string) {
   const diffMs = Date.now() - new Date(ts).getTime()
   const mins = Math.round(diffMs / 60000)
   if (mins < 1) return 'just now'
@@ -17,7 +22,7 @@ function relativeTime(ts) {
 
 // The notification triggers don't set a link column yet, so derive a sensible
 // destination from the notification type until that's wired up server-side.
-function deriveLink(n, portal) {
+function deriveLink(n: Notification, portal: string) {
   if (n.link) return n.link
   if (n.type?.startsWith('leave_')) return portal === 'employee' ? '/employee/leave' : '/app/leave'
   if (n.type?.startsWith('expense_')) return portal === 'employee' ? null : '/app/expenses'
@@ -26,13 +31,13 @@ function deriveLink(n, portal) {
   return null
 }
 
-export function NotificationBell({ portal = 'app' }) {
+export function NotificationBell({ portal = 'app' }: { portal?: string }) {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState<Notification[]>([])
   const [open, setOpen] = useState(false)
-  const [ringing, setRinging] = useState(false)
-  const ref = useRef(null)
+  const ref = useRef<HTMLDivElement>(null)
+  const bellRef = useRef<BellIconHandle>(null)
 
   const load = useCallback(async () => {
     if (!profile) return
@@ -53,8 +58,9 @@ export function NotificationBell({ portal = 'app' }) {
     const channel = supabase
       .channel(`notifications:${profile.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, (payload) => {
-        setItems((prev) => [payload.new, ...prev])
-        setRinging(true)
+        setItems((prev) => [payload.new as Notification, ...prev])
+        bellRef.current?.startAnimation()
+        setTimeout(() => bellRef.current?.stopAnimation(), 600)
       })
       .subscribe()
     return () => {
@@ -63,8 +69,8 @@ export function NotificationBell({ portal = 'app' }) {
   }, [profile])
 
   useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -77,22 +83,22 @@ export function NotificationBell({ portal = 'app' }) {
     await supabase.from('notifications').update({ read_at: new Date().toISOString() }).is('read_at', null)
   }
 
-  async function markOneRead(id) {
+  async function markOneRead(id: string) {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, read_at: i.read_at ?? new Date().toISOString() } : i)))
     await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id)
   }
 
-  async function deleteOne(id) {
+  async function deleteOne(id: string) {
     setItems((prev) => prev.filter((i) => i.id !== id))
     await supabase.from('notifications').delete().eq('id', id)
   }
 
   async function clearAll() {
     setItems([])
-    await supabase.from('notifications').delete().eq('user_id', profile.id)
+    await supabase.from('notifications').delete().eq('user_id', profile!.id)
   }
 
-  async function handleClickItem(n) {
+  async function handleClickItem(n: Notification) {
     if (!n.read_at) markOneRead(n.id)
     const to = deriveLink(n, portal)
     if (to) {
@@ -103,8 +109,8 @@ export function NotificationBell({ portal = 'app' }) {
 
   return (
     <div className="notif-bell-wrap" ref={ref}>
-      <button className={`notif-bell${ringing ? ' ringing' : ''}`} onClick={() => setOpen((v) => !v)} aria-label="Notifications">
-        <Bell size={17} strokeWidth={2} onAnimationEnd={() => setRinging(false)} />
+      <button className="notif-bell" onClick={() => setOpen((v) => !v)} aria-label="Notifications">
+        <BellIcon ref={bellRef} size={17} />
         {unreadCount > 0 && <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
 
@@ -136,7 +142,7 @@ export function NotificationBell({ portal = 'app' }) {
                   <div className="notif-item-actions">
                     {!n.read_at && (
                       <button type="button" className="link-button" aria-label="Mark as read" data-tooltip="Mark as read" onClick={(e) => { e.stopPropagation(); markOneRead(n.id) }}>
-                        <Check size={13} />
+                        <CheckIcon size={13} />
                       </button>
                     )}
                     <button type="button" className="link-button" aria-label="Delete" data-tooltip="Delete" onClick={(e) => { e.stopPropagation(); deleteOne(n.id) }}>

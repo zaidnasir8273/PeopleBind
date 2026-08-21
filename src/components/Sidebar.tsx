@@ -1,43 +1,43 @@
 import { NavLink } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
-import {
-  Home,
-  Users,
-  Clock,
-  CalendarDays,
-  Wallet,
-  Receipt,
-  Briefcase,
-  Target,
-  BarChart3,
-  Settings,
-  LogOut,
-  ShieldCheck,
-  FileText,
-  Laptop,
-  ListChecks,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Timer,
-} from 'lucide-react'
+import { HomeIcon } from './ui/home'
+import { UsersIcon } from './ui/users'
+import { ClockIcon } from './ui/clock'
+import { CalendarDaysIcon } from './ui/calendar-days'
+import { TimerIcon } from './ui/timer'
+import { WalletIcon } from './ui/wallet'
+import { ReceiptIcon } from './ui/receipt'
+import { FileTextIcon } from './ui/file-text'
+import { Laptop, Target } from 'lucide-react'
+import { BriefcaseBusinessIcon } from './ui/briefcase-business'
+import { ClipboardCheckIcon } from './ui/clipboard-check'
+import { ChartColumnIncreasingIcon } from './ui/chart-column-increasing'
+import { SettingsIcon } from './ui/settings'
+import { LogoutIcon } from './ui/logout'
+import { ShieldCheckIcon } from './ui/shield-check'
+import { PanelLeftCloseIcon } from './ui/panel-left-close'
+import { PanelLeftOpenIcon } from './ui/panel-left-open'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
+// lucide-animated's registry doesn't have a "laptop" icon (checked at
+// pull time) -- Assets keeps the plain lucide-react glyph rather than a
+// mismatched substitute.
 const NAV_ITEMS = [
-  { to: '/app', label: 'Home', icon: Home, end: true },
-  { to: '/app/people', label: 'People', icon: Users },
-  { to: '/app/attendance', label: 'Attendance', icon: Clock },
-  { to: '/app/leave', label: 'Leave', icon: CalendarDays },
-  { to: '/app/timesheet', label: 'Timesheet', icon: Timer },
-  { to: '/app/payroll', label: 'Payroll', icon: Wallet },
-  { to: '/app/expenses', label: 'Expenses', icon: Receipt },
-  { to: '/app/documents', label: 'Documents', icon: FileText },
+  { to: '/app', label: 'Home', icon: HomeIcon, end: true },
+  { to: '/app/people', label: 'People', icon: UsersIcon },
+  { to: '/app/attendance', label: 'Attendance', icon: ClockIcon },
+  { to: '/app/leave', label: 'Leave', icon: CalendarDaysIcon },
+  { to: '/app/timesheet', label: 'Timesheet', icon: TimerIcon },
+  { to: '/app/payroll', label: 'Payroll', icon: WalletIcon },
+  { to: '/app/expenses', label: 'Expenses', icon: ReceiptIcon },
+  { to: '/app/documents', label: 'Documents', icon: FileTextIcon },
   { to: '/app/assets', label: 'Assets', icon: Laptop },
-  { to: '/app/recruitment', label: 'Recruitment', icon: Briefcase },
-  { to: '/app/onboarding', label: 'Onboarding', icon: ListChecks },
+  { to: '/app/recruitment', label: 'Recruitment', icon: BriefcaseBusinessIcon },
+  { to: '/app/onboarding', label: 'Onboarding', icon: ClipboardCheckIcon },
   { to: '/app/performance', label: 'Performance', icon: Target },
-  { to: '/app/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/app/settings', label: 'Settings', icon: Settings },
+  { to: '/app/reports', label: 'Reports', icon: ChartColumnIncreasingIcon },
+  { to: '/app/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
 export function Sidebar() {
@@ -69,7 +69,7 @@ export function Sidebar() {
               transition={{ duration: 0.16 }}
               style={{ display: 'flex' }}
             >
-              {collapsed ? <PanelLeftOpen size={15} strokeWidth={2} /> : <PanelLeftClose size={15} strokeWidth={2} />}
+              {collapsed ? <PanelLeftOpenIcon size={15} /> : <PanelLeftCloseIcon size={15} />}
             </motion.span>
           </AnimatePresence>
         </button>
@@ -88,7 +88,7 @@ export function Sidebar() {
             {({ isActive }) => (
               <>
                 {isActive && <motion.span layoutId="sidebar-active-pill" className="sidebar-active-pill" transition={{ duration: 0.22 }} />}
-                <Icon size={17} strokeWidth={2} />
+                <Icon size={17} />
                 {!collapsed && label}
               </>
             )}
@@ -105,7 +105,7 @@ export function Sidebar() {
             data-tooltip={collapsed ? 'Platform Admin' : undefined}
             aria-label="Platform Admin"
           >
-            <ShieldCheck size={15} strokeWidth={2} />
+            <ShieldCheckIcon size={15} />
             {!collapsed && 'Platform Admin'}
           </NavLink>
         )}
@@ -116,7 +116,7 @@ export function Sidebar() {
           data-tooltip={collapsed ? 'Sign out' : undefined}
           aria-label="Sign out"
         >
-          <LogOut size={15} strokeWidth={2} />
+          <LogoutIcon size={15} />
           {!collapsed && 'Sign out'}
         </button>
       </div>

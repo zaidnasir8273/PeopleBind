@@ -67,7 +67,7 @@ export function StaggerItem({ as = 'div', className, children, ...rest }) {
 }
 
 /** Fade + slight rise used for route-level page entrances. */
-export function PageTransition({ className, children }) {
+export function PageTransition({ className = undefined, children }) {
   return (
     <motion.div
       className={className}
