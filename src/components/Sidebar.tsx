@@ -8,10 +8,11 @@ import { TimerIcon } from './ui/timer'
 import { WalletIcon } from './ui/wallet'
 import { ReceiptIcon } from './ui/receipt'
 import { FileTextIcon } from './ui/file-text'
-import { Laptop, Target } from 'lucide-react'
 import { BriefcaseBusinessIcon } from './ui/briefcase-business'
 import { ClipboardCheckIcon } from './ui/clipboard-check'
 import { ChartColumnIncreasingIcon } from './ui/chart-column-increasing'
+import { TrendingUpIcon } from './ui/trending-up'
+import { LaptopMinimalCheckIcon } from './ui/laptop-minimal-check'
 import { SettingsIcon } from './ui/settings'
 import { LogoutIcon } from './ui/logout'
 import { ShieldCheckIcon } from './ui/shield-check'
@@ -20,9 +21,6 @@ import { PanelLeftOpenIcon } from './ui/panel-left-open'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
-// lucide-animated's registry doesn't have a "laptop" icon (checked at
-// pull time) -- Assets keeps the plain lucide-react glyph rather than a
-// mismatched substitute.
 const NAV_ITEMS = [
   { to: '/app', label: 'Home', icon: HomeIcon, end: true },
   { to: '/app/people', label: 'People', icon: UsersIcon },
@@ -32,10 +30,10 @@ const NAV_ITEMS = [
   { to: '/app/payroll', label: 'Payroll', icon: WalletIcon },
   { to: '/app/expenses', label: 'Expenses', icon: ReceiptIcon },
   { to: '/app/documents', label: 'Documents', icon: FileTextIcon },
-  { to: '/app/assets', label: 'Assets', icon: Laptop },
+  { to: '/app/assets', label: 'Assets', icon: LaptopMinimalCheckIcon },
   { to: '/app/recruitment', label: 'Recruitment', icon: BriefcaseBusinessIcon },
   { to: '/app/onboarding', label: 'Onboarding', icon: ClipboardCheckIcon },
-  { to: '/app/performance', label: 'Performance', icon: Target },
+  { to: '/app/performance', label: 'Performance', icon: TrendingUpIcon },
   { to: '/app/reports', label: 'Reports', icon: ChartColumnIncreasingIcon },
   { to: '/app/settings', label: 'Settings', icon: SettingsIcon },
 ]
