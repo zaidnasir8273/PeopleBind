@@ -153,7 +153,7 @@ const CHART_TYPE_OPTIONS = [
   { value: 'leaderboard', label: 'Leaderboard' },
 ]
 
-function WidgetForm({ dashboardId, editing, onDone }) {
+function WidgetForm({ dashboardId, companyId, editing, onDone }) {
   const isBreakdown = editing ? BREAKDOWN_CHART_TYPES.includes(editing.chart_type) : false
   const [chartType, setChartType] = useState(editing?.chart_type ?? 'number')
   const [metricKey, setMetricKey] = useState(editing?.metric_key ?? (BREAKDOWN_CHART_TYPES.includes(chartType) ? DASHBOARD_LEADERBOARD_KEYS[0] : DASHBOARD_METRIC_KEYS[0]))
@@ -175,7 +175,7 @@ function WidgetForm({ dashboardId, editing, onDone }) {
     if (editing) {
       ({ error } = await supabase.from('custom_dashboard_widgets').update(patch).eq('id', editing.id))
     } else {
-      ({ error } = await supabase.from('custom_dashboard_widgets').insert({ dashboard_id: dashboardId, ...patch }))
+      ({ error } = await supabase.from('custom_dashboard_widgets').insert({ dashboard_id: dashboardId, company_id: companyId, ...patch }))
     }
     setSaving(false)
     if (error) {
@@ -431,6 +431,7 @@ export default function Dashboards() {
         {widgetDrawer && (
           <WidgetForm
             dashboardId={activeId}
+            companyId={company?.id}
             editing={widgetDrawer === 'new' ? null : widgetDrawer}
             onDone={() => { setWidgetDrawer(null); loadWidgets() }}
           />
