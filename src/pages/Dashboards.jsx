@@ -232,6 +232,9 @@ export default function Dashboards() {
   const [range, setRange] = useState(defaultRange())
   const [picker, setPicker] = useState(false)
   const [widgetDrawer, setWidgetDrawer] = useState(null) // null | 'new' | widget object
+  const [nameDrawer, setNameDrawer] = useState(null) // null | 'create' | 'rename'
+  const [nameInput, setNameInput] = useState('')
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const dragRef = useRef(null)
 
   const loadDashboards = useCallback(async () => {
@@ -260,10 +263,12 @@ export default function Dashboards() {
     loadWidgets()
   }, [loadWidgets])
 
-  async function createDashboard() {
-    if (!company) return
-    const name = window.prompt('Name this dashboard', 'My Dashboard')
-    if (!name || !name.trim()) return
+  useEffect(() => {
+    setConfirmingDelete(false)
+  }, [activeId])
+
+  async function createDashboard(name) {
+    if (!company || !name.trim()) return
     const def = defaultRange()
     const { data, error } = await supabase.from('custom_dashboards').insert({
       company_id: company.id, name: name.trim(), sort_order: dashboards.length, date_from: def.from, date_to: def.to,
@@ -272,26 +277,26 @@ export default function Dashboards() {
     toast.success('Dashboard created')
     setActiveId(data.id)
     setRange(def)
+    setNameDrawer(null)
     loadDashboards()
   }
 
-  async function renameDashboard() {
+  async function renameDashboard(name) {
     const cur = dashboards.find((d) => d.id === activeId)
-    if (!cur) return
-    const name = window.prompt('Rename dashboard', cur.name)
-    if (!name || !name.trim()) return
+    if (!cur || !name.trim()) return
     const { error } = await supabase.from('custom_dashboards').update({ name: name.trim() }).eq('id', cur.id)
     if (error) { toast.error(error.message); return }
+    setNameDrawer(null)
     loadDashboards()
   }
 
   async function deleteDashboard() {
     const cur = dashboards.find((d) => d.id === activeId)
     if (!cur) return
-    if (!window.confirm(`Delete dashboard "${cur.name}" and all its widgets? This can't be undone.`)) return
     const { error } = await supabase.from('custom_dashboards').delete().eq('id', cur.id)
     if (error) { toast.error(error.message); return }
     toast.success('Dashboard deleted')
+    setConfirmingDelete(false)
     setActiveId(null)
     loadDashboards()
   }
@@ -312,7 +317,6 @@ export default function Dashboards() {
   }
 
   async function removeWidget(id) {
-    if (!window.confirm('Remove this widget?')) return
     const { error } = await supabase.from('custom_dashboard_widgets').delete().eq('id', id)
     if (error) { toast.error(error.message); return }
     setWidgets((prev) => prev.filter((w) => w.id !== id))
@@ -358,7 +362,7 @@ export default function Dashboards() {
       ) : dashboards.length === 0 ? (
         <div className="empty-state">
           <p>No dashboards yet.</p>
-          <button type="button" className="btn-primary" onClick={createDashboard} style={{ marginTop: 12 }}>Create your first dashboard</button>
+          <button type="button" className="btn-primary" onClick={() => { setNameInput(''); setNameDrawer('create') }} style={{ marginTop: 12 }}>Create your first dashboard</button>
         </div>
       ) : (
         <>
@@ -375,15 +379,23 @@ export default function Dashboards() {
                       {d.is_default ? '★ ' : ''}{d.name}
                     </button>
                   ))}
-                  <button type="button" className="account-menu-item" onClick={() => { setPicker(false); createDashboard() }}>
+                  <button type="button" className="account-menu-item" onClick={() => { setPicker(false); setNameInput(''); setNameDrawer('create') }}>
                     <PlusIcon size={14} /> New dashboard
                   </button>
                 </div>
               )}
             </div>
-            <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={renameDashboard}>Rename</button>
+            <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={() => { setNameInput(activeDashboard?.name ?? ''); setNameDrawer('rename') }}>Rename</button>
             <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={setDefault}>Set default</button>
-            <button type="button" className="link-button" style={{ fontSize: 12, color: 'var(--danger)' }} onClick={deleteDashboard}>Delete</button>
+            {confirmingDelete ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                <span className="muted">Delete this dashboard?</span>
+                <button type="button" className="link-button" style={{ fontSize: 12, color: 'var(--danger)' }} onClick={deleteDashboard}>Yes, delete</button>
+                <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={() => setConfirmingDelete(false)}>Cancel</button>
+              </span>
+            ) : (
+              <button type="button" className="link-button" style={{ fontSize: 12, color: 'var(--danger)' }} onClick={() => setConfirmingDelete(true)}>Delete</button>
+            )}
             <span style={{ flex: 1 }} />
             <input type="date" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} onBlur={saveRange} style={{ fontSize: 12 }} />
             <span className="muted" style={{ fontSize: 12 }}>to</span>
@@ -423,6 +435,30 @@ export default function Dashboards() {
             onDone={() => { setWidgetDrawer(null); loadWidgets() }}
           />
         )}
+      </Drawer>
+
+      <Drawer open={!!nameDrawer} onClose={() => setNameDrawer(null)} title={nameDrawer === 'create' ? 'New dashboard' : 'Rename dashboard'}>
+        <div className="drawer-form">
+          <label className="field">
+            <span>Name</span>
+            <input
+              type="text"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && nameInput.trim()) (nameDrawer === 'create' ? createDashboard : renameDashboard)(nameInput) }}
+              autoFocus
+            />
+          </label>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={!nameInput.trim()}
+            onClick={() => (nameDrawer === 'create' ? createDashboard : renameDashboard)(nameInput)}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            {nameDrawer === 'create' ? 'Create dashboard' : 'Save name'}
+          </button>
+        </div>
       </Drawer>
     </div>
   )
