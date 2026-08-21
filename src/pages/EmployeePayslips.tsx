@@ -3,16 +3,43 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonTable } from '../components/Skeleton'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table'
 
-function fmt(n) {
+// The nested-join shape isn't something supabase-js infers automatically
+// from a hand-written select string -- described explicitly instead of
+// fighting the generic inference for one query.
+interface PayrollItemRow {
+  id: string
+  component_name: string
+  component_type: 'earning' | 'deduction'
+  amount: number
+  notes: string | null
+  payroll_run_id: string
+  payroll_runs: {
+    status: string
+    created_at: string
+    payroll_periods: { label: string; period_start: string; period_end: string } | null
+  } | null
+}
+
+interface PayrollRun {
+  id: string
+  label: string | undefined
+  created_at: string | undefined
+  earnings: number
+  deductions: number
+  items: PayrollItemRow[]
+}
+
+function fmt(n: number | null | undefined) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
 }
 
 export default function EmployeePayslips() {
   const { employeeRecord } = useAuth()
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState<PayrollItemRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeRun, setActiveRun] = useState(null)
+  const [activeRun, setActiveRun] = useState<PayrollRun | null>(null)
 
   const load = useCallback(async () => {
     if (!employeeRecord) return
@@ -21,6 +48,7 @@ export default function EmployeePayslips() {
       .from('payroll_items')
       .select('id, component_name, component_type, amount, notes, payroll_run_id, payroll_runs(status, created_at, payroll_periods(label, period_start, period_end))')
       .eq('employee_id', employeeRecord.id)
+      .returns<PayrollItemRow[]>()
     setItems((data ?? []).filter((i) => i.payroll_runs?.status === 'finalized'))
     setLoading(false)
   }, [employeeRecord])
@@ -30,10 +58,17 @@ export default function EmployeePayslips() {
   }, [load])
 
   const runs = useMemo(() => {
-    const byRun = {}
+    const byRun: Record<string, PayrollRun> = {}
     for (const item of items) {
       if (!byRun[item.payroll_run_id]) {
-        byRun[item.payroll_run_id] = { id: item.payroll_run_id, label: item.payroll_runs?.payroll_periods?.label, created_at: item.payroll_runs?.created_at, earnings: 0, deductions: 0, items: [] }
+        byRun[item.payroll_run_id] = {
+          id: item.payroll_run_id,
+          label: item.payroll_runs?.payroll_periods?.label,
+          created_at: item.payroll_runs?.created_at,
+          earnings: 0,
+          deductions: 0,
+          items: [],
+        }
       }
       byRun[item.payroll_run_id].items.push(item)
       if (item.component_type === 'earning') byRun[item.payroll_run_id].earnings += Number(item.amount)
@@ -59,21 +94,26 @@ export default function EmployeePayslips() {
           <p className="muted">They'll show up here once a payroll run including you is finalized.</p>
         </div>
       ) : (
-        <table className="data-table">
-          <thead>
-            <tr><th>Period</th><th>Earnings</th><th>Deductions</th><th>Net</th></tr>
-          </thead>
-          <tbody>
+        <Table className="data-table">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Period</TableHead>
+              <TableHead>Earnings</TableHead>
+              <TableHead>Deductions</TableHead>
+              <TableHead>Net</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {runs.map((r) => (
-              <tr key={r.id} onClick={() => setActiveRun(r)}>
-                <td>{r.label}</td>
-                <td className="mono">{fmt(r.earnings)}</td>
-                <td className="mono">{fmt(r.deductions)}</td>
-                <td className="mono">{fmt(r.earnings - r.deductions)}</td>
-              </tr>
+              <TableRow key={r.id} onClick={() => setActiveRun(r)}>
+                <TableCell>{r.label}</TableCell>
+                <TableCell className="mono">{fmt(r.earnings)}</TableCell>
+                <TableCell className="mono">{fmt(r.deductions)}</TableCell>
+                <TableCell className="mono">{fmt(r.earnings - r.deductions)}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
 
       <Drawer open={!!activeRun} onClose={() => setActiveRun(null)} title={activeRun?.label}>
