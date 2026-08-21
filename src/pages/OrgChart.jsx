@@ -1,8 +1,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { ZoomIn, ZoomOut } from 'lucide-react'
+import { RotateCCWIcon } from '../components/ui/rotate-ccw'
 import { supabase } from '../lib/supabase'
 import { Avatar } from '../components/Avatar'
 import { SkeletonBlock } from '../components/Skeleton'
+
+const ZOOM_MIN = 0.5
+const ZOOM_MAX = 1.5
+const ZOOM_STEP = 0.1
 
 function OrgNode({ employee, childrenByManager, isRoot }) {
   const kids = childrenByManager.get(employee.id) ?? []
@@ -35,6 +41,15 @@ export default function OrgChart() {
   const [roots, setRoots] = useState([])
   const [childrenByManager, setChildrenByManager] = useState(new Map())
   const [unlinked, setUnlinked] = useState(0)
+  const [zoom, setZoom] = useState(1)
+
+  function zoomIn() {
+    setZoom((z) => Math.min(ZOOM_MAX, Math.round((z + ZOOM_STEP) * 100) / 100))
+  }
+
+  function zoomOut() {
+    setZoom((z) => Math.max(ZOOM_MIN, Math.round((z - ZOOM_STEP) * 100) / 100))
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -79,6 +94,20 @@ export default function OrgChart() {
           <p className="page-eyebrow">PEOPLE</p>
           <h1 className="page-title">Organizational hierarchy</h1>
         </div>
+        {!loading && roots.length > 0 && (
+          <div className="zoom-controls">
+            <button type="button" className="btn-icon-round" onClick={zoomOut} disabled={zoom <= ZOOM_MIN} aria-label="Zoom out" data-tooltip="Zoom out">
+              <ZoomOut size={15} />
+            </button>
+            <span className="zoom-controls-level">{Math.round(zoom * 100)}%</span>
+            <button type="button" className="btn-icon-round" onClick={zoomIn} disabled={zoom >= ZOOM_MAX} aria-label="Zoom in" data-tooltip="Zoom in">
+              <ZoomIn size={15} />
+            </button>
+            <button type="button" className="btn-icon-round" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label="Reset zoom" data-tooltip="Reset zoom">
+              <RotateCCWIcon size={14} />
+            </button>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -89,7 +118,7 @@ export default function OrgChart() {
         </div>
       ) : (
         <div className="org-chart-scroll">
-          <div className="org-roots">
+          <div className="org-roots" style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
             {roots.map((e) => (
               <OrgNode key={e.id} employee={e} childrenByManager={childrenByManager} isRoot />
             ))}
