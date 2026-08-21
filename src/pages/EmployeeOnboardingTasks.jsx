@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, Check, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import { PlusIcon } from '../components/ui/plus'
+import { CheckIcon } from '../components/ui/check'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -168,7 +170,7 @@ export default function EmployeeOnboardingTasks() {
         </label>
         {selectedEmployeeId && (
           <button className="btn-secondary btn-icon" onClick={openAddTask} style={{ marginBottom: 2 }}>
-            <Plus size={16} /> Add task
+            <PlusIcon size={16} /> Add task
           </button>
         )}
       </div>
@@ -207,7 +209,7 @@ export default function EmployeeOnboardingTasks() {
               {tasks.map((t) => (
                 <div key={t.id} className={`onboarding-task${t.status === 'completed' ? ' done' : ''}`}>
                   <button className="onboarding-check" onClick={() => toggleTask(t)} aria-label="Toggle complete">
-                    {t.status === 'completed' && <Check size={13} />}
+                    {t.status === 'completed' && <CheckIcon size={13} />}
                   </button>
                   <div style={{ flex: 1 }}>
                     <div className="onboarding-task-title">{t.title}</div>

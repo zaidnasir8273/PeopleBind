@@ -1,6 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, Loader2, Clock, User, Trash2, Users } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
+import { PlusIcon } from '../components/ui/plus'
+import { ClockIcon } from '../components/ui/clock'
+import { UserIcon } from '../components/ui/user'
+import { UsersIcon } from '../components/ui/users'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -294,7 +298,7 @@ function SimpleLookupCard({ title, rows, renderRow, table, company, onChanged })
           onKeyDown={(e) => e.key === 'Enter' && add()}
         />
         <button type="button" className="lookup-add-btn" disabled={saving} onClick={add} aria-label={`Add ${title.toLowerCase().replace(/s$/, '')}`}>
-          <Plus size={15} />
+          <PlusIcon size={15} />
         </button>
       </div>
     </div>
@@ -465,7 +469,7 @@ function ShiftsTab() {
       <div className="page-header-row" style={{ marginTop: 0 }}>
         <p className="section-heading" style={{ margin: 0 }}>Shifts</p>
         <button className="btn-primary btn-icon" onClick={() => setShiftDrawerOpen(true)}>
-          <Plus size={16} /> New shift
+          <PlusIcon size={16} /> New shift
         </button>
       </div>
 
@@ -501,7 +505,7 @@ function ShiftsTab() {
       <div className="page-header-row" style={{ marginTop: 28 }}>
         <p className="section-heading" style={{ margin: 0 }}>Holidays</p>
         <button className="btn-primary btn-icon" onClick={() => setHolidayDrawerOpen(true)}>
-          <Plus size={16} /> New holiday
+          <PlusIcon size={16} /> New holiday
         </button>
       </div>
 
@@ -713,7 +717,7 @@ function LeaveTab() {
       <div className="page-header-row" style={{ marginTop: 0 }}>
         <p className="section-heading" style={{ margin: 0 }}>Leave policies</p>
         <button className="btn-primary btn-icon" onClick={openAdd} disabled={leaveTypes.length === 0}>
-          <Plus size={16} /> New policy
+          <PlusIcon size={16} /> New policy
         </button>
       </div>
 
@@ -959,7 +963,7 @@ function PayrollComponentsTab() {
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
         <button className="btn-primary btn-icon" onClick={() => setDrawerOpen(true)}>
-          <Plus size={16} /> New component
+          <PlusIcon size={16} /> New component
         </button>
       </div>
 
@@ -1121,7 +1125,7 @@ function TaxSlabsTab() {
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
         <button className="btn-primary btn-icon" onClick={openAdd}>
-          <Plus size={16} /> Add bracket
+          <PlusIcon size={16} /> Add bracket
         </button>
       </div>
 
@@ -1298,7 +1302,7 @@ function RolesTab() {
         <div className="lookup-add">
           <input placeholder="New role" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && createRole()} />
           <button type="button" className="lookup-add-btn" disabled={creatingRole} onClick={createRole} aria-label="Add role">
-            <Plus size={15} />
+            <PlusIcon size={15} />
           </button>
         </div>
 
@@ -1466,14 +1470,14 @@ function AuditLogTab() {
           <div className="drawer-form">
             <div className="field-row">
               <div className="info-field">
-                <span className="info-field-icon"><Clock size={15} /></span>
+                <span className="info-field-icon"><ClockIcon size={15} /></span>
                 <span className="info-field-body">
                   <span className="info-field-label">When</span>
                   <span className="info-field-value">{formatDateTime(activeEntry.created_at)}</span>
                 </span>
               </div>
               <div className="info-field">
-                <span className="info-field-icon"><User size={15} /></span>
+                <span className="info-field-icon"><UserIcon size={15} /></span>
                 <span className="info-field-body">
                   <span className="info-field-label">By</span>
                   <span className="info-field-value">{profiles.find((p) => p.id === activeEntry.user_id)?.full_name ?? 'System'}</span>
@@ -1638,7 +1642,7 @@ function OnboardingTemplatesTab() {
         <div className="lookup-add">
           <input placeholder="New template" value={newTemplateName} onChange={(e) => setNewTemplateName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && createTemplate()} />
           <button type="button" className="lookup-add-btn" disabled={creating} onClick={createTemplate} aria-label="Add template">
-            <Plus size={15} />
+            <PlusIcon size={15} />
           </button>
         </div>
       </div>
@@ -1649,7 +1653,7 @@ function OnboardingTemplatesTab() {
         ) : (
           <>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-              <button className="btn-secondary btn-icon" onClick={openAddTask}><Plus size={16} /> Add task</button>
+              <button className="btn-secondary btn-icon" onClick={openAddTask}><PlusIcon size={16} /> Add task</button>
             </div>
             {tasks.length === 0 ? (
               <p className="muted" style={{ marginTop: 16 }}>No tasks in this template yet.</p>
@@ -1828,7 +1832,7 @@ function ProjectsCard({ rows, clients, employees, company, onChanged }) {
                   aria-label="Manage access"
                   data-tooltip="Who can log time here"
                 >
-                  <Users size={14} />
+                  <UsersIcon size={14} />
                 </button>
                 <button
                   type="button"
@@ -1851,7 +1855,7 @@ function ProjectsCard({ rows, clients, employees, company, onChanged }) {
             <div className="lookup-add" style={{ marginTop: 0, flex: 1 }}>
               <input autoFocus placeholder="New client" value={newClientName} onChange={(e) => setNewClientName(e.target.value)} />
               <button type="button" className="lookup-add-btn" onClick={addClient} aria-label="Add client">
-                <Plus size={15} />
+                <PlusIcon size={15} />
               </button>
             </div>
           ) : (

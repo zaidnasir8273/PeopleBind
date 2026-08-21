@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
-import { Loader2, CreditCard, Building2, BadgeCheck, CalendarDays } from 'lucide-react'
+import { Loader2, Building2, BadgeCheck } from 'lucide-react'
+import { CreditCardIcon } from '../components/ui/credit-card'
+import { CalendarDaysIcon } from '../components/ui/calendar-days'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { SkeletonBlock } from '../components/Skeleton'
@@ -88,7 +90,7 @@ export default function EmployeeProfile() {
 
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
         <div className="info-field">
-          <span className="info-field-icon"><CreditCard size={15} /></span>
+          <span className="info-field-icon"><CreditCardIcon size={15} /></span>
           <span className="info-field-body">
             <span className="info-field-label">Employee code</span>
             <span className="info-field-value">{employeeRecord.employee_code}</span>
@@ -109,7 +111,7 @@ export default function EmployeeProfile() {
           </span>
         </div>
         <div className="info-field">
-          <span className="info-field-icon"><CalendarDays size={15} /></span>
+          <span className="info-field-icon"><CalendarDaysIcon size={15} /></span>
           <span className="info-field-body">
             <span className="info-field-label">Joined</span>
             <span className="info-field-value">{formatDate(employeeRecord.joining_date)}</span>
