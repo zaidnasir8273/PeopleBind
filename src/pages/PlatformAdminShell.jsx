@@ -1,13 +1,19 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Building2, Wallet, LogOut, ArrowLeft, PanelLeftClose, PanelLeftOpen, HeartPulse, LifeBuoy } from 'lucide-react'
+import { Building2, LifeBuoy } from 'lucide-react'
+import { WalletIcon } from '../components/ui/wallet'
+import { LogoutIcon } from '../components/ui/logout'
+import { ArrowLeftIcon } from '../components/ui/arrow-left'
+import { PanelLeftCloseIcon } from '../components/ui/panel-left-close'
+import { PanelLeftOpenIcon } from '../components/ui/panel-left-open'
+import { HeartPulseIcon } from '../components/ui/heart-pulse'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
 const NAV_ITEMS = [
   { to: '/platform-admin', label: 'Companies', icon: Building2, end: true },
-  { to: '/platform-admin/health', label: 'Health', icon: HeartPulse },
+  { to: '/platform-admin/health', label: 'Health', icon: HeartPulseIcon },
   { to: '/platform-admin/tickets', label: 'Support tickets', icon: LifeBuoy },
-  { to: '/platform-admin/payroll', label: 'Payroll monitor', icon: Wallet },
+  { to: '/platform-admin/payroll', label: 'Payroll monitor', icon: WalletIcon },
 ]
 
 export default function PlatformAdminShell() {
@@ -31,7 +37,7 @@ export default function PlatformAdminShell() {
             data-tooltip={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {collapsed ? <PanelLeftOpen size={15} strokeWidth={2} /> : <PanelLeftClose size={15} strokeWidth={2} />}
+            {collapsed ? <PanelLeftOpenIcon size={15} /> : <PanelLeftCloseIcon size={15} />}
           </button>
         </div>
 
@@ -45,7 +51,7 @@ export default function PlatformAdminShell() {
               data-tooltip={collapsed ? label : undefined}
               aria-label={label}
             >
-              <Icon size={17} strokeWidth={2} />
+              <Icon size={17} />
               {!collapsed && label}
             </NavLink>
           ))}
@@ -60,7 +66,7 @@ export default function PlatformAdminShell() {
               data-tooltip={collapsed ? `Back to ${company.name}` : undefined}
               aria-label={`Back to ${company.name}`}
             >
-              <ArrowLeft size={15} strokeWidth={2} />
+              <ArrowLeftIcon size={15} />
               {!collapsed && `Back to ${company.name}`}
             </NavLink>
           )}
@@ -71,7 +77,7 @@ export default function PlatformAdminShell() {
             data-tooltip={collapsed ? 'Sign out' : undefined}
             aria-label="Sign out"
           >
-            <LogOut size={15} strokeWidth={2} />
+            <LogoutIcon size={15} />
             {!collapsed && 'Sign out'}
           </button>
         </div>

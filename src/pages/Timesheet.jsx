@@ -1,9 +1,14 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import {
-  Plus, Check, X as XIcon, Loader2,
-  Clock, Wallet, Ban, Send, AlertTriangle, CheckCircle2,
-} from 'lucide-react'
+import { Loader2, AlertTriangle } from 'lucide-react'
+import { PlusIcon } from '../components/ui/plus'
+import { CheckIcon } from '../components/ui/check'
+import { XIcon } from '../components/ui/x'
+import { ClockIcon } from '../components/ui/clock'
+import { WalletIcon } from '../components/ui/wallet'
+import { BanIcon } from '../components/ui/ban'
+import { SendIcon } from '../components/ui/send'
+import { CircleCheckIcon } from '../components/ui/circle-check'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -213,7 +218,7 @@ export default function Timesheet() {
           <h1 className="page-title">Timesheets</h1>
         </div>
         <button className="btn-primary btn-icon" onClick={openNewEntry}>
-          <Plus size={16} /> Log time
+          <PlusIcon size={16} /> Log time
         </button>
       </div>
 
@@ -299,13 +304,13 @@ export default function Timesheet() {
                     <td>{e.timesheet_tasks?.name ?? '—'}</td>
                     <td className="mono">{formatDate(e.entry_date)}</td>
                     <td className="mono">{minutesToHoursLabel(e.duration_minutes)}h</td>
-                    <td>{e.billable ? <Check size={14} style={{ color: 'var(--accent)' }} /> : <span className="muted">—</span>}</td>
+                    <td>{e.billable ? <CheckIcon size={14} style={{ color: 'var(--accent)' }} /> : <span className="muted">—</span>}</td>
                     <td><span className={`status-badge status-${e.status}`}>{e.status}</span></td>
                     <td>
                       {e.status === 'pending' && (
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button className="btn-icon-round approve" onClick={() => review(e.id, 'approved')} aria-label="Approve">
-                            <Check size={14} />
+                            <CheckIcon size={14} />
                           </button>
                           <button className="btn-icon-round reject" onClick={() => review(e.id, 'rejected')} aria-label="Reject">
                             <XIcon size={14} />
@@ -559,10 +564,10 @@ function TeamTimesheetsTab({ employees, departments, projects, tasks, profile, c
                 ) : (
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <button className="btn-primary btn-icon" disabled={actionBusy} onClick={approve}>
-                      <CheckCircle2 size={14} /> Approve
+                      <CircleCheckIcon size={14} /> Approve
                     </button>
                     <button className="btn-secondary btn-icon" onClick={() => setShowReasonFor('request_changes')}>
-                      <Send size={14} /> Request changes
+                      <SendIcon size={14} /> Request changes
                     </button>
                     <button className="btn-danger btn-icon" onClick={() => setShowReasonFor('reject')}>
                       <XIcon size={14} /> Reject
@@ -658,9 +663,9 @@ function DashboardTab({ employees }) {
   return (
     <div>
       <div className="stat-row" style={{ marginBottom: 20, flexWrap: 'wrap' }}>
-        <StatTile icon={Clock} label="Total hours (this week)" value={`${minutesToHoursLabel(totalMinutes)}h`} />
-        <StatTile icon={Wallet} label="Billable hours" value={`${minutesToHoursLabel(billableMinutes)}h`} />
-        <StatTile icon={Ban} label="Non-billable hours" value={`${minutesToHoursLabel(nonBillableMinutes)}h`} />
+        <StatTile icon={ClockIcon} label="Total hours (this week)" value={`${minutesToHoursLabel(totalMinutes)}h`} />
+        <StatTile icon={WalletIcon} label="Billable hours" value={`${minutesToHoursLabel(billableMinutes)}h`} />
+        <StatTile icon={BanIcon} label="Non-billable hours" value={`${minutesToHoursLabel(nonBillableMinutes)}h`} />
         <StatTile icon={Send} label="Pending approvals" value={submittedCount} />
         <StatTile icon={AlertTriangle} label="Missing this week" value={missingCount} />
         <StatTile icon={CheckCircle2} label="Utilization" value={`${utilization}%`} />

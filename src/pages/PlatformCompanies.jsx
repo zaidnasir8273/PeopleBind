@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { LogIn } from 'lucide-react'
+import { LogInIcon } from '../components/ui/login'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -130,7 +130,7 @@ export default function PlatformCompanies() {
                 <td className="mono">{formatDate(c.created_at)}</td>
                 <td>
                   <button className="btn-icon-round" onClick={(e) => viewAs(c, e)} aria-label={`View as ${c.name}`} data-tooltip={`View as ${c.name}`}>
-                    <LogIn size={13} />
+                    <LogInIcon size={13} />
                   </button>
                 </td>
               </tr>

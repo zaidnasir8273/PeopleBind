@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus, Search, Upload } from 'lucide-react'
+import { PlusIcon } from '../components/ui/plus'
+import { SearchIcon } from '../components/ui/search'
+import { UploadIcon } from '../components/ui/upload'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { EmployeeFormDrawer } from '../components/EmployeeFormDrawer'
@@ -95,16 +97,16 @@ export default function People() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-secondary btn-icon" onClick={() => setImportOpen(true)}>
-            <Upload size={16} /> Import
+            <UploadIcon size={16} /> Import
           </button>
           <button className="btn-primary btn-icon" onClick={() => setDrawerOpen(true)}>
-            <Plus size={16} /> Add employee
+            <PlusIcon size={16} /> Add employee
           </button>
         </div>
       </div>
 
       <div className="search-bar">
-        <Search size={15} />
+        <SearchIcon size={15} />
         <input
           type="text"
           placeholder="Search by name or employee code"

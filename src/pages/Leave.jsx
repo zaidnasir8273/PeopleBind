@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Plus, Check, X as XIcon } from 'lucide-react'
+import { PlusIcon } from '../components/ui/plus'
+import { CheckIcon } from '../components/ui/check'
+import { XIcon } from '../components/ui/x'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -230,11 +232,11 @@ export default function Leave() {
         </div>
         {tab === 'requests' ? (
           <button className="btn-primary btn-icon" onClick={openNewRequest}>
-            <Plus size={16} /> New request
+            <PlusIcon size={16} /> New request
           </button>
         ) : (
           <button className="btn-primary btn-icon" onClick={openSetBalance}>
-            <Plus size={16} /> Set balance
+            <PlusIcon size={16} /> Set balance
           </button>
         )}
       </div>
@@ -328,7 +330,7 @@ export default function Leave() {
                       {r.status === 'pending' && (
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button className="btn-icon-round approve" onClick={() => reviewRequest(r.id, 'approved')} aria-label="Approve">
-                            <Check size={14} />
+                            <CheckIcon size={14} />
                           </button>
                           <button className="btn-icon-round reject" onClick={() => reviewRequest(r.id, 'rejected')} aria-label="Reject">
                             <XIcon size={14} />
