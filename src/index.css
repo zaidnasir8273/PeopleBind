@@ -1210,6 +1210,69 @@ button:active:not(:disabled) {
   font-weight: 600;
 }
 
+/* a nav item that's a hover-flyout group rather than a direct link (see
+   Sidebar.tsx) is a <button>, which needs its own chrome reset on top of
+   the shared .sidebar-link layout rules */
+.sidebar-link-button {
+  width: 100%;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ---------- sidebar hover-flyout (portaled to document.body so it can
+   escape .sidebar-nav's overflow-y: auto -- position is computed from the
+   trigger's getBoundingClientRect() in Sidebar.tsx, not CSS anchoring) ---------- */
+
+.sidebar-flyout {
+  position: fixed;
+  width: 220px;
+  background: var(--accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  padding: 8px;
+  z-index: 100;
+  --sidebar-text: rgba(255, 255, 255, 0.92);
+  --sidebar-text-soft: rgba(255, 255, 255, 0.58);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.14);
+  --sidebar-border: rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--sidebar-border);
+}
+
+.sidebar-flyout-header {
+  padding: 6px 10px 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--sidebar-text);
+  border-bottom: 1px solid var(--sidebar-border);
+  margin-bottom: 6px;
+}
+
+.sidebar-flyout-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius);
+  color: var(--sidebar-text-soft);
+  text-decoration: none;
+  font-size: 13.5px;
+  transition: background-color var(--duration-fast) var(--ease), color var(--duration-fast) var(--ease);
+}
+
+.sidebar-flyout-item:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+}
+
+.sidebar-flyout-item.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text);
+  font-weight: 600;
+}
+
 /* icon-rail tooltips, shown only when the sidebar is collapsed (data-tooltip is only set then) */
 [data-tooltip] {
   position: relative;

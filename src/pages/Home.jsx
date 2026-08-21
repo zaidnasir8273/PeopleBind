@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Cake } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { CalendarDaysIcon } from '../components/ui/calendar-days'
 import { ReceiptIcon } from '../components/ui/receipt'
 import { ClockIcon } from '../components/ui/clock'
@@ -69,6 +70,16 @@ function elapsedSince(ts) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`
 }
 
+// Same palette/style as the charts on Reports.jsx, reused verbatim so Home's
+// trend chart doesn't invent a second visual language for the same data.
+const TEAL = '#1f7a63'
+const GOLD = '#c98a2e'
+const RED = '#b0473f'
+const LINE = '#e2ddd0'
+const INK_SOFT = '#5a6472'
+const axisStyle = { fontSize: 11, fontFamily: 'Inter, sans-serif', fill: INK_SOFT }
+const tooltipStyle = { fontSize: 13, fontFamily: 'Inter, sans-serif', borderRadius: 8, border: `1px solid ${LINE}` }
+
 export default function Home() {
   const { profile, company } = useAuth()
   const [loading, setLoading] = useState(true)
@@ -78,6 +89,7 @@ export default function Home() {
   const [runningNow, setRunningNow] = useState([])
   const [outToday, setOutToday] = useState([])
   const [attendanceToday, setAttendanceToday] = useState({ present: 0, late: 0, absent: 0, onLeave: 0 })
+  const [attendanceTrend, setAttendanceTrend] = useState([])
   const [activity, setActivity] = useState([])
   const [teamFaces, setTeamFaces] = useState([])
 
@@ -86,6 +98,7 @@ export default function Home() {
 
     const todayStr = new Date().toISOString().slice(0, 10)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
+    const fourteenDaysAgo = new Date(Date.now() - 13 * 86400000).toISOString().slice(0, 10)
 
     const [
       { count: employeeCount },
@@ -99,6 +112,7 @@ export default function Home() {
       { data: runningTimerRows },
       { data: outTodayRows },
       { data: attendanceTodayRows },
+      { data: attendanceTrendRows },
       { data: recentJoinerRows },
       { data: leaveDecidedRows },
       { data: expenseDecidedRows },
@@ -122,23 +136,24 @@ export default function Home() {
         .lte('start_date', todayStr)
         .gte('end_date', todayStr),
       supabase.from('attendance').select('status').eq('attendance_date', todayStr),
+      supabase.from('attendance').select('attendance_date, status').gte('attendance_date', fourteenDaysAgo).lte('attendance_date', todayStr),
       supabase
         .from('employees')
-        .select('id, full_name, joining_date')
+        .select('id, full_name, photo_url, joining_date')
         .in('employment_status', ['training', 'probation', 'confirmed'])
         .gte('joining_date', thirtyDaysAgo)
         .order('joining_date', { ascending: false })
         .limit(5),
       supabase
         .from('leave_requests')
-        .select('id, status, reviewed_at, employees(full_name), leave_types(name)')
+        .select('id, status, reviewed_at, employees(full_name, photo_url), leave_types(name)')
         .in('status', ['approved', 'rejected'])
         .not('reviewed_at', 'is', null)
         .order('reviewed_at', { ascending: false })
         .limit(5),
       supabase
         .from('expense_claims')
-        .select('id, status, reviewed_at, amount, employees(full_name)')
+        .select('id, status, reviewed_at, amount, employees(full_name, photo_url)')
         .in('status', ['approved', 'rejected'])
         .not('reviewed_at', 'is', null)
         .order('reviewed_at', { ascending: false })
@@ -152,7 +167,7 @@ export default function Home() {
         .limit(3),
       supabase
         .from('timesheets')
-        .select('id, status, approved_at, period_start, period_end, employees(full_name)')
+        .select('id, status, approved_at, period_start, period_end, employees(full_name, photo_url)')
         .in('status', ['approved', 'rejected'])
         .not('approved_at', 'is', null)
         .order('approved_at', { ascending: false })
@@ -240,9 +255,24 @@ export default function Home() {
     }
     setAttendanceToday(counts)
 
+    const trendByDate = new Map()
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(Date.now() - (13 - i) * 86400000)
+      const key = d.toISOString().slice(0, 10)
+      trendByDate.set(key, { date: key, label: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), present: 0, late: 0, absent: 0 })
+    }
+    for (const row of attendanceTrendRows ?? []) {
+      const bucket = trendByDate.get(row.attendance_date)
+      if (!bucket) continue
+      if (row.status === 'present') bucket.present++
+      else if (row.status === 'late') bucket.late++
+      else if (row.status === 'absent') bucket.absent++
+    }
+    setAttendanceTrend([...trendByDate.values()])
+
     const feed = []
     for (const e of recentJoinerRows ?? []) {
-      feed.push({ key: `join-${e.id}`, icon: UserPlusIcon, text: `${e.full_name} joined the team`, time: e.joining_date, to: `/app/people/${e.id}` })
+      feed.push({ key: `join-${e.id}`, icon: UserPlusIcon, text: `${e.full_name} joined the team`, time: e.joining_date, to: `/app/people/${e.id}`, person: { name: e.full_name, photoUrl: e.photo_url } })
     }
     for (const r of leaveDecidedRows ?? []) {
       feed.push({
@@ -251,6 +281,7 @@ export default function Home() {
         text: `${r.employees?.full_name}'s ${r.leave_types?.name ?? ''} leave was ${r.status}`,
         time: r.reviewed_at,
         to: '/app/leave',
+        person: { name: r.employees?.full_name, photoUrl: r.employees?.photo_url },
       })
     }
     for (const r of expenseDecidedRows ?? []) {
@@ -260,10 +291,11 @@ export default function Home() {
         text: `${r.employees?.full_name}'s expense claim was ${r.status}`,
         time: r.reviewed_at,
         to: '/app/expenses',
+        person: { name: r.employees?.full_name, photoUrl: r.employees?.photo_url },
       })
     }
     for (const r of payrollFinalizedRows ?? []) {
-      feed.push({ key: `payroll-${r.id}`, icon: WalletIcon, text: `Payroll for ${r.payroll_periods?.label} was finalized`, time: r.finalized_at, to: '/app/payroll' })
+      feed.push({ key: `payroll-${r.id}`, icon: WalletIcon, text: `Payroll for ${r.payroll_periods?.label} was finalized`, time: r.finalized_at, to: '/app/payroll', person: null })
     }
     for (const r of timesheetDecidedRows ?? []) {
       feed.push({
@@ -272,6 +304,7 @@ export default function Home() {
         text: `${r.employees?.full_name}'s timesheet was ${r.status}`,
         time: r.approved_at,
         to: '/app/timesheet',
+        person: { name: r.employees?.full_name, photoUrl: r.employees?.photo_url },
       })
     }
     feed.sort((a, b) => new Date(b.time) - new Date(a.time))
@@ -326,6 +359,7 @@ export default function Home() {
           <div className="stat-card"><span className="stat-label">Pending leave</span><span className="stat-value">—</span></div>
           <div className="stat-card"><span className="stat-label">Pending expenses</span><span className="stat-value">—</span></div>
           <div className="stat-card"><span className="stat-label">Open roles</span><span className="stat-value">—</span></div>
+          <div className="stat-card"><span className="stat-label">Attendance rate</span><span className="stat-value">—</span></div>
         </div>
       ) : (
         <StaggerContainer as="div" className="stat-row">
@@ -344,6 +378,14 @@ export default function Home() {
           <StaggerItem as="div" className="stat-card">
             <span className="stat-label">Open roles</span>
             <AnimatedNumber value={stats.openRoles} className="stat-value" />
+          </StaggerItem>
+          <StaggerItem as="div" className="stat-card">
+            <span className="stat-label">Attendance rate</span>
+            {(() => {
+              const total = attendanceToday.present + attendanceToday.late + attendanceToday.absent + attendanceToday.onLeave
+              const rate = total > 0 ? Math.round(((attendanceToday.present + attendanceToday.late) / total) * 100) : null
+              return rate === null ? <span className="stat-value">—</span> : <AnimatedNumber value={rate} suffix="%" className="stat-value" />
+            })()}
           </StaggerItem>
         </StaggerContainer>
       )}
@@ -421,6 +463,29 @@ export default function Home() {
         </StaggerContainer>
       )}
 
+      {!loading && (
+        <section style={{ marginTop: 32 }}>
+          <h2 className="section-heading">Attendance — last 14 days</h2>
+          <div className="report-section" style={{ marginBottom: 0 }}>
+            {attendanceTrend.every((d) => d.present + d.late + d.absent === 0) ? (
+              <p className="muted" style={{ margin: '20px 0', textAlign: 'center' }}>No attendance recorded in this window yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={attendanceTrend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                  <CartesianGrid stroke={LINE} vertical={false} />
+                  <XAxis dataKey="label" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} interval={1} />
+                  <YAxis allowDecimals={false} tick={axisStyle} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="present" name="Present" stackId="a" fill={TEAL} />
+                  <Bar dataKey="late" name="Late" stackId="a" fill={GOLD} />
+                  <Bar dataKey="absent" name="Absent" stackId="a" fill={RED} radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </section>
+      )}
+
       <section className="attention-section">
         <h2 className="section-heading">Needs your attention</h2>
 
@@ -490,7 +555,11 @@ export default function Home() {
                 const Icon = a.icon
                 return (
                   <StaggerItem as={Link} key={a.key} to={a.to} className="activity-row">
-                    <span className="activity-row-icon"><Icon size={13} /></span>
+                    {a.person?.name ? (
+                      <Avatar name={a.person.name} photoUrl={a.person.photoUrl} size={26} />
+                    ) : (
+                      <span className="activity-row-icon"><Icon size={13} /></span>
+                    )}
                     <span>{a.text}</span>
                     <span className="activity-row-time">{relativeTime(a.time)}</span>
                   </StaggerItem>

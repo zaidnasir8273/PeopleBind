@@ -6,7 +6,7 @@ import { useMotionValue, useTransform, animate, useReducedMotion } from 'motion/
  * Only animates on genuine value changes (not on every re-render), and skips
  * straight to the target for prefers-reduced-motion.
  */
-export function AnimatedNumber({ value, className }) {
+export function AnimatedNumber({ value, className, suffix }) {
   const prefersReducedMotion = useReducedMotion()
   const motionValue = useMotionValue(value)
   const rounded = useTransform(motionValue, (v) => Math.round(v).toLocaleString())
@@ -26,5 +26,10 @@ export function AnimatedNumber({ value, className }) {
 
   useEffect(() => rounded.on('change', (v) => { if (ref.current) ref.current.textContent = v }), [rounded])
 
-  return <span ref={ref} className={className}>{typeof value === 'number' ? value.toLocaleString() : value}</span>
+  return (
+    <span className={className}>
+      <span ref={ref}>{typeof value === 'number' ? value.toLocaleString() : value}</span>
+      {suffix}
+    </span>
+  )
 }
