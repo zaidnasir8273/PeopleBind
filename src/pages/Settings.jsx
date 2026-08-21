@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'motion/react'
-import { ChevronDown, Loader2, Trash2 } from 'lucide-react'
+import { ChevronDown, Loader2 } from 'lucide-react'
+import { DeleteIcon } from '../components/ui/delete'
 import { PlusIcon } from '../components/ui/plus'
 import { ClockIcon } from '../components/ui/clock'
 import { UserIcon } from '../components/ui/user'
@@ -418,7 +419,7 @@ function SimpleLookupCard({ title, rows, renderRow, table, company, onChanged })
                 disabled={removingId === r.id}
                 aria-label="Remove"
               >
-                <Trash2 size={14} />
+                <DeleteIcon size={14} />
               </button>
             </div>
           ))}
@@ -486,7 +487,7 @@ function BranchesCard({ rows, company, onChanged }) {
                 disabled={removingId === r.id}
                 aria-label="Remove"
               >
-                <Trash2 size={14} />
+                <DeleteIcon size={14} />
               </button>
             </div>
           ))}
@@ -894,7 +895,7 @@ function LeaveTab() {
                     onClick={() => removePolicy(p.id)}
                     aria-label="Remove policy"
                   >
-                    <Trash2 size={14} />
+                    <DeleteIcon size={14} />
                   </button>
                 </td>
               </tr>
@@ -1015,7 +1016,7 @@ function LeaveTypesCard({ rows, company, onChanged }) {
                 disabled={removingId === r.id}
                 aria-label="Remove"
               >
-                <Trash2 size={14} />
+                <DeleteIcon size={14} />
               </button>
             </div>
           ))}
@@ -1987,7 +1988,7 @@ function ProjectsCard({ rows, clients, employees, company, onChanged }) {
                   disabled={removingId === r.id}
                   aria-label="Remove"
                 >
-                  <Trash2 size={14} />
+                  <DeleteIcon size={14} />
                 </button>
               </div>
             </div>

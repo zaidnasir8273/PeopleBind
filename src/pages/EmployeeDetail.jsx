@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Loader2, Trash2, Camera, Mail, BadgeCheck, Building2, UserCog, Landmark, Hash } from 'lucide-react'
+import { Loader2, Camera, Mail, BadgeCheck, Building2, UserCog, Landmark, Hash } from 'lucide-react'
+import { DeleteIcon } from '../components/ui/delete'
 import { ChevronLeftIcon } from '../components/ui/chevron-left'
 import { PlusIcon } from '../components/ui/plus'
 import { PhoneIcon } from '../components/ui/phone'
@@ -747,7 +748,7 @@ function BenefitsTab({ employeeId, company }) {
                 <td className="muted">{b.notes || '—'}</td>
                 <td>
                   <button className="link-button" style={{ color: 'var(--danger)', display: 'flex' }} onClick={() => remove(b.id)} aria-label="Remove">
-                    <Trash2 size={14} />
+                    <DeleteIcon size={14} />
                   </button>
                 </td>
               </tr>
@@ -918,7 +919,7 @@ function DocumentsTab({ employeeId, company }) {
                 <td className="mono">{d.expiry_date ? formatDate(d.expiry_date) : '—'}</td>
                 <td>
                   <button className="link-button" style={{ color: 'var(--danger)', display: 'flex' }} onClick={() => handleDelete(d)} aria-label="Remove">
-                    <Trash2 size={14} />
+                    <DeleteIcon size={14} />
                   </button>
                 </td>
               </tr>

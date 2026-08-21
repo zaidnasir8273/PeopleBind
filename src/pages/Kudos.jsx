@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { PlusIcon } from '../components/ui/plus'
-import { Trash2 } from 'lucide-react'
+import { DeleteIcon } from '../components/ui/delete'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -119,7 +119,7 @@ export default function Kudos() {
                 </span>
                 {k.from_employee_id === employeeRecord?.id && (
                   <button type="button" className="link-button" aria-label="Delete" onClick={() => remove(k.id)}>
-                    <Trash2 size={14} />
+                    <DeleteIcon size={14} />
                   </button>
                 )}
               </div>

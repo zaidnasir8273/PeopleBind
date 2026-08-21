@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { LogInIcon } from '../components/ui/login'
 import { PlusIcon } from '../components/ui/plus'
 import { SquarePenIcon } from '../components/ui/square-pen'
-import { Trash2 } from 'lucide-react'
+import { DeleteIcon } from '../components/ui/delete'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -278,7 +278,7 @@ export default function PlatformCompanies() {
               <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600 }}>Danger zone</p>
               {!confirmingDelete ? (
                 <button type="button" className="btn-danger" onClick={() => setConfirmingDelete(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Trash2 size={14} />
+                  <DeleteIcon size={14} />
                   Delete company
                 </button>
               ) : (

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, type FormEvent } from 'react'
 import { toast } from 'sonner'
-import { Trash2, AlertTriangle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { DeleteIcon } from '../components/ui/delete'
 import { PlusIcon } from '../components/ui/plus'
 import { DownloadIcon } from '../components/ui/download'
 import { supabase } from '../lib/supabase'
@@ -220,7 +221,7 @@ export default function Documents() {
                 <TableCell>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button className="btn-icon-round approve" onClick={() => handleView(d)} aria-label="View"><DownloadIcon size={14} /></button>
-                    <button className="btn-icon-round reject" onClick={() => handleDelete(d)} aria-label="Delete"><Trash2 size={14} /></button>
+                    <button className="btn-icon-round reject" onClick={() => handleDelete(d)} aria-label="Delete"><DeleteIcon size={14} /></button>
                   </div>
                 </TableCell>
               </TableRow>

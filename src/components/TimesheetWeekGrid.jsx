@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Trash2, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import { DeleteIcon } from './ui/delete'
 import { PlusIcon } from './ui/plus'
 import { CheckIcon } from './ui/check'
 import { supabase } from '../lib/supabase'
@@ -367,7 +368,7 @@ export function TimesheetWeekGrid({
                   {!readOnly && (
                     <td>
                       <button type="button" className="link-button" style={{ color: 'var(--danger)', display: 'flex' }} aria-label="Remove row" onClick={() => removeRow(row)}>
-                        <Trash2 size={13} />
+                        <DeleteIcon size={13} />
                       </button>
                     </td>
                   )}

@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ChevronDown, Trash2 } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
+import { DeleteIcon } from '../components/ui/delete'
 import { PlusIcon } from '../components/ui/plus'
 import { SquarePenIcon } from '../components/ui/square-pen'
 import { supabase } from '../lib/supabase'
@@ -135,7 +136,7 @@ function WidgetCard({ widget, onEdit, onRemove, dragHandlers }) {
             <SquarePenIcon size={13} />
           </button>
           <button type="button" className="link-button" onClick={() => onRemove(widget.id)} aria-label="Remove widget" data-tooltip="Remove">
-            <Trash2 size={13} />
+            <DeleteIcon size={13} />
           </button>
         </div>
       </div>
