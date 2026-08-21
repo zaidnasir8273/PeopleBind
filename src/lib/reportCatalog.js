@@ -1,12 +1,12 @@
 import { supabase } from './supabase'
-import { UsersIcon } from '../components/ui/users'
-import { ClockIcon } from '../components/ui/clock'
+import { IdCardIcon } from '../components/ui/id-card'
+import { AlarmClockIcon } from '../components/ui/alarm-clock'
 import { HandCoinsIcon } from '../components/ui/hand-coins'
-import { CreditCardIcon } from '../components/ui/credit-card'
-import { WalletIcon } from '../components/ui/wallet'
-import { CalendarDaysIcon } from '../components/ui/calendar-days'
-import { BriefcaseBusinessIcon } from '../components/ui/briefcase-business'
-import { ShieldCheckIcon } from '../components/ui/shield-check'
+import { DollarSignIcon } from '../components/ui/dollar-sign'
+import { FileChartLineIcon } from '../components/ui/file-chart-line'
+import { CalendarCheck2Icon } from '../components/ui/calendar-check-2'
+import { GraduationCapIcon } from '../components/ui/graduation-cap'
+import { FolderOpenIcon } from '../components/ui/folder-open'
 
 // Categories mirror the pasted report catalog 1:1. Each report is either
 // `{ chart: true }` (rendered by one of the existing hand-built chart
@@ -29,7 +29,7 @@ export const REPORT_CATEGORIES = [
     key: 'overview',
     label: 'Employee Overview',
     color: 'forest',
-    icon: UsersIcon,
+    icon: IdCardIcon,
     submodules: [
       { key: 'ov-directory', label: 'Employee Directory' },
       { key: 'ov-details', label: 'Employee Details' },
@@ -44,7 +44,7 @@ export const REPORT_CATEGORIES = [
     key: 'attendance',
     label: 'Attendance Reports',
     color: 'moss',
-    icon: ClockIcon,
+    icon: AlarmClockIcon,
     submodules: [
       { key: 'att-daily-summary', label: 'Daily Attendance Summary' },
       { key: 'att-summary', label: 'Attendance Summary' },
@@ -72,7 +72,7 @@ export const REPORT_CATEGORIES = [
     key: 'income',
     label: 'Income Reports',
     color: 'olive',
-    icon: CreditCardIcon,
+    icon: DollarSignIcon,
     submodules: [
       { key: 'inc-bank-transaction', label: 'Bank Transaction' },
       { key: 'inc-tax-summary', label: 'Income Tax Summary' },
@@ -83,7 +83,7 @@ export const REPORT_CATEGORIES = [
     key: 'payroll',
     label: 'Payroll Reports',
     color: 'sage',
-    icon: WalletIcon,
+    icon: FileChartLineIcon,
     submodules: [
       { key: 'pay-by-period', label: 'Payroll by Period' },
       { key: 'pay-employee-summary', label: 'Employee Summary' },
@@ -99,7 +99,7 @@ export const REPORT_CATEGORIES = [
     key: 'leave',
     label: 'Leave Reports',
     color: 'forest',
-    icon: CalendarDaysIcon,
+    icon: CalendarCheck2Icon,
     submodules: [
       { key: 'leave-detail', label: 'Leave Detail Report' },
       { key: 'leave-balance', label: 'Employee Leave Balance' },
@@ -110,7 +110,7 @@ export const REPORT_CATEGORIES = [
     key: 'recruitment',
     label: 'Recruitment Reports',
     color: 'moss',
-    icon: BriefcaseBusinessIcon,
+    icon: GraduationCapIcon,
     submodules: [
       { key: 'rec-today', label: "Today's Candidates" },
       { key: 'rec-by-source', label: 'Candidate by Source' },
@@ -124,7 +124,7 @@ export const REPORT_CATEGORIES = [
     key: 'other',
     label: 'Other Reports',
     color: 'bottle',
-    icon: ShieldCheckIcon,
+    icon: FolderOpenIcon,
     submodules: [
       { key: 'oth-audit-log', label: 'Audit Logs' },
       { key: 'oth-company-docs', label: 'Company Docs' },
