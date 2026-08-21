@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import { PlusIcon } from '../components/ui/plus'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -91,7 +92,7 @@ export default function EmployeeLeave() {
           <h1 className="page-title">Leave</h1>
         </div>
         <button className="btn-primary btn-icon" onClick={openNew}>
-          <Plus size={16} /> Request leave
+          <PlusIcon size={16} /> Request leave
         </button>
       </div>
 

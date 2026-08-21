@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import { PlusIcon } from '../components/ui/plus'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -135,7 +136,7 @@ function GoalsTab({ employees, profile, company }) {
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
         <button className="btn-primary btn-icon" onClick={openNew}>
-          <Plus size={16} /> New goal
+          <PlusIcon size={16} /> New goal
         </button>
       </div>
 
@@ -374,7 +375,7 @@ function ReviewsTab({ employees, profile, company }) {
         <button className="link-button" onClick={openNewCycle} style={{ marginBottom: 10 }}>+ New cycle</button>
         <div style={{ flex: 1 }} />
         <button className="btn-primary btn-icon" onClick={openNewReview} style={{ marginBottom: 2 }}>
-          <Plus size={16} /> New review
+          <PlusIcon size={16} /> New review
         </button>
       </div>
 
@@ -562,7 +563,7 @@ function FeedbackTab({ employees, profile, company }) {
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
         <button className="btn-primary btn-icon" onClick={openNew}>
-          <Plus size={16} /> Add note
+          <PlusIcon size={16} /> Add note
         </button>
       </div>
 

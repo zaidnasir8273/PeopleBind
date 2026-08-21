@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Plus, ChevronLeft, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import { PlusIcon } from '../components/ui/plus'
+import { ChevronLeftIcon } from '../components/ui/chevron-left'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -116,7 +118,7 @@ export default function Recruitment() {
           <h1 className="page-title">Job openings</h1>
         </div>
         <button className="btn-primary btn-icon" onClick={openNew}>
-          <Plus size={16} /> New opening
+          <PlusIcon size={16} /> New opening
         </button>
       </div>
 
@@ -303,7 +305,7 @@ function PipelineView({ openingId, profile, company, onBack }) {
   return (
     <div>
       <button className="link-button" onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 16 }}>
-        <ChevronLeft size={14} /> Back to openings
+        <ChevronLeftIcon size={14} /> Back to openings
       </button>
 
       <div className="page-header-row">
@@ -312,7 +314,7 @@ function PipelineView({ openingId, profile, company, onBack }) {
           <h1 className="page-title">{opening?.title ?? '…'}</h1>
         </div>
         <button className="btn-primary btn-icon" onClick={openAddDrawer}>
-          <Plus size={16} /> Add candidate
+          <PlusIcon size={16} /> Add candidate
         </button>
       </div>
 

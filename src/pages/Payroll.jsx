@@ -1,6 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Plus, ChevronLeft, AlertTriangle, Loader2, Wallet, Receipt } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
+import { PlusIcon } from '../components/ui/plus'
+import { ChevronLeftIcon } from '../components/ui/chevron-left'
+import { WalletIcon } from '../components/ui/wallet'
+import { ReceiptIcon } from '../components/ui/receipt'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -153,7 +157,7 @@ function RunsTab({ profile, company }) {
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
         <button className="btn-primary btn-icon" onClick={openNew}>
-          <Plus size={16} /> New period
+          <PlusIcon size={16} /> New period
         </button>
       </div>
 
@@ -340,7 +344,7 @@ function RunDetail({ runId, profile, onBack }) {
   return (
     <div>
       <button className="link-button" onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 16 }}>
-        <ChevronLeft size={14} /> Back to runs
+        <ChevronLeftIcon size={14} /> Back to runs
       </button>
 
       <div className="page-header-row">
@@ -554,7 +558,7 @@ function StructuresTab({ profile, company }) {
         </label>
         {selectedEmployeeId && (
           <button className="btn-primary btn-icon" onClick={openAdd} style={{ marginBottom: 2 }}>
-            <Plus size={16} /> Add component
+            <PlusIcon size={16} /> Add component
           </button>
         )}
       </div>
@@ -760,7 +764,7 @@ function LoansSection({ employees, profile, company }) {
     <>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
         <button className="btn-primary btn-icon" onClick={openNew}>
-          <Plus size={16} /> New loan / advance
+          <PlusIcon size={16} /> New loan / advance
         </button>
       </div>
 
@@ -845,14 +849,14 @@ function LoansSection({ employees, profile, company }) {
           <div className="drawer-form">
             <div className="field-row">
               <div className="info-field">
-                <span className="info-field-icon"><Wallet size={15} /></span>
+                <span className="info-field-icon"><WalletIcon size={15} /></span>
                 <span className="info-field-body">
                   <span className="info-field-label">Principal</span>
                   <span className="info-field-value">{fmt(activeLoan.principal_amount)}</span>
                 </span>
               </div>
               <div className="info-field">
-                <span className="info-field-icon"><Receipt size={15} /></span>
+                <span className="info-field-icon"><ReceiptIcon size={15} /></span>
                 <span className="info-field-body">
                   <span className="info-field-label">Per installment</span>
                   <span className="info-field-value">{fmt(activeLoan.installment_amount)}</span>

@@ -1,6 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, Check, X as XIcon, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import { ChevronLeftIcon } from '../components/ui/chevron-left'
+import { ChevronRightIcon } from '../components/ui/chevron-right'
+import { CheckIcon } from '../components/ui/check'
+import { XIcon } from '../components/ui/x'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -198,14 +202,14 @@ export default function Attendance() {
         <>
           <div className="date-nav">
             <button className="date-nav-btn" onClick={() => setDate((d) => shiftDate(d, -1))} aria-label="Previous day">
-              <ChevronLeft size={16} />
+              <ChevronLeftIcon size={16} />
             </button>
             <div className="date-nav-label">
               <span>{formatDateLong(date)}</span>
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <button className="date-nav-btn" onClick={() => setDate((d) => shiftDate(d, 1))} aria-label="Next day">
-              <ChevronRight size={16} />
+              <ChevronRightIcon size={16} />
             </button>
             {date !== todayStr() && (
               <button className="link-button" onClick={() => setDate(todayStr())}>
@@ -312,7 +316,7 @@ export default function Attendance() {
                       {c.status === 'pending' && (
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button className="btn-icon-round approve" onClick={() => reviewCorrection(c.id, 'approved')} aria-label="Approve">
-                            <Check size={14} />
+                            <CheckIcon size={14} />
                           </button>
                           <button className="btn-icon-round reject" onClick={() => reviewCorrection(c.id, 'rejected')} aria-label="Reject">
                             <XIcon size={14} />

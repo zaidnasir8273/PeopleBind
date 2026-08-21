@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, type FormEvent } from 'react'
 import { toast } from 'sonner'
-import { Plus, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import { PlusIcon } from '../components/ui/plus'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -148,7 +149,7 @@ export default function Assets() {
         </label>
         {selectedEmployeeId && (
           <button className="btn-primary btn-icon" onClick={openAssign} style={{ marginBottom: 2 }}>
-            <Plus size={16} /> Assign asset
+            <PlusIcon size={16} /> Assign asset
           </button>
         )}
       </div>

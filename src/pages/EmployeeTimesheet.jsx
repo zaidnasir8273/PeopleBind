@@ -1,6 +1,14 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, Plus, Loader2, Play, Square, RotateCcw, Send, AlertTriangle, CheckCircle2, Lock } from 'lucide-react'
+import { Loader2, Square, AlertTriangle } from 'lucide-react'
+import { ChevronLeftIcon } from '../components/ui/chevron-left'
+import { ChevronRightIcon } from '../components/ui/chevron-right'
+import { PlusIcon } from '../components/ui/plus'
+import { PlayIcon } from '../components/ui/play'
+import { RotateCCWIcon } from '../components/ui/rotate-ccw'
+import { SendIcon } from '../components/ui/send'
+import { CircleCheckIcon } from '../components/ui/circle-check'
+import { LockIcon } from '../components/ui/lock'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -54,10 +62,10 @@ function minutesToHoursLabel(mins) {
 
 const STATUS_COPY = {
   draft: { label: 'Draft', icon: null },
-  submitted: { label: 'Submitted — awaiting approval', icon: Send },
-  approved: { label: 'Approved', icon: CheckCircle2 },
+  submitted: { label: 'Submitted — awaiting approval', icon: SendIcon },
+  approved: { label: 'Approved', icon: CircleCheckIcon },
   rejected: { label: 'Changes requested', icon: AlertTriangle },
-  locked: { label: 'Locked', icon: Lock },
+  locked: { label: 'Locked', icon: LockIcon },
 }
 
 export default function EmployeeTimesheet() {
@@ -329,7 +337,7 @@ export default function EmployeeTimesheet() {
           <h1 className="page-title">Timesheet</h1>
         </div>
         <button className="btn-primary btn-icon" onClick={() => openAdd()}>
-          <Plus size={16} /> Add entry
+          <PlusIcon size={16} /> Add entry
         </button>
       </div>
 
@@ -370,7 +378,7 @@ export default function EmployeeTimesheet() {
               disabled={timerBusy}
               onClick={() => startTimer(startForm.project_id, startForm.task_id, startForm.billable, startForm.notes)}
             >
-              <Play size={14} /> Start timer
+              <PlayIcon size={14} /> Start timer
             </button>
           </div>
         )}
@@ -383,13 +391,13 @@ export default function EmployeeTimesheet() {
 
       <div className="date-nav">
         <button className="date-nav-btn" onClick={() => setDate((d) => shiftDate(d, view === 'week' ? -7 : -1))} aria-label="Previous">
-          <ChevronLeft size={16} />
+          <ChevronLeftIcon size={16} />
         </button>
         <span className="date-nav-label">
           {view === 'day' ? formatDateLong(date) : `Week of ${formatDateLong(weekStart)}`}
         </span>
         <button className="date-nav-btn" onClick={() => setDate((d) => shiftDate(d, view === 'week' ? 7 : 1))} aria-label="Next">
-          <ChevronRight size={16} />
+          <ChevronRightIcon size={16} />
         </button>
         {date !== todayStr() && (
           <button className="link-button" onClick={() => setDate(todayStr())}>Jump to today</button>
@@ -411,7 +419,7 @@ export default function EmployeeTimesheet() {
               {editable && (
                 <button className="btn-primary btn-icon" onClick={submitTimesheet} disabled={submitting}>
                   {submitting && <Loader2 size={14} className="btn-spinner" />}
-                  <Send size={14} /> {status === 'rejected' ? 'Resubmit' : 'Submit for approval'}
+                  <SendIcon size={14} /> {status === 'rejected' ? 'Resubmit' : 'Submit for approval'}
                 </button>
               )}
             </div>
@@ -466,7 +474,7 @@ export default function EmployeeTimesheet() {
                     data-tooltip="Restart"
                     onClick={() => startTimer(e.project_id, e.task_id, e.billable, null)}
                   >
-                    <RotateCcw size={14} />
+                    <RotateCCWIcon size={14} />
                   </button>
                 )}
               </div>
