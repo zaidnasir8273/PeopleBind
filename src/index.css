@@ -3375,6 +3375,13 @@ a.attention-item:hover {
 .settings-module-icon-bottle { background: rgba(28, 58, 46, 0.12); color: var(--green-bottle); }
 .settings-module-icon-olive { background: rgba(92, 107, 63, 0.16); color: var(--green-olive); }
 
+.report-module-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 100%;
+  background: currentColor;
+}
+
 .settings-module-label {
   flex: 1;
   min-width: 0;

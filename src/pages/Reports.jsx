@@ -1,7 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
+import { toast } from 'sonner'
+import { motion, AnimatePresence } from 'motion/react'
+import { ChevronDown } from 'lucide-react'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { DownloadIcon } from '../components/ui/download'
 import { supabase } from '../lib/supabase'
-import { SkeletonBlock } from '../components/Skeleton'
+import { SkeletonBlock, SkeletonTable } from '../components/Skeleton'
+import { REPORT_CATEGORIES, REPORT_DEFINITIONS } from '../lib/reportCatalog'
 
 const TEAL = '#1f7a63'
 const TEAL_DEEP = '#123f33'
@@ -28,7 +33,319 @@ function monthsAgo(n) {
 const axisStyle = { fontSize: 12, fontFamily: 'Inter, sans-serif', fill: INK_SOFT }
 const tooltipStyle = { fontSize: 13, fontFamily: 'Inter, sans-serif', borderRadius: 8, border: `1px solid ${LINE}` }
 
+function moduleKeyForReport(reportKey) {
+  return REPORT_CATEGORIES.find((c) => c.submodules.some((s) => s.key === reportKey))?.key
+}
+
+function ReportsNav({ tab, setTab }) {
+  const [expanded, setExpanded] = useState(() => new Set([moduleKeyForReport(tab)]))
+
+  function toggleModule(key) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  function selectSubmodule(moduleKey, submoduleKey) {
+    setTab(submoduleKey)
+    setExpanded((prev) => new Set(prev).add(moduleKey))
+  }
+
+  return (
+    <nav className="settings-nav">
+      {REPORT_CATEGORIES.map((mod) => {
+        const isExpanded = expanded.has(mod.key)
+        const isActiveModule = mod.submodules.some((s) => s.key === tab)
+
+        return (
+          <div key={mod.key} className="settings-module">
+            <button
+              type="button"
+              className={`settings-module-header${isActiveModule ? ' active' : ''}`}
+              onClick={() => toggleModule(mod.key)}
+              aria-expanded={isExpanded}
+            >
+              <span className={`settings-module-icon settings-module-icon-${mod.color}`}>
+                <span className="report-module-dot" />
+              </span>
+              <span className="settings-module-label">{mod.label}</span>
+              <ChevronDown size={14} className={`settings-module-chevron${isExpanded ? ' expanded' : ''}`} />
+            </button>
+
+            <AnimatePresence initial={false}>
+              {isExpanded && (
+                <motion.div
+                  className="settings-submodule-list"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  {mod.submodules.map((sub) => (
+                    <button
+                      key={sub.key}
+                      type="button"
+                      className={`settings-submodule-item${tab === sub.key ? ' active' : ''}`}
+                      onClick={() => selectSubmodule(mod.key, sub.key)}
+                    >
+                      {tab === sub.key && (
+                        <motion.span
+                          layoutId="reports-active-pill"
+                          className="settings-submodule-pill"
+                          transition={{ duration: 0.2 }}
+                        />
+                      )}
+                      {sub.label}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )
+      })}
+    </nav>
+  )
+}
+
+function csvEscape(value) {
+  const s = String(value ?? '')
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+function exportCsv(label, columns, rows) {
+  const header = columns.map((c) => csvEscape(c.label)).join(',')
+  const body = rows.map((r) => columns.map((c) => csvEscape(r[c.key])).join(',')).join('\n')
+  const blob = new Blob([header + '\n' + body], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function ReportTable({ reportKey, label }) {
+  const def = REPORT_DEFINITIONS[reportKey]
+  const [rows, setRows] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    setRows(null)
+    setError(null)
+    if (!def || def.unavailable) return
+    def.fetch()
+      .then((data) => { if (active) setRows(data) })
+      .catch((e) => { if (active) setError(e.message || 'Failed to load report') })
+    return () => { active = false }
+  }, [def])
+
+  if (!def) {
+    return <div className="empty-state"><p>Report not found.</p></div>
+  }
+
+  if (def.unavailable) {
+    return (
+      <div className="empty-state">
+        <p>Not available yet.</p>
+        <p className="muted">{def.unavailable}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="report-section" style={{ marginBottom: 0 }}>
+      <div className="report-section-head">
+        <p className="section-heading" style={{ margin: 0 }}>{label}</p>
+        {rows && rows.length > 0 && (
+          <button type="button" className="link-button" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }} onClick={() => exportCsv(label, def.columns, rows)}>
+            <DownloadIcon size={13} />
+            Export CSV
+          </button>
+        )}
+      </div>
+      {def.note && <p className="muted" style={{ fontSize: 12, marginTop: -4 }}>{def.note}</p>}
+      {error ? (
+        <p className="muted" style={{ padding: '24px 0' }}>{error}</p>
+      ) : rows === null ? (
+        <SkeletonTable rows={5} columns={def.columns.length} />
+      ) : rows.length === 0 ? (
+        <p className="muted" style={{ padding: '24px 0' }}>No data for this report yet.</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table className="data-table">
+            <thead>
+              <tr>{def.columns.map((c) => <th key={c.key}>{c.label}</th>)}</tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i} style={{ cursor: 'default' }}>
+                  {def.columns.map((c) => <td key={c.key}>{r[c.key] ?? '—'}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ReportSection({ title, stat, extra, children }) {
+  return (
+    <div className="report-section" style={{ marginBottom: 0 }}>
+      <div className="report-section-head">
+        <p className="section-heading" style={{ margin: 0 }}>{title}</p>
+        {stat && <span className="report-stat">{stat}</span>}
+        {extra}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function EmptyChart({ text }) {
+  return <p className="muted" style={{ padding: '24px 0' }}>{text}</p>
+}
+
+function HeadcountChart({ headcount }) {
+  const total = headcount.reduce((sum, r) => sum + Number(r.count), 0)
+  return (
+    <ReportSection title="Headcount by department" stat={`${total} active`}>
+      {headcount.length === 0 ? (
+        <EmptyChart text="No active employees yet." />
+      ) : (
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={headcount} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+            <CartesianGrid stroke={LINE} vertical={false} />
+            <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} />
+            <YAxis allowDecimals={false} tick={axisStyle} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Bar dataKey="count" name="Employees" fill={TEAL_DEEP} radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </ReportSection>
+  )
+}
+
+function AttendanceMonthlyChart({ attendance }) {
+  return (
+    <ReportSection title="Attendance — last 6 months">
+      {attendance.length === 0 ? (
+        <EmptyChart text="No attendance recorded in this window." />
+      ) : (
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={attendance} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+            <CartesianGrid stroke={LINE} vertical={false} />
+            <XAxis dataKey="label" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} />
+            <YAxis allowDecimals={false} tick={axisStyle} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Legend wrapperStyle={{ fontSize: 12, fontFamily: 'Inter, sans-serif' }} />
+            <Bar dataKey="present" name="Present" stackId="a" fill={TEAL} />
+            <Bar dataKey="late" name="Late" stackId="a" fill={GOLD} />
+            <Bar dataKey="absent" name="Absent" stackId="a" fill={RED} />
+            <Bar dataKey="leave" name="On leave" stackId="a" fill={LINE} radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </ReportSection>
+  )
+}
+
+function LeaveUsageChart({ leave, leaveYear, setLeaveYear }) {
+  return (
+    <ReportSection
+      title="Leave usage"
+      extra={
+        <select value={leaveYear} onChange={(e) => setLeaveYear(Number(e.target.value))} style={{ fontSize: 13 }}>
+          {[leaveYear - 1, leaveYear, leaveYear + 1].map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      }
+    >
+      {leave.length === 0 ? (
+        <EmptyChart text={`No leave balances set for ${leaveYear}.`} />
+      ) : (
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={leave} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+            <CartesianGrid stroke={LINE} vertical={false} />
+            <XAxis dataKey="type" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} />
+            <YAxis allowDecimals={false} tick={axisStyle} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Legend wrapperStyle={{ fontSize: 12, fontFamily: 'Inter, sans-serif' }} />
+            <Bar dataKey="entitled" name="Entitled" fill={LINE} radius={[6, 6, 0, 0]} />
+            <Bar dataKey="used" name="Used" fill={GOLD} radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </ReportSection>
+  )
+}
+
+function ExpensesChart({ expenseTrend, expenseByCategory }) {
+  return (
+    <ReportSection title="Expenses — last 6 months">
+      {expenseTrend.length === 0 ? (
+        <EmptyChart text="No approved or reimbursed claims in this window." />
+      ) : (
+        <>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={expenseTrend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+              <CartesianGrid stroke={LINE} vertical={false} />
+              <XAxis dataKey="label" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} />
+              <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v) => fmt(v)} />
+              <Line type="monotone" dataKey="total" name="Total claimed" stroke={TEAL_DEEP} strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+          {expenseByCategory.length > 0 && (
+            <>
+              <p className="section-heading" style={{ margin: '16px 0 8px' }}>By category — most recent month</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={expenseByCategory} layout="vertical" margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
+                  <CartesianGrid stroke={LINE} horizontal={false} />
+                  <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} width={110} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => fmt(v)} />
+                  <Bar dataKey="amount" fill={GOLD} radius={[0, 6, 6, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
+          )}
+        </>
+      )}
+    </ReportSection>
+  )
+}
+
+function PayrollChart({ payroll }) {
+  return (
+    <ReportSection title="Payroll by period">
+      {payroll.length === 0 ? (
+        <EmptyChart text="No payroll runs calculated yet." />
+      ) : (
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={payroll} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+            <CartesianGrid stroke={LINE} vertical={false} />
+            <XAxis dataKey="period_label" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} />
+            <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(v) => fmt(v)} />
+            <Bar dataKey="total_net" name="Net pay" fill={TEAL} radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </ReportSection>
+  )
+}
+
 export default function Reports() {
+  const [tab, setTab] = useState('ov-directory')
   const [headcount, setHeadcount] = useState([])
   const [attendance, setAttendance] = useState([])
   const [leave, setLeave] = useState([])
@@ -112,153 +429,35 @@ export default function Reports() {
     load()
   }, [load])
 
-  if (loading) {
-    return (
-      <div className="page-inner" style={{ maxWidth: 1020 }}>
-        <div className="report-section"><SkeletonBlock rows={5} /></div>
-        <div className="report-section"><SkeletonBlock rows={5} /></div>
-        <div className="report-section"><SkeletonBlock rows={5} /></div>
-      </div>
-    )
-  }
-
-  const totalHeadcount = headcount.reduce((sum, r) => sum + Number(r.count), 0)
+  const def = REPORT_DEFINITIONS[tab]
 
   return (
-    <div className="page-inner" style={{ maxWidth: 1020 }}>
+    <div className="page-inner" style={{ maxWidth: 1180 }}>
       <div className="page-header-row">
         <div>
           <h1 className="page-title">Reports</h1>
         </div>
       </div>
 
-      <ReportSection title="Headcount by department" stat={`${totalHeadcount} active`}>
-        {headcount.length === 0 ? (
-          <EmptyChart text="No active employees yet." />
-        ) : (
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={headcount} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-              <CartesianGrid stroke={LINE} vertical={false} />
-              <XAxis dataKey="name" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} />
-              <YAxis allowDecimals={false} tick={axisStyle} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="count" name="Employees" fill={TEAL_DEEP} radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </ReportSection>
+      <div className="settings-shell">
+        <ReportsNav tab={tab} setTab={setTab} />
 
-      <ReportSection title="Attendance — last 6 months">
-        {attendance.length === 0 ? (
-          <EmptyChart text="No attendance recorded in this window." />
-        ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={attendance} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-              <CartesianGrid stroke={LINE} vertical={false} />
-              <XAxis dataKey="label" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} />
-              <YAxis allowDecimals={false} tick={axisStyle} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: 12, fontFamily: 'Inter, sans-serif' }} />
-              <Bar dataKey="present" name="Present" stackId="a" fill={TEAL} />
-              <Bar dataKey="late" name="Late" stackId="a" fill={GOLD} />
-              <Bar dataKey="absent" name="Absent" stackId="a" fill={RED} />
-              <Bar dataKey="leave" name="On leave" stackId="a" fill={LINE} radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </ReportSection>
-
-      <ReportSection
-        title="Leave usage"
-        extra={
-          <select value={leaveYear} onChange={(e) => setLeaveYear(Number(e.target.value))} style={{ fontSize: 13 }}>
-            {[leaveYear - 1, leaveYear, leaveYear + 1].map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        }
-      >
-        {leave.length === 0 ? (
-          <EmptyChart text={`No leave balances set for ${leaveYear}.`} />
-        ) : (
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={leave} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-              <CartesianGrid stroke={LINE} vertical={false} />
-              <XAxis dataKey="type" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} />
-              <YAxis allowDecimals={false} tick={axisStyle} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: 12, fontFamily: 'Inter, sans-serif' }} />
-              <Bar dataKey="entitled" name="Entitled" fill={LINE} radius={[6, 6, 0, 0]} />
-              <Bar dataKey="used" name="Used" fill={GOLD} radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </ReportSection>
-
-      <ReportSection title="Expenses — last 6 months">
-        {expenseTrend.length === 0 ? (
-          <EmptyChart text="No approved or reimbursed claims in this window." />
-        ) : (
-          <>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={expenseTrend} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                <CartesianGrid stroke={LINE} vertical={false} />
-                <XAxis dataKey="label" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} />
-                <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(v) => fmt(v)} />
-                <Line type="monotone" dataKey="total" name="Total claimed" stroke={TEAL_DEEP} strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-            {expenseByCategory.length > 0 && (
-              <>
-                <p className="section-heading" style={{ margin: '16px 0 8px' }}>By category — most recent month</p>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={expenseByCategory} layout="vertical" margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
-                    <CartesianGrid stroke={LINE} horizontal={false} />
-                    <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-                    <YAxis type="category" dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} width={110} />
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v) => fmt(v)} />
-                    <Bar dataKey="amount" fill={GOLD} radius={[0, 6, 6, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </>
-            )}
-          </>
-        )}
-      </ReportSection>
-
-      <ReportSection title="Payroll by period">
-        {payroll.length === 0 ? (
-          <EmptyChart text="No payroll runs calculated yet." />
-        ) : (
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={payroll} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-              <CartesianGrid stroke={LINE} vertical={false} />
-              <XAxis dataKey="period_label" tick={axisStyle} axisLine={{ stroke: LINE }} tickLine={false} />
-              <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v) => fmt(v)} />
-              <Bar dataKey="total_net" name="Net pay" fill={TEAL} radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </ReportSection>
-    </div>
-  )
-}
-
-function ReportSection({ title, stat, extra, children }) {
-  return (
-    <div className="report-section">
-      <div className="report-section-head">
-        <p className="section-heading" style={{ margin: 0 }}>{title}</p>
-        {stat && <span className="report-stat">{stat}</span>}
-        {extra}
+        <div className="settings-content">
+          {loading ? (
+            <SkeletonBlock rows={6} />
+          ) : def?.chart ? (
+            <>
+              {tab === 'ov-headcount' && <HeadcountChart headcount={headcount} />}
+              {tab === 'pay-by-period' && <PayrollChart payroll={payroll} />}
+              {tab === 'pay-expenses' && <ExpensesChart expenseTrend={expenseTrend} expenseByCategory={expenseByCategory} />}
+              {tab === 'leave-usage' && <LeaveUsageChart leave={leave} leaveYear={leaveYear} setLeaveYear={setLeaveYear} />}
+              {tab === 'att-summary' && <AttendanceMonthlyChart attendance={attendance} />}
+            </>
+          ) : (
+            <ReportTable reportKey={tab} label={REPORT_CATEGORIES.flatMap((c) => c.submodules).find((s) => s.key === tab)?.label ?? tab} />
+          )}
+        </div>
       </div>
-      {children}
     </div>
   )
-}
-
-function EmptyChart({ text }) {
-  return <p className="muted" style={{ padding: '24px 0' }}>{text}</p>
 }

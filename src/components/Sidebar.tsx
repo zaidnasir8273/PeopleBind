@@ -58,7 +58,7 @@ const NAV_ITEMS: NavItem[] = [
     submodules: [
       { to: '/app/attendance', label: 'Attendance', icon: ClockIcon },
       { to: '/app/leave', label: 'Leave', icon: CalendarDaysIcon },
-      { to: '/app/timesheet', label: 'Timesheet', icon: TimerIcon },
+      { to: '/app/timesheet', label: 'Timesheets', icon: TimerIcon },
     ],
   },
   {
