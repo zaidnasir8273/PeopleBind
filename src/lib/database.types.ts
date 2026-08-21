@@ -645,6 +645,122 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_dashboard_widgets: {
+        Row: {
+          chart_type: string
+          company_id: string
+          created_at: string
+          dashboard_id: string
+          id: string
+          metric_key: string
+          size: string
+          sort_order: number
+          title: string | null
+        }
+        Insert: {
+          chart_type?: string
+          company_id: string
+          created_at?: string
+          dashboard_id: string
+          id?: string
+          metric_key: string
+          size?: string
+          sort_order?: number
+          title?: string | null
+        }
+        Update: {
+          chart_type?: string
+          company_id?: string
+          created_at?: string
+          dashboard_id?: string
+          id?: string
+          metric_key?: string
+          size?: string
+          sort_order?: number
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_dashboard_widgets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_dashboard_widgets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "custom_dashboard_widgets_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "custom_dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_dashboards: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          date_from: string | null
+          date_to: string | null
+          id: string
+          is_default: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_from?: string | null
+          date_to?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_dashboards_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_dashboards_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "custom_dashboards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           company_id: string

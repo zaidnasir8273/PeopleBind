@@ -28,6 +28,7 @@ import OrgChart from './pages/OrgChart'
 import Announcements from './pages/Announcements'
 import Kudos from './pages/Kudos'
 import CalendarPage from './pages/Calendar'
+import Dashboards from './pages/Dashboards'
 import { PlatformAdminGate } from './components/PlatformAdminGate'
 import PlatformAdminShell from './pages/PlatformAdminShell'
 import PlatformCompanies from './pages/PlatformCompanies'
@@ -104,6 +105,7 @@ export default function App() {
             <Route path="onboarding" element={<EmployeeOnboardingTasks />} />
             <Route path="performance" element={<Performance />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="dashboards" element={<Dashboards />} />
             <Route path="settings" element={<Settings />} />
             <Route path="org-chart" element={<OrgChart />} />
             <Route path="announcements" element={<Announcements />} />

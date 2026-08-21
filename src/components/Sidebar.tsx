@@ -13,6 +13,7 @@ import { FileTextIcon } from './ui/file-text'
 import { BriefcaseBusinessIcon } from './ui/briefcase-business'
 import { ClipboardCheckIcon } from './ui/clipboard-check'
 import { ChartColumnIncreasingIcon } from './ui/chart-column-increasing'
+import { ChartBarIncreasingIcon } from './ui/chart-bar-increasing'
 import { TrendingUpIcon } from './ui/trending-up'
 import { LaptopMinimalCheckIcon } from './ui/laptop-minimal-check'
 import { ArchiveIcon } from './ui/archive'
@@ -89,7 +90,15 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { key: 'calendar', to: '/app/calendar', label: 'Calendar', icon: CalendarDaysIcon },
-  { key: 'reports', to: '/app/reports', label: 'Reports', icon: ChartColumnIncreasingIcon },
+  {
+    key: 'insights',
+    label: 'Insights',
+    icon: ChartColumnIncreasingIcon,
+    submodules: [
+      { to: '/app/reports', label: 'Reports', icon: ChartColumnIncreasingIcon },
+      { to: '/app/dashboards', label: 'Dashboards', icon: ChartBarIncreasingIcon },
+    ],
+  },
   { key: 'settings', to: '/app/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
