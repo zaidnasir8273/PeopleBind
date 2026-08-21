@@ -1,20 +1,18 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  CalendarDays,
-  Receipt,
-  Clock,
-  Wallet,
-  UserCheck,
-  ChevronRight,
-  Cake,
-  PartyPopper,
-  Radio,
-  PlaneTakeoff,
-  UserPlus,
-  Timer,
-  Users,
-} from 'lucide-react'
+import { Cake } from 'lucide-react'
+import { CalendarDaysIcon } from '../components/ui/calendar-days'
+import { ReceiptIcon } from '../components/ui/receipt'
+import { ClockIcon } from '../components/ui/clock'
+import { WalletIcon } from '../components/ui/wallet'
+import { UserCheckIcon } from '../components/ui/user-check'
+import { ChevronRightIcon } from '../components/ui/chevron-right'
+import { PartyPopperIcon } from '../components/ui/party-popper'
+import { RadioIcon } from '../components/ui/radio'
+import { PlaneTakeoffIcon } from '../components/ui/plane-takeoff'
+import { UserPlusIcon } from '../components/ui/user-plus'
+import { TimerIcon } from '../components/ui/timer'
+import { UsersIcon } from '../components/ui/users'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { SkeletonStatRow } from '../components/Skeleton'
@@ -166,7 +164,7 @@ export default function Home() {
     if (leaveRows?.length) {
       items.push({
         key: 'leave',
-        icon: CalendarDays,
+        icon: CalendarDaysIcon,
         text: `${leaveRows.length} leave request${leaveRows.length > 1 ? 's' : ''} awaiting approval`,
         detail: leaveRows.slice(0, 3).map((r) => r.employees?.full_name).filter(Boolean).join(', '),
         to: '/app/leave',
@@ -176,7 +174,7 @@ export default function Home() {
     if (expenseRows?.length) {
       items.push({
         key: 'expenses',
-        icon: Receipt,
+        icon: ReceiptIcon,
         text: `${expenseRows.length} expense claim${expenseRows.length > 1 ? 's' : ''} awaiting review`,
         detail: expenseRows.slice(0, 3).map((r) => r.employees?.full_name).filter(Boolean).join(', '),
         to: '/app/expenses',
@@ -186,7 +184,7 @@ export default function Home() {
     if (correctionRows?.length) {
       items.push({
         key: 'corrections',
-        icon: Clock,
+        icon: ClockIcon,
         text: `${correctionRows.length} attendance correction${correctionRows.length > 1 ? 's' : ''} pending`,
         detail: correctionRows.slice(0, 3).map((r) => r.employees?.full_name).filter(Boolean).join(', '),
         to: '/app/attendance',
@@ -196,7 +194,7 @@ export default function Home() {
     for (const run of payrollRuns ?? []) {
       items.push({
         key: `payroll-${run.id}`,
-        icon: Wallet,
+        icon: WalletIcon,
         text: `Payroll for ${run.payroll_periods?.label} is ${run.status === 'draft' ? 'not yet calculated' : 'awaiting finalization'}`,
         detail: null,
         to: '/app/payroll',
@@ -210,7 +208,7 @@ export default function Home() {
     if (probationSoon.length) {
       items.push({
         key: 'probation',
-        icon: UserCheck,
+        icon: UserCheckIcon,
         text: `${probationSoon.length} probation${probationSoon.length > 1 ? 's' : ''} ending within 2 weeks`,
         detail: probationSoon.slice(0, 3).map((e) => e.full_name).join(', '),
         to: '/app/people',
@@ -224,7 +222,7 @@ export default function Home() {
       const bDays = daysUntilAnnual(e.date_of_birth, 14)
       if (bDays !== null) upcomingList.push({ key: `bday-${e.id}`, icon: Cake, text: `${e.full_name}'s birthday`, when: bDays === 0 ? 'Today' : bDays === 1 ? 'Tomorrow' : `In ${bDays} days` })
       const aDays = daysUntilAnnual(e.joining_date, 14)
-      if (aDays !== null) upcomingList.push({ key: `anniv-${e.id}`, icon: PartyPopper, text: `${e.full_name}'s work anniversary`, when: aDays === 0 ? 'Today' : aDays === 1 ? 'Tomorrow' : `In ${aDays} days` })
+      if (aDays !== null) upcomingList.push({ key: `anniv-${e.id}`, icon: PartyPopperIcon, text: `${e.full_name}'s work anniversary`, when: aDays === 0 ? 'Today' : aDays === 1 ? 'Tomorrow' : `In ${aDays} days` })
     }
     upcomingList.sort((a, b) => (a.when === 'Today' ? -1 : 0) - (b.when === 'Today' ? -1 : 0))
     setUpcoming(upcomingList.slice(0, 6))
@@ -243,12 +241,12 @@ export default function Home() {
 
     const feed = []
     for (const e of recentJoinerRows ?? []) {
-      feed.push({ key: `join-${e.id}`, icon: UserPlus, text: `${e.full_name} joined the team`, time: e.joining_date, to: `/app/people/${e.id}` })
+      feed.push({ key: `join-${e.id}`, icon: UserPlusIcon, text: `${e.full_name} joined the team`, time: e.joining_date, to: `/app/people/${e.id}` })
     }
     for (const r of leaveDecidedRows ?? []) {
       feed.push({
         key: `leave-${r.id}`,
-        icon: CalendarDays,
+        icon: CalendarDaysIcon,
         text: `${r.employees?.full_name}'s ${r.leave_types?.name ?? ''} leave was ${r.status}`,
         time: r.reviewed_at,
         to: '/app/leave',
@@ -257,19 +255,19 @@ export default function Home() {
     for (const r of expenseDecidedRows ?? []) {
       feed.push({
         key: `expense-${r.id}`,
-        icon: Receipt,
+        icon: ReceiptIcon,
         text: `${r.employees?.full_name}'s expense claim was ${r.status}`,
         time: r.reviewed_at,
         to: '/app/expenses',
       })
     }
     for (const r of payrollFinalizedRows ?? []) {
-      feed.push({ key: `payroll-${r.id}`, icon: Wallet, text: `Payroll for ${r.payroll_periods?.label} was finalized`, time: r.finalized_at, to: '/app/payroll' })
+      feed.push({ key: `payroll-${r.id}`, icon: WalletIcon, text: `Payroll for ${r.payroll_periods?.label} was finalized`, time: r.finalized_at, to: '/app/payroll' })
     }
     for (const r of timesheetDecidedRows ?? []) {
       feed.push({
         key: `ts-${r.id}`,
-        icon: Timer,
+        icon: TimerIcon,
         text: `${r.employees?.full_name}'s timesheet was ${r.status}`,
         time: r.approved_at,
         to: '/app/timesheet',
@@ -334,7 +332,7 @@ export default function Home() {
         <StaggerContainer as="div" className="today-grid">
           <StaggerItem as="div" className="today-card">
             <div className="today-card-head">
-              <span className="today-card-title"><Radio size={13} /> On the clock now</span>
+              <span className="today-card-title"><RadioIcon size={13} /> On the clock now</span>
               <span className="today-card-count">{runningNow.length}</span>
             </div>
             {runningNow.length === 0 ? (
@@ -354,7 +352,7 @@ export default function Home() {
 
           <StaggerItem as="div" className="today-card">
             <div className="today-card-head">
-              <span className="today-card-title"><PlaneTakeoff size={13} /> Out today</span>
+              <span className="today-card-title"><PlaneTakeoffIcon size={13} /> Out today</span>
               <span className="today-card-count">{outToday.length}</span>
             </div>
             {outToday.length === 0 ? (
@@ -373,7 +371,7 @@ export default function Home() {
 
           <StaggerItem as="div" className="today-card">
             <div className="today-card-head">
-              <span className="today-card-title"><Clock size={13} /> Attendance today</span>
+              <span className="today-card-title"><ClockIcon size={13} /> Attendance today</span>
               <span className="today-card-count">{attendanceToday.present + attendanceToday.late}</span>
             </div>
             {attendanceToday.present + attendanceToday.late + attendanceToday.absent + attendanceToday.onLeave === 0 ? (
@@ -429,7 +427,7 @@ export default function Home() {
                         {item.detail && <span className="muted" style={{ display: 'block', fontSize: 12 }}>{item.detail}</span>}
                       </span>
                     </span>
-                    <ChevronRight size={16} className="attention-item-chevron" />
+                    <ChevronRightIcon size={16} className="attention-item-chevron" />
                   </Link>
                 </li>
               )
@@ -478,7 +476,7 @@ export default function Home() {
 
       {!loading && teamFaces.length > 0 && (
         <section style={{ marginTop: 32 }}>
-          <h2 className="section-heading"><Users size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Team</h2>
+          <h2 className="section-heading"><UsersIcon size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Team</h2>
           <StaggerContainer as="div" className="team-strip" staggerDelay={0.02}>
             {teamFaces.map((e) => (
               <StaggerItem as={Link} key={e.id} to={`/app/people/${e.id}`} className="team-strip-item" data-tooltip={e.full_name}>

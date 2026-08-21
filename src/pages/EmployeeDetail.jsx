@@ -1,12 +1,24 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import {
-  ChevronLeft, Plus, Loader2, Trash2, Camera,
-  Phone, Mail, CalendarDays, Users, User, Heart, PhoneCall, CreditCard, MapPin,
-  BadgeCheck, Building2, FileText, CheckCircle2, Clock, CalendarCheck, UserCog,
-  Landmark, Hash, LogOut, Wallet, Layers,
-} from 'lucide-react'
+import { Loader2, Trash2, Camera, Mail, BadgeCheck, Building2, UserCog, Landmark, Hash } from 'lucide-react'
+import { ChevronLeftIcon } from '../components/ui/chevron-left'
+import { PlusIcon } from '../components/ui/plus'
+import { PhoneIcon } from '../components/ui/phone'
+import { CalendarDaysIcon } from '../components/ui/calendar-days'
+import { UsersIcon } from '../components/ui/users'
+import { UserIcon } from '../components/ui/user'
+import { HeartIcon } from '../components/ui/heart'
+import { PhoneCallIcon } from '../components/ui/phone-call'
+import { CreditCardIcon } from '../components/ui/credit-card'
+import { MapPinIcon } from '../components/ui/map-pin'
+import { FileTextIcon } from '../components/ui/file-text'
+import { CircleCheckIcon } from '../components/ui/circle-check'
+import { ClockIcon } from '../components/ui/clock'
+import { CalendarCheckIcon } from '../components/ui/calendar-check'
+import { LogoutIcon } from '../components/ui/logout'
+import { WalletIcon } from '../components/ui/wallet'
+import { LayersIcon } from '../components/ui/layers'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -145,7 +157,7 @@ export default function EmployeeDetail() {
     return (
       <div className="page-inner" style={{ maxWidth: 920 }}>
         <button className="link-button" onClick={() => navigate('/app/people')} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 16 }}>
-          <ChevronLeft size={14} /> Back to employees
+          <ChevronLeftIcon size={14} /> Back to employees
         </button>
         <div className="empty-state"><p>Employee not found.</p></div>
       </div>
@@ -155,7 +167,7 @@ export default function EmployeeDetail() {
   return (
     <div className="page-inner" style={{ maxWidth: 920 }}>
       <button className="link-button" onClick={() => navigate('/app/people')} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginBottom: 16 }}>
-        <ChevronLeft size={14} /> Back to employees
+        <ChevronLeftIcon size={14} /> Back to employees
       </button>
 
       <div className="page-header-row">
@@ -256,15 +268,15 @@ function TabSection({ title, onEdit, children }) {
 function PersonalTab({ employee: e, onEdit }) {
   return (
     <TabSection title="Personal Info" onEdit={onEdit}>
-      <InfoField icon={Phone} label="Contact #" value={e.phone} />
+      <InfoField icon={PhoneIcon} label="Contact #" value={e.phone} />
       <InfoField icon={Mail} label="Personal email" value={e.personal_email} />
-      <InfoField icon={CalendarDays} label="Date of birth" value={e.date_of_birth ? formatDate(e.date_of_birth) : null} />
-      <InfoField icon={User} label="Gender" value={capitalize(e.gender)} />
-      <InfoField icon={User} label="Father name" value={e.father_name} />
-      <InfoField icon={Heart} label="Marital status" value={capitalize(e.marital_status)} />
-      <InfoField icon={PhoneCall} label="Emergency contact" value={e.emergency_contact_name ? `${e.emergency_contact_name}${e.emergency_contact_phone ? ` · ${e.emergency_contact_phone}` : ''}` : null} />
-      <InfoField icon={CreditCard} label="CNIC #" value={e.cnic} />
-      <InfoField icon={MapPin} label="Address" value={e.address} />
+      <InfoField icon={CalendarDaysIcon} label="Date of birth" value={e.date_of_birth ? formatDate(e.date_of_birth) : null} />
+      <InfoField icon={UserIcon} label="Gender" value={capitalize(e.gender)} />
+      <InfoField icon={UserIcon} label="Father name" value={e.father_name} />
+      <InfoField icon={HeartIcon} label="Marital status" value={capitalize(e.marital_status)} />
+      <InfoField icon={PhoneCallIcon} label="Emergency contact" value={e.emergency_contact_name ? `${e.emergency_contact_name}${e.emergency_contact_phone ? ` · ${e.emergency_contact_phone}` : ''}` : null} />
+      <InfoField icon={CreditCardIcon} label="CNIC #" value={e.cnic} />
+      <InfoField icon={MapPinIcon} label="Address" value={e.address} />
     </TabSection>
   )
 }
@@ -294,19 +306,19 @@ function EmploymentTab({ employee: e, managerName, onEdit, onDeleted }) {
   return (
     <>
       <TabSection title="Employment Info" onEdit={onEdit}>
-        <InfoField icon={CreditCard} label="Employee ID" value={e.employee_code} />
+        <InfoField icon={CreditCardIcon} label="Employee ID" value={e.employee_code} />
         <InfoField icon={BadgeCheck} label="Designation" value={e.designations?.name} />
-        <InfoField icon={Users} label="Team" value={e.teams?.name} />
+        <InfoField icon={UsersIcon} label="Team" value={e.teams?.name} />
         <InfoField icon={Building2} label="Department" value={e.departments?.name} />
-        <InfoField icon={FileText} label="Employment type" value={e.employment_types?.name} />
-        <InfoField icon={CheckCircle2} label="Employment status" value={capitalize(e.employment_status?.replace('_', ' '))} />
-        <InfoField icon={CalendarDays} label="Hire date" value={e.hire_date ? formatDate(e.hire_date) : null} />
-        <InfoField icon={CalendarDays} label="Joining date" value={formatDate(e.joining_date)} />
-        <InfoField icon={Clock} label="Probation time" value={e.probation_period_months ? `${e.probation_period_months} month${e.probation_period_months > 1 ? 's' : ''}` : null} />
-        <InfoField icon={CalendarCheck} label="Probation end date" value={e.confirmation_date ? formatDate(e.confirmation_date) : null} />
-        <InfoField icon={LogOut} label="Company exit date" value={e.exit_date ? formatDate(e.exit_date) : null} />
+        <InfoField icon={FileTextIcon} label="Employment type" value={e.employment_types?.name} />
+        <InfoField icon={CircleCheckIcon} label="Employment status" value={capitalize(e.employment_status?.replace('_', ' '))} />
+        <InfoField icon={CalendarDaysIcon} label="Hire date" value={e.hire_date ? formatDate(e.hire_date) : null} />
+        <InfoField icon={CalendarDaysIcon} label="Joining date" value={formatDate(e.joining_date)} />
+        <InfoField icon={ClockIcon} label="Probation time" value={e.probation_period_months ? `${e.probation_period_months} month${e.probation_period_months > 1 ? 's' : ''}` : null} />
+        <InfoField icon={CalendarCheckIcon} label="Probation end date" value={e.confirmation_date ? formatDate(e.confirmation_date) : null} />
+        <InfoField icon={LogoutIcon} label="Company exit date" value={e.exit_date ? formatDate(e.exit_date) : null} />
         <InfoField icon={UserCog} label="Reporting manager" value={managerName} />
-        <InfoField icon={MapPin} label="Location" value={e.branches?.name} />
+        <InfoField icon={MapPinIcon} label="Location" value={e.branches?.name} />
       </TabSection>
 
       {!historyLoading && history.length > 0 && (
@@ -420,10 +432,10 @@ function SalaryTab({ employee: e, onEdit }) {
   return (
     <>
       <TabSection title="Salary Info" onEdit={onEdit}>
-        <InfoField icon={Wallet} label="Basic salary" value={e.basic_salary != null ? fmt(e.basic_salary) : null} />
-        <InfoField icon={Layers} label="Salary level" value={e.salary_level} />
+        <InfoField icon={WalletIcon} label="Basic salary" value={e.basic_salary != null ? fmt(e.basic_salary) : null} />
+        <InfoField icon={LayersIcon} label="Salary level" value={e.salary_level} />
         <InfoField icon={Landmark} label="Bank name" value={e.bank_name} />
-        <InfoField icon={CreditCard} label="Account number" value={e.bank_account_number} />
+        <InfoField icon={CreditCardIcon} label="Account number" value={e.bank_account_number} />
         <InfoField icon={Hash} label="IBAN" value={e.bank_iban} />
       </TabSection>
 
@@ -585,7 +597,7 @@ function AssetsTab({ employeeId, company }) {
       <div className="report-section-head">
         <p className="section-heading">Assets</p>
         <button className="btn-primary btn-icon" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => setDrawerOpen(true)}>
-          <Plus size={14} /> Assign asset
+          <PlusIcon size={14} /> Assign asset
         </button>
       </div>
       {loading ? (
@@ -716,7 +728,7 @@ function BenefitsTab({ employeeId, company }) {
       <div className="report-section-head">
         <p className="section-heading">Benefits</p>
         <button className="btn-primary btn-icon" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => setDrawerOpen(true)}>
-          <Plus size={14} /> Add benefit
+          <PlusIcon size={14} /> Add benefit
         </button>
       </div>
       {loading ? (
@@ -782,7 +794,7 @@ function BenefitTypeSelect({ value, options, onChange, onCreate }) {
         <div className="lookup-add" style={{ marginTop: 0 }}>
           <input autoFocus value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="New benefit type" />
           <button type="button" className="lookup-add-btn" onClick={() => { onCreate(newName); setNewName(''); setAdding(false) }} aria-label="Add benefit type">
-            <Plus size={15} />
+            <PlusIcon size={15} />
           </button>
         </div>
       </div>
@@ -888,7 +900,7 @@ function DocumentsTab({ employeeId, company }) {
       <div className="report-section-head">
         <p className="section-heading">Onboarding Docs</p>
         <button className="btn-primary btn-icon" style={{ padding: '6px 12px', fontSize: 13 }} onClick={openUpload}>
-          <Plus size={14} /> Upload
+          <PlusIcon size={14} /> Upload
         </button>
       </div>
       {loading ? (

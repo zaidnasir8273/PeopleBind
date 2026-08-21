@@ -2094,59 +2094,14 @@ a.attention-item:hover {
   font-size: 14px;
 }
 
-/* ---------- lucide icon micro-interactions ----------
-   lucide-react auto-classes every icon `lucide lucide-<kebab-name>` (e.g.
-   <Plus/> -> "lucide lucide-plus"), so these reach every instance of an
-   icon across the whole app without touching each page individually. */
-
-.lucide-plus {
-  transition: transform var(--duration-fast) var(--ease);
-}
-
-.btn-primary:hover .lucide-plus,
-.btn-secondary:hover .lucide-plus,
-.btn-icon-round:hover .lucide-plus,
-.lookup-add-btn:hover .lucide-plus,
-.cmdk-item:hover .lucide-plus {
-  transform: rotate(90deg);
-}
-
-.lucide-chevron-right {
-  transition: transform var(--duration-fast) var(--ease);
-}
-
-.attention-item:hover .lucide-chevron-right,
-.cmdk-item:hover .lucide-chevron-right,
-.data-table tbody tr:hover .lucide-chevron-right {
-  transform: translateX(3px);
-}
-
-/* One-time pop on appearance -- reuses the same keyframe the onboarding
-   checkbox already used, so "a checkmark just appeared" reads consistently
-   everywhere (SearchableSelect's selected item, approve actions, etc). */
-.lucide-check {
-  animation: check-pop 0.3s var(--ease-out);
-}
-
-.lucide-search {
-  transition: transform var(--duration-fast) var(--ease);
-}
-
-.search-bar:focus-within .lucide-search,
-.cmdk-input-row:focus-within .lucide-search {
-  transform: scale(1.12);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lucide-plus,
-  .lucide-chevron-right,
-  .lucide-search {
-    transition: none !important;
-  }
-  .lucide-check {
-    animation: none !important;
-  }
-}
+/* The CSS hover-transform treatment that used to live here (targeting
+   lucide-react's auto-generated .lucide-<name> classes on Plus/ChevronRight/
+   Check/Search) is gone -- every one of those icons across the app is now a
+   real lucide-animated component with its own internal Motion animation,
+   which doesn't carry that class. SearchableSelect's ChevronDown is the one
+   deliberate exception (see the comment at its import) and still needs its
+   own rotate-on-open rule, kept further down where that component's other
+   styles live. */
 
 .cmdk-item {
   display: flex;
