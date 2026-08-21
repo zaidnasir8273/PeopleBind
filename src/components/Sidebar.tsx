@@ -17,6 +17,9 @@ import { TrendingUpIcon } from './ui/trending-up'
 import { LaptopMinimalCheckIcon } from './ui/laptop-minimal-check'
 import { ArchiveIcon } from './ui/archive'
 import { GitBranchIcon } from './ui/git-branch'
+import { SparklesIcon } from './ui/sparkles'
+import { RadioTowerIcon } from './ui/radio-tower'
+import { HeartHandshakeIcon } from './ui/heart-handshake'
 import { SettingsIcon } from './ui/settings'
 import { LogoutIcon } from './ui/logout'
 import { ShieldCheckIcon } from './ui/shield-check'
@@ -74,6 +77,15 @@ const NAV_ITEMS: NavItem[] = [
     submodules: [
       { to: '/app/documents', label: 'Documents', icon: FileTextIcon },
       { to: '/app/assets', label: 'Assets', icon: LaptopMinimalCheckIcon },
+    ],
+  },
+  {
+    key: 'company',
+    label: 'Company',
+    icon: SparklesIcon,
+    submodules: [
+      { to: '/app/announcements', label: 'Announcements', icon: RadioTowerIcon },
+      { to: '/app/kudos', label: 'Celebrate wins', icon: HeartHandshakeIcon },
     ],
   },
   { key: 'reports', to: '/app/reports', label: 'Reports', icon: ChartColumnIncreasingIcon },

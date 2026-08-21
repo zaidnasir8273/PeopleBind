@@ -14,6 +14,58 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          author_profile_id: string
+          body: string
+          company_id: string
+          created_at: string
+          id: string
+          pinned: boolean
+          title: string
+        }
+        Insert: {
+          author_profile_id: string
+          body: string
+          company_id: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          title: string
+        }
+        Update: {
+          author_profile_id?: string
+          body?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           applied_at: string
@@ -1707,6 +1759,65 @@ export type Database = {
           },
         ]
       }
+      kudos: {
+        Row: {
+          category: string | null
+          company_id: string
+          created_at: string
+          from_employee_id: string
+          id: string
+          message: string
+          to_employee_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          created_at?: string
+          from_employee_id: string
+          id?: string
+          message: string
+          to_employee_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          from_employee_id?: string
+          id?: string
+          message?: string
+          to_employee_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kudos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kudos_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "kudos_from_employee_id_fkey"
+            columns: ["from_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kudos_to_employee_id_fkey"
+            columns: ["to_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_balances: {
         Row: {
           carried_forward_days: number
@@ -3001,6 +3112,8 @@ export type Database = {
           client_id: string | null
           company_id: string
           created_at: string
+          description: string | null
+          expected_completion_date: string | null
           id: string
           name: string
           status: string
@@ -3010,6 +3123,8 @@ export type Database = {
           client_id?: string | null
           company_id: string
           created_at?: string
+          description?: string | null
+          expected_completion_date?: string | null
           id?: string
           name: string
           status?: string
@@ -3019,6 +3134,8 @@ export type Database = {
           client_id?: string | null
           company_id?: string
           created_at?: string
+          description?: string | null
+          expected_completion_date?: string | null
           id?: string
           name?: string
           status?: string
