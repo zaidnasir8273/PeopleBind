@@ -24,6 +24,7 @@ import EmployeeOnboardingTasks from './pages/EmployeeOnboardingTasks'
 import Performance from './pages/Performance'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import OrgChart from './pages/OrgChart'
 import { PlatformAdminGate } from './components/PlatformAdminGate'
 import PlatformAdminShell from './pages/PlatformAdminShell'
 import PlatformCompanies from './pages/PlatformCompanies'
@@ -101,6 +102,7 @@ export default function App() {
             <Route path="performance" element={<Performance />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="org-chart" element={<OrgChart />} />
           </Route>
           <Route
             path="/platform-admin"

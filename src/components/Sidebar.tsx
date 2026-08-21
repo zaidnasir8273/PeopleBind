@@ -16,6 +16,7 @@ import { ChartColumnIncreasingIcon } from './ui/chart-column-increasing'
 import { TrendingUpIcon } from './ui/trending-up'
 import { LaptopMinimalCheckIcon } from './ui/laptop-minimal-check'
 import { ArchiveIcon } from './ui/archive'
+import { GitBranchIcon } from './ui/git-branch'
 import { SettingsIcon } from './ui/settings'
 import { LogoutIcon } from './ui/logout'
 import { ShieldCheckIcon } from './ui/shield-check'
@@ -44,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
       { to: '/app/recruitment', label: 'Recruitment', icon: BriefcaseBusinessIcon },
       { to: '/app/onboarding', label: 'Onboarding', icon: ClipboardCheckIcon },
       { to: '/app/performance', label: 'Performance', icon: TrendingUpIcon },
+      { to: '/app/org-chart', label: 'Org hierarchy', icon: GitBranchIcon },
     ],
   },
   {
