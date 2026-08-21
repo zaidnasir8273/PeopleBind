@@ -1153,6 +1153,14 @@ button:active:not(:disabled) {
   color: var(--sidebar-text-soft);
   text-decoration: none;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.sidebar-link-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .sidebar-link svg {

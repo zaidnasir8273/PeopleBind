@@ -69,7 +69,7 @@ export default function PlatformAdminShell() {
               aria-label={`Back to ${company.name}`}
             >
               <ArrowLeftIcon size={15} />
-              {!collapsed && `Back to ${company.name}`}
+              {!collapsed && <span className="sidebar-link-label">{`Back to ${company.name}`}</span>}
             </NavLink>
           )}
           {!collapsed && <div className="sidebar-user-name">{profile?.full_name || profile?.email}</div>}
