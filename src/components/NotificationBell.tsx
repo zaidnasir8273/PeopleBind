@@ -110,7 +110,12 @@ export function NotificationBell({ portal = 'app' }: { portal?: string }) {
   return (
     <div className="notif-bell-wrap" ref={ref}>
       <button className="notif-bell" onClick={() => setOpen((v) => !v)} aria-label="Notifications">
-        <BellIcon ref={bellRef} size={17} />
+        <BellIcon
+          ref={bellRef}
+          size={17}
+          onMouseEnter={() => bellRef.current?.startAnimation()}
+          onMouseLeave={() => bellRef.current?.stopAnimation()}
+        />
         {unreadCount > 0 && <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
 

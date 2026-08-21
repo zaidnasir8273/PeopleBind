@@ -2672,9 +2672,9 @@ a.attention-item:hover {
 }
 
 .tab-button.active {
-  background: var(--surface);
-  border-color: var(--border);
-  color: var(--ink);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
   font-weight: 600;
 }
 
