@@ -59,6 +59,7 @@ function ReportsNav({ tab, setTab }) {
       {REPORT_CATEGORIES.map((mod) => {
         const isExpanded = expanded.has(mod.key)
         const isActiveModule = mod.submodules.some((s) => s.key === tab)
+        const Icon = mod.icon
 
         return (
           <div key={mod.key} className="settings-module">
@@ -69,7 +70,7 @@ function ReportsNav({ tab, setTab }) {
               aria-expanded={isExpanded}
             >
               <span className={`settings-module-icon settings-module-icon-${mod.color}`}>
-                <span className="report-module-dot" />
+                <Icon size={17} />
               </span>
               <span className="settings-module-label">{mod.label}</span>
               <ChevronDown size={14} className={`settings-module-chevron${isExpanded ? ' expanded' : ''}`} />
