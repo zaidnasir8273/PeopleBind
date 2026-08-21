@@ -108,7 +108,7 @@ export function CommandPalette() {
   return (
     <>
       <button className="cmdk-trigger" onClick={() => setOpen(true)}>
-        <SearchIcon size={14} />
+        <SearchIcon size={16} />
         <span>Search</span>
         <kbd>⌘K</kbd>
       </button>

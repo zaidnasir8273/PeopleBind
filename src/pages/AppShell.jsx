@@ -5,6 +5,8 @@ import { ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { Sidebar } from '../components/Sidebar'
 import { NotificationBell } from '../components/NotificationBell'
+import { SupportChat } from '../components/SupportChat'
+import { AccountMenu } from '../components/AccountMenu'
 import { CommandPalette } from '../components/CommandPalette'
 import { PageTransition } from '../components/motion'
 import { useAuth } from '../context/AuthContext'
@@ -51,7 +53,9 @@ export default function AppShell() {
         )}
         <div className="topbar">
           <CommandPalette />
+          <SupportChat />
           <NotificationBell portal="app" />
+          <AccountMenu />
         </div>
         <AnimatePresence mode="wait" initial={false}>
           <PageTransition key={location.pathname}>

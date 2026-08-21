@@ -110,7 +110,7 @@ function SettingsNav({ tab, setTab }) {
               aria-expanded={single ? undefined : isExpanded}
             >
               <span className={`settings-module-icon settings-module-icon-${mod.color}`}>
-                <Icon size={15} />
+                <Icon size={17} />
               </span>
               <span className="settings-module-label">{mod.label}</span>
               {!single && (

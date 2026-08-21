@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { LogInIcon } from '../components/ui/login'
+import { PlusIcon } from '../components/ui/plus'
+import { SquarePenIcon } from '../components/ui/square-pen'
+import { Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -12,17 +15,29 @@ function formatDate(ts) {
   return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
 export default function PlatformCompanies() {
   const navigate = useNavigate()
   const { enterCompany } = useAuth()
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeCompany, setActiveCompany] = useState(null)
-  const [form, setForm] = useState({ status: '', plan: '' })
+  const [form, setForm] = useState({ name: '', status: '', plan: '' })
   const [saving, setSaving] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleteInput, setDeleteInput] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [createForm, setCreateForm] = useState({ name: '', slug: '', plan: 'starter', status: 'trial', timezone: 'Asia/Karachi' })
+  const [slugTouched, setSlugTouched] = useState(false)
+  const [savingCreate, setSavingCreate] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -40,7 +55,7 @@ export default function PlatformCompanies() {
 
   function openCompany(c) {
     setActiveCompany(c)
-    setForm({ status: c.status, plan: c.plan })
+    setForm({ name: c.name, status: c.status, plan: c.plan })
     setConfirmingDelete(false)
     setDeleteInput('')
   }
@@ -49,6 +64,40 @@ export default function PlatformCompanies() {
     setActiveCompany(null)
     setConfirmingDelete(false)
     setDeleteInput('')
+  }
+
+  function openCreate() {
+    setCreateForm({ name: '', slug: '', plan: 'starter', status: 'trial', timezone: 'Asia/Karachi' })
+    setSlugTouched(false)
+    setCreating(true)
+  }
+
+  function closeCreate() {
+    setCreating(false)
+  }
+
+  function onCreateNameChange(name) {
+    setCreateForm((f) => ({ ...f, name, slug: slugTouched ? f.slug : slugify(name) }))
+  }
+
+  async function createCompany() {
+    if (!createForm.name.trim() || !createForm.slug.trim()) return
+    setSavingCreate(true)
+    const { error } = await supabase.from('companies').insert({
+      name: createForm.name.trim(),
+      slug: createForm.slug.trim(),
+      plan: createForm.plan,
+      status: createForm.status,
+      timezone: createForm.timezone,
+    })
+    setSavingCreate(false)
+    if (error) {
+      toast.error(error.message || 'Failed to create company')
+      return
+    }
+    toast.success(`${createForm.name} created`)
+    closeCreate()
+    load()
   }
 
   async function deleteCompany() {
@@ -72,9 +121,9 @@ export default function PlatformCompanies() {
   }
 
   async function saveChanges() {
-    if (!activeCompany) return
+    if (!activeCompany || !form.name.trim()) return
     setSaving(true)
-    await supabase.from('companies').update({ status: form.status, plan: form.plan }).eq('id', activeCompany.id)
+    await supabase.from('companies').update({ name: form.name.trim(), status: form.status, plan: form.plan }).eq('id', activeCompany.id)
     setSaving(false)
     toast.success('Company updated')
     setActiveCompany(null)
@@ -91,7 +140,13 @@ export default function PlatformCompanies() {
           <p className="page-eyebrow">PLATFORM ADMIN</p>
           <h1 className="page-title">Companies</h1>
         </div>
-        <span className="report-stat">{realCompanies.length} companies · {totalEmployees} employees</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span className="report-stat">{realCompanies.length} companies · {totalEmployees} employees</span>
+          <button type="button" className="btn-primary" onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <PlusIcon size={15} />
+            Add company
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -129,9 +184,19 @@ export default function PlatformCompanies() {
                 <td className="mono">{c.employees?.[0]?.count ?? 0}</td>
                 <td className="mono">{formatDate(c.created_at)}</td>
                 <td>
-                  <button className="btn-icon-round" onClick={(e) => viewAs(c, e)} aria-label={`View as ${c.name}`} data-tooltip={`View as ${c.name}`}>
-                    <LogInIcon size={13} />
-                  </button>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button
+                      className="btn-icon-round"
+                      onClick={(e) => { e.stopPropagation(); openCompany(c) }}
+                      aria-label={`Edit ${c.name}`}
+                      data-tooltip={`Edit ${c.name}`}
+                    >
+                      <SquarePenIcon size={13} />
+                    </button>
+                    <button className="btn-icon-round" onClick={(e) => viewAs(c, e)} aria-label={`View as ${c.name}`} data-tooltip={`View as ${c.name}`}>
+                      <LogInIcon size={13} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -142,6 +207,15 @@ export default function PlatformCompanies() {
       <Drawer open={!!activeCompany} onClose={closeDrawer} title={activeCompany?.name}>
         {activeCompany && (
           <div className="drawer-form">
+            <label className="field">
+              <span>Name</span>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </label>
+
             <div className="field-row">
               <div className="field">
                 <span>Timezone</span>
@@ -178,14 +252,15 @@ export default function PlatformCompanies() {
               </p>
             )}
 
-            <button type="button" className="btn-primary" disabled={saving} onClick={saveChanges} style={{ alignSelf: 'flex-start' }}>
+            <button type="button" className="btn-primary" disabled={saving || !form.name.trim()} onClick={saveChanges} style={{ alignSelf: 'flex-start' }}>
               {saving ? 'Saving…' : 'Save changes'}
             </button>
 
             <div style={{ marginTop: 8, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
               <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 600 }}>Danger zone</p>
               {!confirmingDelete ? (
-                <button type="button" className="btn-danger" onClick={() => setConfirmingDelete(true)}>
+                <button type="button" className="btn-danger" onClick={() => setConfirmingDelete(true)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Trash2 size={14} />
                   Delete company
                 </button>
               ) : (
@@ -220,6 +295,59 @@ export default function PlatformCompanies() {
             </div>
           </div>
         )}
+      </Drawer>
+
+      <Drawer open={creating} onClose={closeCreate} title="Add company">
+        <div className="drawer-form">
+          <label className="field">
+            <span>Name</span>
+            <input type="text" value={createForm.name} onChange={(e) => onCreateNameChange(e.target.value)} autoFocus />
+          </label>
+
+          <label className="field">
+            <span>Slug</span>
+            <input
+              type="text"
+              className="mono"
+              value={createForm.slug}
+              onChange={(e) => { setSlugTouched(true); setCreateForm({ ...createForm, slug: slugify(e.target.value) }) }}
+            />
+          </label>
+
+          <label className="field">
+            <span>Plan</span>
+            <select value={createForm.plan} onChange={(e) => setCreateForm({ ...createForm, plan: e.target.value })}>
+              <option value="starter">Starter</option>
+              <option value="professional">Professional</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+          </label>
+
+          <label className="field">
+            <span>Status</span>
+            <select value={createForm.status} onChange={(e) => setCreateForm({ ...createForm, status: e.target.value })}>
+              <option value="trial">Trial</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </label>
+
+          <label className="field">
+            <span>Timezone</span>
+            <input type="text" value={createForm.timezone} onChange={(e) => setCreateForm({ ...createForm, timezone: e.target.value })} />
+          </label>
+
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={savingCreate || !createForm.name.trim() || !createForm.slug.trim()}
+            onClick={createCompany}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            {savingCreate ? 'Creating…' : 'Create company'}
+          </button>
+        </div>
       </Drawer>
     </div>
   )

@@ -13,6 +13,7 @@ import { PlaneTakeoffIcon } from '../components/ui/plane-takeoff'
 import { UserPlusIcon } from '../components/ui/user-plus'
 import { TimerIcon } from '../components/ui/timer'
 import { UsersIcon } from '../components/ui/users'
+import { BriefcaseBusinessIcon } from '../components/ui/briefcase-business'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { SkeletonStatRow } from '../components/Skeleton'
@@ -300,6 +301,25 @@ export default function Home() {
       </h1>
       <p className="page-subtitle">{company?.name}</p>
 
+      <div className="quick-actions-row">
+        <Link to="/app/people" className="quick-action">
+          <UserPlusIcon size={18} />
+          Add employee
+        </Link>
+        <Link to="/app/payroll" className="quick-action">
+          <WalletIcon size={18} />
+          Run payroll
+        </Link>
+        <Link to="/app/recruitment" className="quick-action">
+          <BriefcaseBusinessIcon size={18} />
+          Post a job
+        </Link>
+        <Link to="/app/expenses" className="quick-action">
+          <ReceiptIcon size={18} />
+          Add expense
+        </Link>
+      </div>
+
       {loading ? (
         <div className="stat-row">
           <div className="stat-card"><span className="stat-label">Team size</span><span className="stat-value">—</span></div>
@@ -456,35 +476,49 @@ export default function Home() {
         </section>
       )}
 
-      {!loading && activity.length > 0 && (
+      {!loading && (
         <section style={{ marginTop: 32 }}>
           <h2 className="section-heading">Recent activity</h2>
-          <StaggerContainer as="div" className="report-section" style={{ marginBottom: 0 }} staggerDelay={0.03}>
-            {activity.map((a) => {
-              const Icon = a.icon
-              return (
-                <StaggerItem as={Link} key={a.key} to={a.to} className="activity-row">
-                  <span className="activity-row-icon"><Icon size={13} /></span>
-                  <span>{a.text}</span>
-                  <span className="activity-row-time">{relativeTime(a.time)}</span>
-                </StaggerItem>
-              )
-            })}
-          </StaggerContainer>
+          {activity.length === 0 ? (
+            <div className="empty-state">
+              <p>Nothing has happened yet.</p>
+              <p className="muted">Approvals, joins, and payroll finalizations will show up here as they happen.</p>
+            </div>
+          ) : (
+            <StaggerContainer as="div" className="report-section" style={{ marginBottom: 0 }} staggerDelay={0.03}>
+              {activity.map((a) => {
+                const Icon = a.icon
+                return (
+                  <StaggerItem as={Link} key={a.key} to={a.to} className="activity-row">
+                    <span className="activity-row-icon"><Icon size={13} /></span>
+                    <span>{a.text}</span>
+                    <span className="activity-row-time">{relativeTime(a.time)}</span>
+                  </StaggerItem>
+                )
+              })}
+            </StaggerContainer>
+          )}
         </section>
       )}
 
-      {!loading && teamFaces.length > 0 && (
+      {!loading && (
         <section style={{ marginTop: 32 }}>
           <h2 className="section-heading"><UsersIcon size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Team</h2>
-          <StaggerContainer as="div" className="team-strip" staggerDelay={0.02}>
-            {teamFaces.map((e) => (
-              <StaggerItem as={Link} key={e.id} to={`/app/people/${e.id}`} className="team-strip-item" data-tooltip={e.full_name}>
-                <Avatar name={e.full_name} photoUrl={e.photo_url} size={40} />
-                <span className="team-strip-name">{firstName(e.full_name)}</span>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
+          {teamFaces.length === 0 ? (
+            <div className="empty-state">
+              <p>No one on the team yet.</p>
+              <p className="muted">Add your first employee to see faces here.</p>
+            </div>
+          ) : (
+            <StaggerContainer as="div" className="team-strip" staggerDelay={0.02}>
+              {teamFaces.map((e) => (
+                <StaggerItem as={Link} key={e.id} to={`/app/people/${e.id}`} className="team-strip-item" data-tooltip={e.full_name}>
+                  <Avatar name={e.full_name} photoUrl={e.photo_url} size={40} />
+                  <span className="team-strip-name">{firstName(e.full_name)}</span>
+                </StaggerItem>
+              ))}
+            </StaggerContainer>
+          )}
         </section>
       )}
     </div>

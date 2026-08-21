@@ -86,7 +86,7 @@ export function Sidebar() {
             {({ isActive }) => (
               <>
                 {isActive && <motion.span layoutId="sidebar-active-pill" className="sidebar-active-pill" transition={{ duration: 0.22 }} />}
-                <Icon size={17} />
+                <Icon size={19} />
                 {!collapsed && label}
               </>
             )}

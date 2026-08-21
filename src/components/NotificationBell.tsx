@@ -112,7 +112,7 @@ export function NotificationBell({ portal = 'app' }: { portal?: string }) {
       <button className="notif-bell" onClick={() => setOpen((v) => !v)} aria-label="Notifications">
         <BellIcon
           ref={bellRef}
-          size={17}
+          size={19}
           onMouseEnter={() => bellRef.current?.startAnimation()}
           onMouseLeave={() => bellRef.current?.stopAnimation()}
         />
