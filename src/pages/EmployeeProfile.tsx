@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { Loader2, CreditCard, Building2, BadgeCheck, CalendarDays } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -6,16 +6,27 @@ import { useAuth } from '../context/AuthContext'
 import { SkeletonBlock } from '../components/Skeleton'
 import { Avatar } from '../components/Avatar'
 
-function formatDate(dateStr) {
+interface ProfileForm {
+  phone: string
+  personal_email: string
+  address: string
+  emergency_contact_name: string
+  emergency_contact_phone: string
+  bank_name: string
+  bank_account_number: string
+  bank_iban: string
+}
+
+function formatDate(dateStr: string | null | undefined) {
   if (!dateStr) return '—'
   return new Date(`${dateStr}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 export default function EmployeeProfile() {
   const { employeeRecord, refreshProfile } = useAuth()
-  const [form, setForm] = useState(null)
+  const [form, setForm] = useState<ProfileForm | null>(null)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (employeeRecord) {
@@ -34,20 +45,20 @@ export default function EmployeeProfile() {
 
   if (!form) return <div className="page-inner" style={{ maxWidth: 700 }}><SkeletonBlock rows={5} /></div>
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setSaving(true)
 
     const { error: saveError } = await supabase.rpc('update_my_employee_profile', {
-      p_phone: form.phone || null,
-      p_personal_email: form.personal_email || null,
-      p_address: form.address || null,
-      p_emergency_contact_name: form.emergency_contact_name || null,
-      p_emergency_contact_phone: form.emergency_contact_phone || null,
-      p_bank_name: form.bank_name || null,
-      p_bank_account_number: form.bank_account_number || null,
-      p_bank_iban: form.bank_iban || null,
+      p_phone: form!.phone || null,
+      p_personal_email: form!.personal_email || null,
+      p_address: form!.address || null,
+      p_emergency_contact_name: form!.emergency_contact_name || null,
+      p_emergency_contact_phone: form!.emergency_contact_phone || null,
+      p_bank_name: form!.bank_name || null,
+      p_bank_account_number: form!.bank_account_number || null,
+      p_bank_iban: form!.bank_iban || null,
     })
 
     setSaving(false)
