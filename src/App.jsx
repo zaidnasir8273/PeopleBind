@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { MotionConfig } from 'motion/react'
 import { AuthProvider } from './context/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
@@ -43,6 +44,7 @@ import EmployeeProfile from './pages/EmployeeProfile'
 export default function App() {
   return (
     <BrowserRouter>
+      <MotionConfig reducedMotion="user" transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
       <AuthProvider>
         <Toaster
           position="top-right"
@@ -141,6 +143,7 @@ export default function App() {
           </Route>
         </Routes>
       </AuthProvider>
+      </MotionConfig>
     </BrowserRouter>
   )
 }

@@ -56,6 +56,22 @@
   box-sizing: border-box;
 }
 
+/* Global backstop: every animation/transition on the site collapses to
+   effectively instant. Individual components also carry their own
+   prefers-reduced-motion overrides for cases (JS-driven transforms, layout
+   animations) this alone can't reach -- this just guarantees nothing is
+   ever missed by a future addition. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 html,
 body,
 #root {
@@ -507,6 +523,12 @@ h1 {
   padding: 14px 12px;
 }
 
+/* Skeleton rows already communicate "loading" via the shimmer sweep --
+   the one-time row entrance is for real data settling in, not placeholders. */
+.skeleton-table tbody tr {
+  animation: none;
+}
+
 @keyframes skeleton-sweep {
   from {
     background-position: 200% 0;
@@ -858,6 +880,40 @@ button:active:not(:disabled) {
   cursor: not-allowed;
 }
 
+/* Restrained press/hover feedback shared by every button variant -- small
+   enough to read as "responsive," not "bouncy." */
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-icon-round {
+  transition: transform var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease),
+    border-color var(--duration-fast) var(--ease), opacity var(--duration-fast) var(--ease);
+}
+
+.btn-primary:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled),
+.btn-danger:hover:not(:disabled),
+.btn-icon-round:hover {
+  transform: scale(1.015);
+}
+
+.btn-primary:active:not(:disabled),
+.btn-secondary:active:not(:disabled),
+.btn-danger:active:not(:disabled),
+.btn-icon-round:active {
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-icon-round {
+    transition: background-color var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease) !important;
+    transform: none !important;
+  }
+}
+
 .btn-link {
   margin-top: 4px;
 }
@@ -1008,6 +1064,7 @@ button:active:not(:disabled) {
 }
 
 .sidebar-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1018,6 +1075,33 @@ button:active:not(:disabled) {
   color: var(--sidebar-text-soft);
   text-decoration: none;
   white-space: nowrap;
+}
+
+.sidebar-link svg {
+  transition: transform var(--duration-fast) var(--ease);
+  flex-shrink: 0;
+}
+
+.sidebar-link:hover svg {
+  transform: translateX(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-link svg {
+    transition: none !important;
+  }
+}
+
+/* The active background/border live on this element (see Sidebar.jsx /
+   EmployeeShell.jsx) so a shared layoutId can slide it between nav items
+   instead of each link independently cross-fading its own background. */
+.sidebar-active-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--sidebar-active-bg);
+  border: 1px solid var(--sidebar-border);
+  border-radius: var(--radius);
 }
 
 .sidebar.collapsed .sidebar-link,
@@ -1036,10 +1120,8 @@ button:active:not(:disabled) {
 }
 
 .sidebar-link.active {
-  background: var(--sidebar-active-bg);
   color: var(--sidebar-text);
   font-weight: 600;
-  border: 1px solid var(--sidebar-border);
 }
 
 /* icon-rail tooltips, shown only when the sidebar is collapsed (data-tooltip is only set then) */
@@ -1319,6 +1401,13 @@ button:active:not(:disabled) {
   border-radius: var(--radius-lg);
   padding: 24px;
   font-size: 14px;
+  animation: fade-in-only 0.25s var(--ease-out) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-state {
+    animation: none !important;
+  }
 }
 
 .empty-state p {
@@ -1935,6 +2024,14 @@ a.attention-item:hover {
   color: var(--ink-soft);
 }
 
+.searchable-select-trigger svg:last-child {
+  transition: transform var(--duration-fast) var(--ease);
+}
+
+.searchable-select-trigger[aria-expanded="true"] svg:last-child {
+  transform: rotate(180deg);
+}
+
 .searchable-select-panel {
   position: absolute;
   top: calc(100% + 6px);
@@ -1949,6 +2046,28 @@ a.attention-item:hover {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transform-origin: top;
+  animation: select-panel-in var(--duration) var(--ease-out);
+}
+
+@keyframes select-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .searchable-select-trigger svg:last-child {
+    transition: none !important;
+  }
+  .searchable-select-panel {
+    animation: none !important;
+  }
 }
 
 .searchable-select-input-row {
@@ -2092,6 +2211,35 @@ a.attention-item:hover {
 .data-table tbody tr {
   cursor: pointer;
   transition: background-color var(--duration) var(--ease);
+  animation: table-row-in var(--duration) var(--ease-out) backwards;
+}
+
+/* Stagger only the rows likely visible on load -- a 200-row table shouldn't
+   make you wait for row 190 to finish fading in. */
+.data-table tbody tr:nth-child(1) { animation-delay: 0ms; }
+.data-table tbody tr:nth-child(2) { animation-delay: 20ms; }
+.data-table tbody tr:nth-child(3) { animation-delay: 40ms; }
+.data-table tbody tr:nth-child(4) { animation-delay: 60ms; }
+.data-table tbody tr:nth-child(5) { animation-delay: 80ms; }
+.data-table tbody tr:nth-child(6) { animation-delay: 100ms; }
+.data-table tbody tr:nth-child(7) { animation-delay: 120ms; }
+.data-table tbody tr:nth-child(8) { animation-delay: 140ms; }
+
+@keyframes table-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .data-table tbody tr {
+    animation: none !important;
+  }
 }
 
 .data-table tbody tr:hover {
@@ -2113,6 +2261,7 @@ a.attention-item:hover {
   text-transform: capitalize;
   background: var(--line);
   color: var(--ink-soft);
+  transition: background-color var(--duration) var(--ease), color var(--duration) var(--ease);
 }
 
 .status-locked {

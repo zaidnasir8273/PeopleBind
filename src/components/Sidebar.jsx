@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { motion } from 'motion/react'
 import {
   Home,
   Users,
@@ -73,8 +74,13 @@ export function Sidebar() {
             data-tooltip={collapsed ? label : undefined}
             aria-label={label}
           >
-            <Icon size={17} strokeWidth={2} />
-            {!collapsed && label}
+            {({ isActive }) => (
+              <>
+                {isActive && <motion.span layoutId="sidebar-active-pill" className="sidebar-active-pill" transition={{ duration: 0.22 }} />}
+                <Icon size={17} strokeWidth={2} />
+                {!collapsed && label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

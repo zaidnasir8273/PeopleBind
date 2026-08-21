@@ -63,6 +63,7 @@ export function SearchableSelect({ options, value, onChange, placeholder = '— 
         type="button"
         className="searchable-select-trigger"
         disabled={disabled}
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
         <span className={selected ? '' : 'muted'}>{selected ? selected.label : placeholder}</span>

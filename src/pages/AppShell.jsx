@@ -1,15 +1,18 @@
 import { useEffect } from 'react'
-import { Outlet, useNavigate, Navigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
+import { AnimatePresence } from 'motion/react'
 import { ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { Sidebar } from '../components/Sidebar'
 import { NotificationBell } from '../components/NotificationBell'
 import { CommandPalette } from '../components/CommandPalette'
+import { PageTransition } from '../components/motion'
 import { useAuth } from '../context/AuthContext'
 
 export default function AppShell() {
   const { isImpersonating, company, exitImpersonation, profile } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   // A platform admin with no company of their own and no active "View as"
   // has nothing to manage here -- every save on these pages assumes a
@@ -50,7 +53,11 @@ export default function AppShell() {
           <CommandPalette />
           <NotificationBell portal="app" />
         </div>
-        <Outlet />
+        <AnimatePresence mode="wait" initial={false}>
+          <PageTransition key={location.pathname}>
+            <Outlet />
+          </PageTransition>
+        </AnimatePresence>
       </div>
     </div>
   )

@@ -19,6 +19,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { SkeletonStatRow } from '../components/Skeleton'
 import { Avatar } from '../components/Avatar'
+import { StaggerContainer, StaggerItem } from '../components/motion'
+import { AnimatedNumber } from '../components/motion/AnimatedNumber'
 
 function greeting() {
   const hour = new Date().getHours()
@@ -300,28 +302,37 @@ export default function Home() {
       </h1>
       <p className="page-subtitle">{company?.name}</p>
 
-      <div className={`stat-row${loading ? '' : ' content-reveal'}`} key={loading ? 'loading' : 'loaded'}>
-        <div className="stat-card">
-          <span className="stat-label">Team size</span>
-          <span className="stat-value">{loading ? '—' : stats.employeeCount}</span>
+      {loading ? (
+        <div className="stat-row">
+          <div className="stat-card"><span className="stat-label">Team size</span><span className="stat-value">—</span></div>
+          <div className="stat-card"><span className="stat-label">Pending leave</span><span className="stat-value">—</span></div>
+          <div className="stat-card"><span className="stat-label">Pending expenses</span><span className="stat-value">—</span></div>
+          <div className="stat-card"><span className="stat-label">Open roles</span><span className="stat-value">—</span></div>
         </div>
-        <div className="stat-card">
-          <span className="stat-label">Pending leave</span>
-          <span className="stat-value">{loading ? '—' : stats.pendingLeave}</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-label">Pending expenses</span>
-          <span className="stat-value">{loading ? '—' : stats.pendingExpenses}</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-label">Open roles</span>
-          <span className="stat-value">{loading ? '—' : stats.openRoles}</span>
-        </div>
-      </div>
+      ) : (
+        <StaggerContainer as="div" className="stat-row">
+          <StaggerItem as="div" className="stat-card">
+            <span className="stat-label">Team size</span>
+            <AnimatedNumber value={stats.employeeCount} className="stat-value" />
+          </StaggerItem>
+          <StaggerItem as="div" className="stat-card">
+            <span className="stat-label">Pending leave</span>
+            <AnimatedNumber value={stats.pendingLeave} className="stat-value" />
+          </StaggerItem>
+          <StaggerItem as="div" className="stat-card">
+            <span className="stat-label">Pending expenses</span>
+            <AnimatedNumber value={stats.pendingExpenses} className="stat-value" />
+          </StaggerItem>
+          <StaggerItem as="div" className="stat-card">
+            <span className="stat-label">Open roles</span>
+            <AnimatedNumber value={stats.openRoles} className="stat-value" />
+          </StaggerItem>
+        </StaggerContainer>
+      )}
 
       {!loading && (
-        <div className="today-grid content-reveal">
-          <div className="today-card">
+        <StaggerContainer as="div" className="today-grid">
+          <StaggerItem as="div" className="today-card">
             <div className="today-card-head">
               <span className="today-card-title"><Radio size={13} /> On the clock now</span>
               <span className="today-card-count">{runningNow.length}</span>
@@ -339,9 +350,9 @@ export default function Home() {
                 {runningNow.length > 6 && <span className="avatar-stack-more">+{runningNow.length - 6}</span>}
               </div>
             )}
-          </div>
+          </StaggerItem>
 
-          <div className="today-card">
+          <StaggerItem as="div" className="today-card">
             <div className="today-card-head">
               <span className="today-card-title"><PlaneTakeoff size={13} /> Out today</span>
               <span className="today-card-count">{outToday.length}</span>
@@ -358,9 +369,9 @@ export default function Home() {
                 {outToday.length > 6 && <span className="avatar-stack-more">+{outToday.length - 6}</span>}
               </div>
             )}
-          </div>
+          </StaggerItem>
 
-          <div className="today-card">
+          <StaggerItem as="div" className="today-card">
             <div className="today-card-head">
               <span className="today-card-title"><Clock size={13} /> Attendance today</span>
               <span className="today-card-count">{attendanceToday.present + attendanceToday.late}</span>
@@ -388,8 +399,8 @@ export default function Home() {
                 })}
               </div>
             )}
-          </div>
-        </div>
+          </StaggerItem>
+        </StaggerContainer>
       )}
 
       <section className="attention-section">
@@ -450,32 +461,32 @@ export default function Home() {
       {!loading && activity.length > 0 && (
         <section style={{ marginTop: 32 }}>
           <h2 className="section-heading">Recent activity</h2>
-          <div className="report-section" style={{ marginBottom: 0 }}>
+          <StaggerContainer as="div" className="report-section" style={{ marginBottom: 0 }} staggerDelay={0.03}>
             {activity.map((a) => {
               const Icon = a.icon
               return (
-                <Link key={a.key} to={a.to} className="activity-row">
+                <StaggerItem as={Link} key={a.key} to={a.to} className="activity-row">
                   <span className="activity-row-icon"><Icon size={13} /></span>
                   <span>{a.text}</span>
                   <span className="activity-row-time">{relativeTime(a.time)}</span>
-                </Link>
+                </StaggerItem>
               )
             })}
-          </div>
+          </StaggerContainer>
         </section>
       )}
 
       {!loading && teamFaces.length > 0 && (
         <section style={{ marginTop: 32 }}>
           <h2 className="section-heading"><Users size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Team</h2>
-          <div className="team-strip">
+          <StaggerContainer as="div" className="team-strip" staggerDelay={0.02}>
             {teamFaces.map((e) => (
-              <Link key={e.id} to={`/app/people/${e.id}`} className="team-strip-item" data-tooltip={e.full_name}>
+              <StaggerItem as={Link} key={e.id} to={`/app/people/${e.id}`} className="team-strip-item" data-tooltip={e.full_name}>
                 <Avatar name={e.full_name} photoUrl={e.photo_url} size={40} />
                 <span className="team-strip-name">{firstName(e.full_name)}</span>
-              </Link>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         </section>
       )}
     </div>

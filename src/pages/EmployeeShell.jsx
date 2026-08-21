@@ -1,7 +1,9 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'motion/react'
 import { Home, Wallet, CalendarDays, User, LogOut, PanelLeftClose, PanelLeftOpen, Timer } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { NotificationBell } from '../components/NotificationBell'
+import { PageTransition } from '../components/motion'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
 const NAV_ITEMS = [
@@ -15,6 +17,7 @@ const NAV_ITEMS = [
 export default function EmployeeShell() {
   const { employeeRecord, company, signOut } = useAuth()
   const [collapsed, setCollapsed] = useSidebarCollapse()
+  const location = useLocation()
 
   return (
     <div className="app-shell">
@@ -47,8 +50,13 @@ export default function EmployeeShell() {
               data-tooltip={collapsed ? label : undefined}
               aria-label={label}
             >
-              <Icon size={17} strokeWidth={2} />
-              {!collapsed && label}
+              {({ isActive }) => (
+                <>
+                  {isActive && <motion.span layoutId="employee-nav-active-pill" className="sidebar-active-pill" transition={{ duration: 0.22 }} />}
+                  <Icon size={17} strokeWidth={2} />
+                  {!collapsed && label}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -70,7 +78,11 @@ export default function EmployeeShell() {
         <div className="topbar">
           <NotificationBell portal="employee" />
         </div>
-        <Outlet />
+        <AnimatePresence mode="wait" initial={false}>
+          <PageTransition key={location.pathname}>
+            <Outlet />
+          </PageTransition>
+        </AnimatePresence>
       </div>
     </div>
   )
