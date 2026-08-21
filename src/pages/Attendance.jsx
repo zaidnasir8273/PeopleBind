@@ -76,7 +76,7 @@ export default function Attendance() {
       supabase.from('shifts').select('id, name').eq('status', 'active').order('name'),
       supabase
         .from('attendance')
-        .select('id, employee_id, status, shift_id, check_in, check_out, worked_minutes, late_minutes, overtime_minutes, notes')
+        .select('id, employee_id, status, shift_id, check_in, check_out, worked_minutes, late_minutes, overtime_minutes, notes, source')
         .eq('attendance_date', date),
     ])
     clearTimeout(loadingTimer)
@@ -250,6 +250,9 @@ export default function Attendance() {
                           <span className={`status-badge status-${rec.status}`}>{rec.status.replace('_', ' ')}</span>
                         ) : (
                           <span className="status-badge">not marked</span>
+                        )}
+                        {rec?.source === 'auto' && (
+                          <span className="muted mono" style={{ marginLeft: 6, fontSize: 11 }} data-tooltip="Marked automatically at end of day">auto</span>
                         )}
                       </td>
                       <td className="mono">{rec?.check_in ? timeFromTimestamp(rec.check_in) : '—'}</td>

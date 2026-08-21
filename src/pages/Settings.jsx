@@ -36,6 +36,7 @@ export default function Settings() {
         <button className={`tab-button${tab === 'company' ? ' active' : ''}`} onClick={() => setTab('company')}>Company</button>
         <button className={`tab-button${tab === 'structure' ? ' active' : ''}`} onClick={() => setTab('structure')}>Org structure</button>
         <button className={`tab-button${tab === 'shifts' ? ' active' : ''}`} onClick={() => setTab('shifts')}>Shifts & holidays</button>
+        <button className={`tab-button${tab === 'leave' ? ' active' : ''}`} onClick={() => setTab('leave')}>Leave</button>
         <button className={`tab-button${tab === 'payroll' ? ' active' : ''}`} onClick={() => setTab('payroll')}>Payroll components</button>
         <button className={`tab-button${tab === 'tax' ? ' active' : ''}`} onClick={() => setTab('tax')}>Tax slabs</button>
         <button className={`tab-button${tab === 'roles' ? ' active' : ''}`} onClick={() => setTab('roles')}>Roles & users</button>
@@ -48,6 +49,7 @@ export default function Settings() {
       {tab === 'company' && <CompanyTab />}
       {tab === 'structure' && <StructureTab />}
       {tab === 'shifts' && <ShiftsTab />}
+      {tab === 'leave' && <LeaveTab />}
       {tab === 'payroll' && <PayrollComponentsTab />}
       {tab === 'tax' && <TaxSlabsTab />}
       {tab === 'roles' && <RolesTab />}
@@ -588,6 +590,316 @@ function ShiftsTab() {
         </form>
       </Drawer>
     </>
+  )
+}
+
+/* =========================== LEAVE =========================== */
+
+function LeaveTab() {
+  const { company } = useAuth()
+  const [leaveTypes, setLeaveTypes] = useState([])
+  const [policies, setPolicies] = useState([])
+  const [employmentTypes, setEmploymentTypes] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [form, setForm] = useState({
+    leave_type_id: '',
+    employment_type_id: '',
+    name: '',
+    annual_entitlement_days: '',
+    carry_forward_enabled: false,
+    carry_forward_max_days: '0',
+    requires_approval: true,
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const [{ data: lt }, { data: p }, { data: et }] = await Promise.all([
+      supabase.from('leave_types').select('id, name, is_paid').order('name'),
+      supabase
+        .from('leave_policies')
+        .select('id, name, annual_entitlement_days, carry_forward_enabled, carry_forward_max_days, requires_approval, leave_types(name), employment_types(name)')
+        .order('name'),
+      supabase.from('employment_types').select('id, name').order('name'),
+    ])
+    setLeaveTypes(lt ?? [])
+    setPolicies(p ?? [])
+    setEmploymentTypes(et ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  function openAdd() {
+    setForm({
+      leave_type_id: leaveTypes[0]?.id ?? '',
+      employment_type_id: '',
+      name: '',
+      annual_entitlement_days: '',
+      carry_forward_enabled: false,
+      carry_forward_max_days: '0',
+      requires_approval: true,
+    })
+    setError(null)
+    setDrawerOpen(true)
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.leave_type_id) {
+      setError('Pick a leave type first')
+      return
+    }
+    setError(null)
+    setSaving(true)
+
+    const { error: saveError } = await supabase.from('leave_policies').insert({
+      company_id: company.id,
+      leave_type_id: form.leave_type_id,
+      employment_type_id: form.employment_type_id || null,
+      name: form.name.trim(),
+      annual_entitlement_days: Number(form.annual_entitlement_days || 0),
+      carry_forward_enabled: form.carry_forward_enabled,
+      carry_forward_max_days: form.carry_forward_enabled ? Number(form.carry_forward_max_days || 0) : 0,
+      requires_approval: form.requires_approval,
+    })
+
+    setSaving(false)
+
+    if (saveError) {
+      setError(saveError.message)
+      toast.error(saveError.message)
+      return
+    }
+
+    toast.success('Leave policy added')
+    setDrawerOpen(false)
+    load()
+  }
+
+  async function removePolicy(id) {
+    const { error: removeError } = await supabase.from('leave_policies').delete().eq('id', id)
+    if (removeError) {
+      toast.error(removeError.message || 'Failed to remove')
+      return
+    }
+    toast.success('Policy removed')
+    load()
+  }
+
+  if (loading) return <SkeletonBlock rows={6} />
+
+  return (
+    <>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+        <LeaveTypesCard rows={leaveTypes} company={company} onChanged={load} />
+        <div className="report-section" style={{ marginBottom: 0 }}>
+          <p className="section-heading">How this fits together</p>
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+            <strong>Leave types</strong> are the categories employees request against (Casual, Sick, Annual…).
+            <strong style={{ display: 'block', marginTop: 8 }}>Leave policies</strong> say how many days of a
+            given type an employment type gets each year, whether unused days carry forward, and whether a
+            request needs approval. A policy with no employment type set applies to everyone. Balances for each
+            employee are generated from whichever policy matches their leave type and employment type.
+          </p>
+        </div>
+      </div>
+
+      <div className="page-header-row" style={{ marginTop: 0 }}>
+        <p className="section-heading" style={{ margin: 0 }}>Leave policies</p>
+        <button className="btn-primary btn-icon" onClick={openAdd} disabled={leaveTypes.length === 0}>
+          <Plus size={16} /> New policy
+        </button>
+      </div>
+
+      {leaveTypes.length === 0 ? (
+        <div className="empty-state">
+          <p>Add a leave type first.</p>
+          <p className="muted">Policies are always attached to a leave type — create Casual, Sick, Annual, etc. on the left before setting entitlements.</p>
+        </div>
+      ) : policies.length === 0 ? (
+        <div className="empty-state">
+          <p>No leave policies yet.</p>
+          <p className="muted">Without a policy, employees have no entitlement to accrue and leave requests will draw down a zero balance.</p>
+        </div>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Policy</th>
+              <th>Leave type</th>
+              <th>Employment type</th>
+              <th>Days/year</th>
+              <th>Carry forward</th>
+              <th>Approval</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {policies.map((p) => (
+              <tr key={p.id} style={{ cursor: 'default' }}>
+                <td>{p.name}</td>
+                <td>{p.leave_types?.name ?? '—'}</td>
+                <td>{p.employment_types?.name ?? 'All'}</td>
+                <td className="mono">{p.annual_entitlement_days}</td>
+                <td>{p.carry_forward_enabled ? `Up to ${p.carry_forward_max_days}` : 'No'}</td>
+                <td>{p.requires_approval ? 'Required' : 'Auto'}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="btn-icon-round reject"
+                    onClick={() => removePolicy(p.id)}
+                    aria-label="Remove policy"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="New leave policy">
+        <form onSubmit={handleSubmit} className="drawer-form">
+          <label className="field">
+            <span>Policy name</span>
+            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Casual — Full-Time" />
+          </label>
+
+          <div className="field-row">
+            <label className="field">
+              <span>Leave type</span>
+              <select required value={form.leave_type_id} onChange={(e) => setForm({ ...form, leave_type_id: e.target.value })}>
+                {leaveTypes.map((lt) => (
+                  <option key={lt.id} value={lt.id}>{lt.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>Employment type</span>
+              <select value={form.employment_type_id} onChange={(e) => setForm({ ...form, employment_type_id: e.target.value })}>
+                <option value="">All employment types</option>
+                {employmentTypes.map((et) => (
+                  <option key={et.id} value={et.id}>{et.name}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label className="field">
+            <span>Annual entitlement (days)</span>
+            <input type="number" min="0" step="0.5" required value={form.annual_entitlement_days} onChange={(e) => setForm({ ...form, annual_entitlement_days: e.target.value })} />
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+            <input type="checkbox" checked={form.requires_approval} onChange={(e) => setForm({ ...form, requires_approval: e.target.checked })} />
+            Requires manager/admin approval
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+            <input type="checkbox" checked={form.carry_forward_enabled} onChange={(e) => setForm({ ...form, carry_forward_enabled: e.target.checked })} />
+            Unused days carry forward to next year
+          </label>
+
+          {form.carry_forward_enabled && (
+            <label className="field">
+              <span>Max carry-forward days</span>
+              <input type="number" min="0" step="0.5" value={form.carry_forward_max_days} onChange={(e) => setForm({ ...form, carry_forward_max_days: e.target.value })} />
+            </label>
+          )}
+
+          {error && <p className="field-error">{error}</p>}
+
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Adding…' : 'Add policy'}
+          </button>
+        </form>
+      </Drawer>
+    </>
+  )
+}
+
+function LeaveTypesCard({ rows, company, onChanged }) {
+  const [form, setForm] = useState({ name: '', is_paid: true })
+  const [saving, setSaving] = useState(false)
+  const [removingId, setRemovingId] = useState(null)
+
+  async function add() {
+    if (!form.name.trim()) return
+    setSaving(true)
+    const { error } = await supabase.from('leave_types').insert({ company_id: company.id, name: form.name.trim(), is_paid: form.is_paid })
+    setSaving(false)
+    if (error) {
+      toast.error(error.message || 'Failed to add leave type')
+      return
+    }
+    setForm({ name: '', is_paid: true })
+    onChanged()
+  }
+
+  async function remove(id) {
+    setRemovingId(id)
+    const { error } = await supabase.from('leave_types').delete().eq('id', id)
+    setRemovingId(null)
+    if (error) {
+      if (error.code === '23503') {
+        toast.error("Can't remove — still used by a policy, balance, or leave request.")
+      } else {
+        toast.error(error.message || 'Failed to remove')
+      }
+      return
+    }
+    toast.success('Removed')
+    onChanged()
+  }
+
+  return (
+    <div className="report-section" style={{ marginBottom: 0 }}>
+      <p className="section-heading">Leave types</p>
+      {rows.length === 0 ? (
+        <p className="muted">None yet.</p>
+      ) : (
+        <div className="lookup-list">
+          {rows.map((r) => (
+            <div key={r.id} className="lookup-row">
+              <span>{r.name}{!r.is_paid && <span className="muted" style={{ marginLeft: 6 }}>· unpaid</span>}</span>
+              <button
+                type="button"
+                className="btn-icon-round reject lookup-row-remove"
+                onClick={() => remove(r.id)}
+                disabled={removingId === r.id}
+                aria-label="Remove"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="lookup-add-group">
+        <input
+          className="input-ghost"
+          placeholder="New leave type (e.g. Casual)"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          onKeyDown={(e) => e.key === 'Enter' && add()}
+        />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+          <input type="checkbox" checked={form.is_paid} onChange={(e) => setForm({ ...form, is_paid: e.target.checked })} />
+          Paid leave
+        </label>
+        <button type="button" className="btn-primary" style={{ alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
+          {saving ? 'Adding…' : 'Add leave type'}
+        </button>
+      </div>
+    </div>
   )
 }
 
