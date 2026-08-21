@@ -373,7 +373,7 @@ export default function Dashboards() {
                 <ChevronDown size={14} />
               </button>
               {picker && (
-                <div className="account-menu-panel" style={{ width: 220 }}>
+                <div className="dashboard-picker-panel">
                   {dashboards.map((d) => (
                     <button key={d.id} type="button" className="account-menu-item" onClick={() => { setActiveId(d.id); setRange({ from: d.date_from ?? defaultRange().from, to: d.date_to ?? defaultRange().to }); setPicker(false) }}>
                       {d.is_default ? '★ ' : ''}{d.name}

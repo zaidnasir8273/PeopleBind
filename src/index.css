@@ -2103,6 +2103,25 @@ a.attention-item:hover {
   position: relative;
 }
 
+/* Unlike .account-menu-panel (anchored right, for a trigger in the far
+   top-right corner), this trigger sits at the left edge of the page --
+   right-aligning would grow the panel leftward off the content area and
+   under the sidebar. Same visual treatment, opposite anchor. */
+.dashboard-picker-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 220px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+  z-index: 60;
+  transform-origin: top left;
+  animation: notif-pop var(--duration) var(--ease-out);
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
