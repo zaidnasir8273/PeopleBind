@@ -666,9 +666,9 @@ function DashboardTab({ employees }) {
         <StatTile icon={ClockIcon} label="Total hours (this week)" value={`${minutesToHoursLabel(totalMinutes)}h`} />
         <StatTile icon={WalletIcon} label="Billable hours" value={`${minutesToHoursLabel(billableMinutes)}h`} />
         <StatTile icon={BanIcon} label="Non-billable hours" value={`${minutesToHoursLabel(nonBillableMinutes)}h`} />
-        <StatTile icon={Send} label="Pending approvals" value={submittedCount} />
+        <StatTile icon={SendIcon} label="Pending approvals" value={submittedCount} />
         <StatTile icon={AlertTriangle} label="Missing this week" value={missingCount} />
-        <StatTile icon={CheckCircle2} label="Utilization" value={`${utilization}%`} />
+        <StatTile icon={CircleCheckIcon} label="Utilization" value={`${utilization}%`} />
       </div>
 
       <div className="report-section">
