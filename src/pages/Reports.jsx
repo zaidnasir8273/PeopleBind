@@ -33,12 +33,8 @@ function monthsAgo(n) {
 const axisStyle = { fontSize: 12, fontFamily: 'Inter, sans-serif', fill: INK_SOFT }
 const tooltipStyle = { fontSize: 13, fontFamily: 'Inter, sans-serif', borderRadius: 8, border: `1px solid ${LINE}` }
 
-function moduleKeyForReport(reportKey) {
-  return REPORT_CATEGORIES.find((c) => c.submodules.some((s) => s.key === reportKey))?.key
-}
-
 function ReportsNav({ tab, setTab }) {
-  const [expanded, setExpanded] = useState(() => new Set([moduleKeyForReport(tab)]))
+  const [expanded, setExpanded] = useState(() => new Set())
 
   function toggleModule(key) {
     setExpanded((prev) => {

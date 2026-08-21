@@ -72,12 +72,8 @@ const SETTINGS_MODULES = [
   },
 ]
 
-function moduleKeyForTab(tabKey) {
-  return SETTINGS_MODULES.find((m) => m.submodules.some((s) => s.key === tabKey))?.key
-}
-
 function SettingsNav({ tab, setTab }) {
-  const [expanded, setExpanded] = useState(() => new Set([moduleKeyForTab(tab)]))
+  const [expanded, setExpanded] = useState(() => new Set())
 
   function toggleModule(key) {
     setExpanded((prev) => {
