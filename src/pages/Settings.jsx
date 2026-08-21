@@ -1861,7 +1861,7 @@ function TimesheetsSetupTab() {
     setLoading(true)
     const [{ data: c }, { data: p }, { data: t }, { data: e }] = await Promise.all([
       supabase.from('clients').select('id, name, status').order('name'),
-      supabase.from('projects').select('id, name, client_id, status, clients(name)').order('name'),
+      supabase.from('projects').select('id, name, client_id, status, expected_completion_date, clients(name)').order('name'),
       supabase.from('timesheet_tasks').select('id, name, status').order('name'),
       supabase.from('employees').select('id, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
     ])
@@ -1902,7 +1902,7 @@ function TimesheetsSetupTab() {
 }
 
 function ProjectsCard({ rows, clients, employees, company, onChanged }) {
-  const [form, setForm] = useState({ name: '', client_id: '' })
+  const [form, setForm] = useState({ name: '', client_id: '', expected_completion_date: '' })
   const [saving, setSaving] = useState(false)
   const [removingId, setRemovingId] = useState(null)
   const [addingClient, setAddingClient] = useState(false)
@@ -1912,13 +1912,18 @@ function ProjectsCard({ rows, clients, employees, company, onChanged }) {
   async function add() {
     if (!form.name.trim()) return
     setSaving(true)
-    const { error } = await supabase.from('projects').insert({ company_id: company.id, name: form.name.trim(), client_id: form.client_id || null })
+    const { error } = await supabase.from('projects').insert({
+      company_id: company.id,
+      name: form.name.trim(),
+      client_id: form.client_id || null,
+      expected_completion_date: form.expected_completion_date || null,
+    })
     setSaving(false)
     if (error) {
       toast.error(error.message || 'Failed to add project')
       return
     }
-    setForm({ name: '', client_id: '' })
+    setForm({ name: '', client_id: '', expected_completion_date: '' })
     onChanged()
   }
 
@@ -1960,7 +1965,14 @@ function ProjectsCard({ rows, clients, employees, company, onChanged }) {
         <div className="lookup-list">
           {rows.map((r) => (
             <div key={r.id} className="lookup-row">
-              <span>{r.name}{r.clients?.name ? ` · ${r.clients.name}` : ''}</span>
+              <span>
+                {r.name}{r.clients?.name ? ` · ${r.clients.name}` : ''}
+                {r.expected_completion_date && (
+                  <span className="muted" style={{ display: 'block', fontSize: 11 }}>
+                    Due {new Date(r.expected_completion_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                )}
+              </span>
               <div style={{ display: 'flex', gap: 2 }}>
                 <button
                   type="button"
@@ -2008,14 +2020,56 @@ function ProjectsCard({ rows, clients, employees, company, onChanged }) {
             </select>
           )}
         </div>
+        <label className="field" style={{ maxWidth: 200 }}>
+          <span>Expected completion (optional)</span>
+          <input
+            type="date"
+            value={form.expected_completion_date}
+            onChange={(e) => setForm({ ...form, expected_completion_date: e.target.value })}
+          />
+        </label>
         <button type="button" className="btn-primary" style={{ alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
           {saving ? 'Adding…' : 'Add project'}
         </button>
       </div>
 
-      <Drawer open={!!membersProject} onClose={() => setMembersProject(null)} title={membersProject ? `Access · ${membersProject.name}` : ''}>
-        {membersProject && <ProjectMembersEditor project={membersProject} employees={employees} company={company} />}
+      <Drawer open={!!membersProject} onClose={() => setMembersProject(null)} title={membersProject ? `Project · ${membersProject.name}` : ''}>
+        {membersProject && (
+          <>
+            <ProjectDueDateForm project={membersProject} onChanged={onChanged} />
+            <ProjectMembersEditor project={membersProject} employees={employees} company={company} />
+          </>
+        )}
       </Drawer>
+    </div>
+  )
+}
+
+function ProjectDueDateForm({ project, onChanged }) {
+  const [date, setDate] = useState(project.expected_completion_date ?? '')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    setSaving(true)
+    const { error } = await supabase.from('projects').update({ expected_completion_date: date || null }).eq('id', project.id)
+    setSaving(false)
+    if (error) {
+      toast.error(error.message || 'Failed to save')
+      return
+    }
+    toast.success('Saved')
+    onChanged()
+  }
+
+  return (
+    <div style={{ padding: '0 24px 20px', display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+      <label className="field" style={{ flex: 1, margin: 0 }}>
+        <span>Expected completion</span>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </label>
+      <button type="button" className="btn-secondary" disabled={saving} onClick={save}>
+        {saving ? 'Saving…' : 'Save'}
+      </button>
     </div>
   )
 }

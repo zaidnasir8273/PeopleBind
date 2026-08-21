@@ -92,6 +92,9 @@ export default function Home() {
   const [attendanceTrend, setAttendanceTrend] = useState([])
   const [activity, setActivity] = useState([])
   const [teamFaces, setTeamFaces] = useState([])
+  const [announcements, setAnnouncements] = useState([])
+  const [kudosFeed, setKudosFeed] = useState([])
+  const [projectUpdates, setProjectUpdates] = useState([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -119,6 +122,9 @@ export default function Home() {
       { data: payrollFinalizedRows },
       { data: timesheetDecidedRows },
       { data: teamFaceRows },
+      { data: announcementRows },
+      { data: kudosRows },
+      { data: projectRows },
     ] = await Promise.all([
       supabase.from('employees').select('id', { count: 'exact', head: true }).in('employment_status', ['training', 'probation', 'confirmed']),
       supabase.from('leave_requests').select('id, employees(full_name), leave_types(name), days_requested').eq('status', 'pending'),
@@ -173,6 +179,24 @@ export default function Home() {
         .order('approved_at', { ascending: false })
         .limit(5),
       supabase.from('employees').select('id, full_name, photo_url').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name').limit(18),
+      supabase
+        .from('announcements')
+        .select('id, title, body, pinned, created_at')
+        .order('pinned', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(3),
+      supabase
+        .from('kudos')
+        .select('id, category, message, created_at, from:employees!kudos_from_employee_id_fkey(full_name, photo_url), to:employees!kudos_to_employee_id_fkey(full_name, photo_url)')
+        .order('created_at', { ascending: false })
+        .limit(3),
+      supabase
+        .from('projects')
+        .select('id, name, expected_completion_date, project_members(employees(full_name, photo_url))')
+        .eq('status', 'active')
+        .not('expected_completion_date', 'is', null)
+        .order('expected_completion_date', { ascending: true })
+        .limit(5),
     ])
 
     const items = []
@@ -311,6 +335,9 @@ export default function Home() {
     setActivity(feed.slice(0, 8))
 
     setTeamFaces(teamFaceRows ?? [])
+    setAnnouncements(announcementRows ?? [])
+    setKudosFeed(kudosRows ?? [])
+    setProjectUpdates((projectRows ?? []).map((p) => ({ ...p, assignees: (p.project_members ?? []).map((m) => m.employees).filter(Boolean) })))
 
     setStats({
       employeeCount: employeeCount ?? 0,
@@ -520,6 +547,76 @@ export default function Home() {
           </ul>
         )}
       </section>
+
+      {!loading && announcements.length > 0 && (
+        <section style={{ marginTop: 32 }}>
+          <div className="page-header-row" style={{ marginBottom: 0, alignItems: 'center' }}>
+            <h2 className="section-heading" style={{ marginBottom: 0 }}>Announcements</h2>
+            <Link to="/app/announcements" className="link-button" style={{ fontSize: 12 }}>View all</Link>
+          </div>
+          <div className="report-section" style={{ marginBottom: 0 }}>
+            {announcements.map((a) => (
+              <Link key={a.id} to="/app/announcements" className="upcoming-row" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {a.pinned && <span className="tab-count" style={{ marginRight: 8 }}>Pinned</span>}
+                  {a.title}
+                </span>
+                <span className="muted mono">{relativeTime(a.created_at)}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!loading && kudosFeed.length > 0 && (
+        <section style={{ marginTop: 32 }}>
+          <div className="page-header-row" style={{ marginBottom: 0, alignItems: 'center' }}>
+            <h2 className="section-heading" style={{ marginBottom: 0 }}>Celebrate wins</h2>
+            <Link to="/app/kudos" className="link-button" style={{ fontSize: 12 }}>Give kudos</Link>
+          </div>
+          <div className="report-section" style={{ marginBottom: 0 }}>
+            {kudosFeed.map((k) => (
+              <Link key={k.id} to="/app/kudos" className="upcoming-row" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                  <Avatar name={k.from?.full_name} photoUrl={k.from?.photo_url} size={22} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <strong>{k.from?.full_name ?? 'Someone'}</strong>
+                    {k.to?.full_name && <> → <strong>{k.to.full_name}</strong></>}: {k.message}
+                  </span>
+                </span>
+                <span className="muted mono">{relativeTime(k.created_at)}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!loading && projectUpdates.length > 0 && (
+        <section style={{ marginTop: 32 }}>
+          <h2 className="section-heading">Company updates</h2>
+          <div className="report-section" style={{ marginBottom: 0 }}>
+            {projectUpdates.map((p) => (
+              <div key={p.id} className="upcoming-row">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {p.assignees.length > 0 && (
+                    <span className="avatar-stack">
+                      {p.assignees.slice(0, 4).map((e, i) => (
+                        <span key={i} className="avatar-stack-item" data-tooltip={e.full_name}>
+                          <Avatar name={e.full_name} photoUrl={e.photo_url} size={22} />
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                  {p.name}
+                </span>
+                <span className="muted mono">
+                  Due {new Date(p.expected_completion_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {!loading && upcoming.length > 0 && (
         <section style={{ marginTop: 32 }}>
