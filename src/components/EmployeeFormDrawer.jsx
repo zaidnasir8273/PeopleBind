@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Loader2, Plus } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import { PlusIcon } from './ui/plus'
 import { supabase } from '../lib/supabase'
 import { Drawer } from './Drawer'
 
@@ -375,7 +376,7 @@ function LookupSelect({ label, value, options, onChange, onCreate }) {
               setAdding(false)
             }}
           >
-            <Plus size={15} />
+            <PlusIcon size={15} />
           </button>
         </div>
       </div>

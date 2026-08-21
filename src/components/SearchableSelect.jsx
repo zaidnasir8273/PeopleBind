@@ -1,5 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, ChevronDown, Check } from 'lucide-react'
+// ChevronDown deliberately stays the plain lucide-react icon: the CSS rotate
+// treatment below targets svg:last-child directly, and the animated version
+// wraps its svg in a div (breaking that selector) plus animates with a
+// bounce rather than a rotate, which doesn't read as an open/closed state.
+import { ChevronDown } from 'lucide-react'
+import { SearchIcon } from './ui/search'
+import { CheckIcon } from './ui/check'
 
 // A lightweight, keyboard-friendly combobox: click to open, type to filter,
 // arrow keys + Enter to pick, click-outside or Escape to close.
@@ -73,7 +79,7 @@ export function SearchableSelect({ options, value, onChange, placeholder = '— 
       {open && (
         <div className="searchable-select-panel">
           <div className="searchable-select-input-row">
-            <Search size={14} />
+            <SearchIcon size={14} />
             <input
               ref={inputRef}
               value={query}
@@ -102,7 +108,7 @@ export function SearchableSelect({ options, value, onChange, placeholder = '— 
                         {opt.label}
                         {opt.sublabel && <span className="muted" style={{ display: 'block', fontSize: 12 }}>{opt.sublabel}</span>}
                       </span>
-                      {opt.value === value && <Check size={14} />}
+                      {opt.value === value && <CheckIcon size={14} />}
                     </button>
                   </div>
                 )

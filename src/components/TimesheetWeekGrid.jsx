@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Plus, Trash2, Loader2, Check } from 'lucide-react'
+import { Trash2, Loader2 } from 'lucide-react'
+import { PlusIcon } from './ui/plus'
+import { CheckIcon } from './ui/check'
 import { supabase } from '../lib/supabase'
 import { SkeletonBlock } from './Skeleton'
 import { SearchableSelect } from './SearchableSelect'
@@ -271,7 +273,7 @@ export function TimesheetWeekGrid({
             {saveState === 'saving' ? (
               <><Loader2 size={12} className="btn-spinner" /> Saving…</>
             ) : (
-              <><Check size={12} /> Saved</>
+              <><CheckIcon size={12} /> Saved</>
             )}
           </span>
         )}
@@ -288,7 +290,7 @@ export function TimesheetWeekGrid({
           <p className="muted" style={{ margin: 0 }}>Start tracking your work or add a project to your timesheet.</p>
           {!readOnly && (
             <button type="button" className="btn-primary btn-icon" onClick={() => setAddOpen(true)}>
-              <Plus size={14} /> Add time
+              <PlusIcon size={14} /> Add time
             </button>
           )}
         </div>
@@ -395,12 +397,12 @@ export function TimesheetWeekGrid({
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, whiteSpace: 'nowrap' }}>
               <input type="checkbox" checked={addForm.billable} onChange={(e) => setAddForm((f) => ({ ...f, billable: e.target.checked }))} /> Billable
             </label>
-            <button type="button" className="btn-primary btn-icon" onClick={addRow}><Plus size={14} /> Add</button>
+            <button type="button" className="btn-primary btn-icon" onClick={addRow}><PlusIcon size={14} /> Add</button>
             <button type="button" className="link-button" onClick={() => setAddOpen(false)}>Cancel</button>
           </div>
         ) : (
           <button type="button" className="btn-secondary btn-icon" onClick={() => setAddOpen(true)} style={{ marginTop: 12 }}>
-            <Plus size={14} /> Add project
+            <PlusIcon size={14} /> Add project
           </button>
         )
       )}

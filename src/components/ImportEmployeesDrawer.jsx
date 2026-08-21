@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react'
 import Papa from 'papaparse'
-import { Upload, ArrowRight, CheckCircle2, XCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
+import { UploadIcon } from './ui/upload'
+import { ArrowRightIcon } from './ui/arrow-right'
+import { CircleCheckIcon } from './ui/circle-check'
 import { supabase } from '../lib/supabase'
 import { Drawer } from './Drawer'
 
@@ -192,7 +195,7 @@ export function ImportEmployeesDrawer({ open, onClose, company, lookups, onImpor
             Upload a CSV with your employee list. You'll map columns and preview everything before anything gets created.
           </p>
           <label className="import-dropzone">
-            <Upload size={20} />
+            <UploadIcon size={20} />
             <span>Choose a CSV file</span>
             <input type="file" accept=".csv,text/csv" onChange={handleFile} style={{ display: 'none' }} />
           </label>
@@ -211,7 +214,7 @@ export function ImportEmployeesDrawer({ open, onClose, company, lookups, onImpor
               {headers.map((h) => (
                 <tr key={h} style={{ cursor: 'default' }}>
                   <td>{h}</td>
-                  <td><ArrowRight size={14} className="muted" /></td>
+                  <td><ArrowRightIcon size={14} className="muted" /></td>
                   <td>
                     <select value={mapping[h] || ''} onChange={(e) => setMapping({ ...mapping, [h]: e.target.value })}>
                       {TARGET_FIELDS.map((f) => (
@@ -242,7 +245,7 @@ export function ImportEmployeesDrawer({ open, onClose, company, lookups, onImpor
                       <td>
                         {r.errors.length === 0 ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--teal-deep)', fontSize: 12 }}>
-                            <CheckCircle2 size={13} /> OK
+                            <CircleCheckIcon size={13} /> OK
                           </span>
                         ) : (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#b0473f', fontSize: 12 }}>

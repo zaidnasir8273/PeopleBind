@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { LogIn, LogOut, Clock } from 'lucide-react'
+import { LogInIcon } from './ui/login'
+import { LogoutIcon } from './ui/logout'
+import { ClockIcon } from './ui/clock'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -84,7 +86,7 @@ export function AttendanceClock() {
       <div className="attendance-clock-row">
         <div className="attendance-clock-status">
           <span className={`attendance-clock-icon${hasCheckedIn && !hasCheckedOut ? ' live' : ''}`}>
-            <Clock size={16} />
+            <ClockIcon size={16} />
           </span>
           <div>
             {!hasCheckedIn ? (
@@ -111,11 +113,11 @@ export function AttendanceClock() {
 
         {!hasCheckedIn ? (
           <button type="button" className="btn-primary btn-icon" disabled={working} onClick={clockIn}>
-            <LogIn size={15} /> Clock in
+            <LogInIcon size={15} /> Clock in
           </button>
         ) : !hasCheckedOut ? (
           <button type="button" className="btn-secondary btn-icon" disabled={working} onClick={clockOut}>
-            <LogOut size={15} /> Clock out
+            <LogoutIcon size={15} /> Clock out
           </button>
         ) : null}
       </div>

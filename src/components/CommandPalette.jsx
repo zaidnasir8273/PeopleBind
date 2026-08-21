@@ -1,22 +1,31 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Search, Home, Users, Clock, CalendarDays, Wallet, Receipt, Briefcase, Target, BarChart3, Settings, FileText,
-} from 'lucide-react'
+import { Target } from 'lucide-react'
+import { SearchIcon } from './ui/search'
+import { HomeIcon } from './ui/home'
+import { UsersIcon } from './ui/users'
+import { ClockIcon } from './ui/clock'
+import { CalendarDaysIcon } from './ui/calendar-days'
+import { WalletIcon } from './ui/wallet'
+import { ReceiptIcon } from './ui/receipt'
+import { BriefcaseBusinessIcon } from './ui/briefcase-business'
+import { ChartBarIncreasingIcon } from './ui/chart-bar-increasing'
+import { SettingsIcon } from './ui/settings'
+import { FileTextIcon } from './ui/file-text'
 import { supabase } from '../lib/supabase'
 
 const STATIC_ACTIONS = [
-  { label: 'Home', to: '/app', icon: Home, keywords: 'dashboard home' },
-  { label: 'People', to: '/app/people', icon: Users, keywords: 'employees people directory' },
-  { label: 'Attendance', to: '/app/attendance', icon: Clock, keywords: 'attendance roster corrections' },
-  { label: 'Leave', to: '/app/leave', icon: CalendarDays, keywords: 'leave requests balances' },
-  { label: 'Payroll', to: '/app/payroll', icon: Wallet, keywords: 'payroll salary payslips runs' },
-  { label: 'Expenses', to: '/app/expenses', icon: Receipt, keywords: 'expenses claims reimbursement' },
-  { label: 'Documents', to: '/app/documents', icon: FileText, keywords: 'documents files contracts' },
-  { label: 'Recruitment', to: '/app/recruitment', icon: Briefcase, keywords: 'recruitment candidates jobs hiring' },
+  { label: 'Home', to: '/app', icon: HomeIcon, keywords: 'dashboard home' },
+  { label: 'People', to: '/app/people', icon: UsersIcon, keywords: 'employees people directory' },
+  { label: 'Attendance', to: '/app/attendance', icon: ClockIcon, keywords: 'attendance roster corrections' },
+  { label: 'Leave', to: '/app/leave', icon: CalendarDaysIcon, keywords: 'leave requests balances' },
+  { label: 'Payroll', to: '/app/payroll', icon: WalletIcon, keywords: 'payroll salary payslips runs' },
+  { label: 'Expenses', to: '/app/expenses', icon: ReceiptIcon, keywords: 'expenses claims reimbursement' },
+  { label: 'Documents', to: '/app/documents', icon: FileTextIcon, keywords: 'documents files contracts' },
+  { label: 'Recruitment', to: '/app/recruitment', icon: BriefcaseBusinessIcon, keywords: 'recruitment candidates jobs hiring' },
   { label: 'Performance', to: '/app/performance', icon: Target, keywords: 'performance goals reviews feedback' },
-  { label: 'Reports', to: '/app/reports', icon: BarChart3, keywords: 'reports analytics dashboards' },
-  { label: 'Settings', to: '/app/settings', icon: Settings, keywords: 'settings shifts holidays roles' },
+  { label: 'Reports', to: '/app/reports', icon: ChartBarIncreasingIcon, keywords: 'reports analytics dashboards' },
+  { label: 'Settings', to: '/app/settings', icon: SettingsIcon, keywords: 'settings shifts holidays roles' },
 ]
 
 export function CommandPalette() {
@@ -44,9 +53,9 @@ export function CommandPalette() {
     ])
 
     const dynamicMatches = [
-      ...(employees ?? []).map((e) => ({ label: e.full_name, sublabel: e.employee_code, to: '/app/people', icon: Users, group: 'Employees' })),
-      ...(candidates ?? []).map((c) => ({ label: c.full_name, to: '/app/recruitment', icon: Briefcase, group: 'Candidates' })),
-      ...(openings ?? []).map((o) => ({ label: o.title, to: '/app/recruitment', icon: Briefcase, group: 'Job openings' })),
+      ...(employees ?? []).map((e) => ({ label: e.full_name, sublabel: e.employee_code, to: '/app/people', icon: UsersIcon, group: 'Employees' })),
+      ...(candidates ?? []).map((c) => ({ label: c.full_name, to: '/app/recruitment', icon: BriefcaseBusinessIcon, group: 'Candidates' })),
+      ...(openings ?? []).map((o) => ({ label: o.title, to: '/app/recruitment', icon: BriefcaseBusinessIcon, group: 'Job openings' })),
     ]
 
     setResults([...staticMatches, ...dynamicMatches])
@@ -99,7 +108,7 @@ export function CommandPalette() {
   return (
     <>
       <button className="cmdk-trigger" onClick={() => setOpen(true)}>
-        <Search size={14} />
+        <SearchIcon size={14} />
         <span>Search</span>
         <kbd>⌘K</kbd>
       </button>
@@ -108,7 +117,7 @@ export function CommandPalette() {
         <div className="cmdk-overlay" onClick={() => setOpen(false)}>
           <div className="cmdk-panel" onClick={(e) => e.stopPropagation()}>
             <div className="cmdk-input-row">
-              <Search size={16} />
+              <SearchIcon size={16} />
               <input
                 ref={inputRef}
                 value={query}

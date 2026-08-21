@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+import { XIcon } from './ui/x'
 
 const CLOSE_DISTANCE_RATIO = 0.35
 const CLOSE_VELOCITY = 0.15
@@ -102,7 +102,7 @@ export function Drawer({ open, onClose, title, children, wide = false }) {
         >
           <h2 className="drawer-title">{title}</h2>
           <button className="drawer-close" onClick={onClose} aria-label="Close">
-            <X size={18} />
+            <XIcon size={18} />
           </button>
         </div>
         <div className="drawer-body">{children}</div>
