@@ -31,6 +31,7 @@ export function NotificationBell({ portal = 'app' }) {
   const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [open, setOpen] = useState(false)
+  const [ringing, setRinging] = useState(false)
   const ref = useRef(null)
 
   const load = useCallback(async () => {
@@ -53,6 +54,7 @@ export function NotificationBell({ portal = 'app' }) {
       .channel(`notifications:${profile.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` }, (payload) => {
         setItems((prev) => [payload.new, ...prev])
+        setRinging(true)
       })
       .subscribe()
     return () => {
@@ -101,8 +103,8 @@ export function NotificationBell({ portal = 'app' }) {
 
   return (
     <div className="notif-bell-wrap" ref={ref}>
-      <button className="notif-bell" onClick={() => setOpen((v) => !v)} aria-label="Notifications">
-        <Bell size={17} strokeWidth={2} />
+      <button className={`notif-bell${ringing ? ' ringing' : ''}`} onClick={() => setOpen((v) => !v)} aria-label="Notifications">
+        <Bell size={17} strokeWidth={2} onAnimationEnd={() => setRinging(false)} />
         {unreadCount > 0 && <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
       </button>
 

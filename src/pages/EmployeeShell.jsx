@@ -36,7 +36,18 @@ export default function EmployeeShell() {
             data-tooltip={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {collapsed ? <PanelLeftOpen size={15} strokeWidth={2} /> : <PanelLeftClose size={15} strokeWidth={2} />}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={collapsed ? 'open' : 'close'}
+                initial={{ opacity: 0, rotate: -90, scale: 0.6 }}
+                animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, rotate: 90, scale: 0.6 }}
+                transition={{ duration: 0.16 }}
+                style={{ display: 'flex' }}
+              >
+                {collapsed ? <PanelLeftOpen size={15} strokeWidth={2} /> : <PanelLeftClose size={15} strokeWidth={2} />}
+              </motion.span>
+            </AnimatePresence>
           </button>
         </div>
 

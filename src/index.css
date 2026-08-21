@@ -1924,6 +1924,10 @@ a.attention-item:hover {
   padding-top: 12vh;
 }
 
+.cmdk-overlay {
+  animation: fade-in-only 0.15s var(--ease-out);
+}
+
 .cmdk-panel {
   width: min(560px, 92vw);
   max-height: 60vh;
@@ -1934,6 +1938,14 @@ a.attention-item:hover {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  animation: select-panel-in var(--duration) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmdk-overlay,
+  .cmdk-panel {
+    animation: none !important;
+  }
 }
 
 .cmdk-input-row {
@@ -1966,6 +1978,75 @@ a.attention-item:hover {
   letter-spacing: 0.04em;
   color: var(--ink-soft);
   padding: 8px 10px 4px;
+}
+
+/* ---------- lucide icon micro-interactions ----------
+   lucide-react auto-classes every icon `lucide lucide-<kebab-name>` (e.g.
+   <Plus/> -> "lucide lucide-plus"), so these reach every instance of an
+   icon across the whole app without touching each page individually. */
+
+.lucide-plus {
+  transition: transform var(--duration-fast) var(--ease);
+}
+
+.btn-primary:hover .lucide-plus,
+.btn-secondary:hover .lucide-plus,
+.btn-icon-round:hover .lucide-plus,
+.lookup-add-btn:hover .lucide-plus,
+.cmdk-item:hover .lucide-plus {
+  transform: rotate(90deg);
+}
+
+.lucide-chevron-right {
+  transition: transform var(--duration-fast) var(--ease);
+}
+
+.attention-item:hover .lucide-chevron-right,
+.cmdk-item:hover .lucide-chevron-right,
+.data-table tbody tr:hover .lucide-chevron-right {
+  transform: translateX(3px);
+}
+
+/* One-time pop on appearance -- reuses the same keyframe the onboarding
+   checkbox already used, so "a checkmark just appeared" reads consistently
+   everywhere (SearchableSelect's selected item, approve actions, etc). */
+.lucide-check {
+  animation: check-pop 0.3s var(--ease-out);
+}
+
+.lucide-search {
+  transition: transform var(--duration-fast) var(--ease);
+}
+
+.search-bar:focus-within .lucide-search,
+.cmdk-input-row:focus-within .lucide-search {
+  transform: scale(1.12);
+}
+
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-13deg); }
+  30% { transform: rotate(10deg); }
+  45% { transform: rotate(-7deg); }
+  60% { transform: rotate(4deg); }
+  75% { transform: rotate(-2deg); }
+}
+
+.notif-bell.ringing .lucide-bell {
+  animation: bell-ring 0.6s var(--ease-out);
+  transform-origin: top center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lucide-plus,
+  .lucide-chevron-right,
+  .lucide-search {
+    transition: none !important;
+  }
+  .lucide-check,
+  .notif-bell.ringing .lucide-bell {
+    animation: none !important;
+  }
 }
 
 .cmdk-item {
