@@ -51,6 +51,7 @@ const SETTINGS_MODULES = [
       { key: 'payroll', label: 'Payroll components' },
       { key: 'tax', label: 'Tax slabs' },
       { key: 'statutory', label: 'Statutory rates' },
+      { key: 'proftax', label: 'Professional tax' },
     ],
   },
   {
@@ -191,6 +192,7 @@ export default function Settings() {
           {tab === 'payroll' && <PayrollComponentsTab />}
           {tab === 'tax' && <TaxSlabsTab />}
           {tab === 'statutory' && <StatutoryRatesTab />}
+          {tab === 'proftax' && <ProfessionalTaxTab />}
           {tab === 'roles' && <RolesTab />}
           {tab === 'audit' && <AuditLogTab />}
           {tab === 'onboarding' && <OnboardingTemplatesTab />}
@@ -1500,6 +1502,174 @@ function StatutoryRatesTab() {
           <button type="submit" className="btn-primary" disabled={saving}>
             {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Adding…' : 'Add rate'}
+          </button>
+        </form>
+      </Drawer>
+    </>
+  )
+}
+
+/* =========================== PROFESSIONAL TAX =========================== */
+
+function ProfessionalTaxTab() {
+  const { company } = useAuth()
+  const [slabs, setSlabs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [form, setForm] = useState({ effective_from: '', effective_to: '', min_annual_income: '', max_annual_income: '', rate_percent: '0', fixed_amount: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('professional_tax_slabs')
+      .select('id, effective_from, effective_to, min_annual_income, max_annual_income, rate_percent, fixed_amount')
+      .order('effective_from', { ascending: false })
+      .order('min_annual_income', { ascending: true })
+    setSlabs(data ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const periods = {}
+  for (const s of slabs) {
+    const key = `${s.effective_from}_${s.effective_to ?? 'open'}`
+    if (!periods[key]) periods[key] = { effective_from: s.effective_from, effective_to: s.effective_to, rows: [] }
+    periods[key].rows.push(s)
+  }
+  const periodList = Object.values(periods)
+
+  function openAdd() {
+    setForm({
+      effective_from: periodList[0]?.effective_from || new Date().toISOString().slice(0, 10),
+      effective_to: '',
+      min_annual_income: '',
+      max_annual_income: '',
+      rate_percent: '0',
+      fixed_amount: '',
+    })
+    setError(null)
+    setDrawerOpen(true)
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
+    setSaving(true)
+
+    const { error: saveError } = await supabase.from('professional_tax_slabs').insert({
+      company_id: company.id,
+      effective_from: form.effective_from,
+      effective_to: form.effective_to || null,
+      min_annual_income: Number(form.min_annual_income),
+      max_annual_income: form.max_annual_income ? Number(form.max_annual_income) : null,
+      rate_percent: Number(form.rate_percent || 0),
+      fixed_amount: Number(form.fixed_amount || 0),
+    })
+
+    setSaving(false)
+
+    if (saveError) {
+      setError(saveError.message)
+      toast.error(saveError.message)
+      return
+    }
+
+    toast.success('Professional tax bracket added')
+    setDrawerOpen(false)
+    load()
+  }
+
+  if (loading) return <SkeletonTable rows={4} columns={4} />
+
+  return (
+    <>
+      <p className="muted" style={{ marginTop: 0 }}>
+        Provincial professional tax is usually a flat annual amount per income band rather than a percentage —
+        most provinces just need a "fixed amount" row (leave rate at 0%) covering everyone, e.g. Rs. 0 to no
+        cap. Add a rate% only if your province's schedule is genuinely percentage-based.
+      </p>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <button className="btn-primary btn-icon" onClick={openAdd}>
+          <PlusIcon size={16} /> Add bracket
+        </button>
+      </div>
+
+      {periodList.length === 0 ? (
+        <div className="empty-state" style={{ marginTop: 20 }}>
+          <p>No professional tax brackets configured.</p>
+          <p className="muted">Professional tax will be skipped in payroll until at least one bracket exists.</p>
+        </div>
+      ) : (
+        periodList.map((period) => (
+          <div key={`${period.effective_from}_${period.effective_to}`} style={{ marginBottom: 24 }}>
+            <p className="section-heading" style={{ marginBottom: 8 }}>
+              {formatDate(period.effective_from)} {period.effective_to ? `– ${formatDate(period.effective_to)}` : '(current)'}
+            </p>
+            <table className="data-table">
+              <thead>
+                <tr><th>Annual income from</th><th>Annual income to</th><th>Rate</th><th>Fixed amount</th></tr>
+              </thead>
+              <tbody>
+                {period.rows.map((s) => (
+                  <tr key={s.id} style={{ cursor: 'default' }}>
+                    <td className="mono">{fmtMoney(s.min_annual_income)}</td>
+                    <td className="mono">{fmtMoney(s.max_annual_income)}</td>
+                    <td className="mono">{s.rate_percent}%</td>
+                    <td className="mono">{fmtMoney(s.fixed_amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )}
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Add professional tax bracket">
+        <form onSubmit={handleSubmit} className="drawer-form">
+          <div className="field-row">
+            <label className="field">
+              <span>Effective from</span>
+              <input type="date" required value={form.effective_from} onChange={(e) => setForm({ ...form, effective_from: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Effective to</span>
+              <input type="date" value={form.effective_to} onChange={(e) => setForm({ ...form, effective_to: e.target.value })} placeholder="Open-ended" />
+            </label>
+          </div>
+
+          <div className="field-row">
+            <label className="field">
+              <span>Annual income from (Rs.)</span>
+              <input type="number" min="0" required value={form.min_annual_income} onChange={(e) => setForm({ ...form, min_annual_income: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Annual income to (Rs.)</span>
+              <input type="number" min="0" value={form.max_annual_income} onChange={(e) => setForm({ ...form, max_annual_income: e.target.value })} placeholder="No cap" />
+            </label>
+          </div>
+
+          <div className="field-row">
+            <label className="field">
+              <span>Rate (%)</span>
+              <input type="number" min="0" max="100" step="0.1" value={form.rate_percent} onChange={(e) => setForm({ ...form, rate_percent: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Fixed amount (Rs./year)</span>
+              <input type="number" min="0" value={form.fixed_amount} onChange={(e) => setForm({ ...form, fixed_amount: e.target.value })} />
+            </label>
+          </div>
+
+          {error && <p className="field-error">{error}</p>}
+
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Adding…' : 'Add bracket'}
           </button>
         </form>
       </Drawer>
