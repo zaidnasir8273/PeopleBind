@@ -9,6 +9,8 @@ import { RotateCCWIcon } from '../components/ui/rotate-ccw'
 import { SendIcon } from '../components/ui/send'
 import { CircleCheckIcon } from '../components/ui/circle-check'
 import { LockIcon } from '../components/ui/lock'
+import { SquareStackIcon } from '../components/ui/square-stack'
+import { SunIcon } from '../components/ui/sun'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -385,8 +387,8 @@ export default function EmployeeTimesheet() {
       </div>
 
       <div className="tabs">
-        <button className={`tab-button ts-week-tab${view === 'week' ? ' active' : ''}`} onClick={() => setView('week')}>Week</button>
-        <button className={`tab-button${view === 'day' ? ' active' : ''}`} onClick={() => setView('day')}>Day</button>
+        <button className={`tab-button ts-week-tab${view === 'week' ? ' active' : ''}`} onClick={() => setView('week')}><SquareStackIcon size={15} /> Week</button>
+        <button className={`tab-button${view === 'day' ? ' active' : ''}`} onClick={() => setView('day')}><SunIcon size={15} /> Day</button>
       </div>
 
       <div className="date-nav">

@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { PlusIcon } from './ui/plus'
+import { ScanFaceIcon } from './ui/scan-face'
+import { FolderCogIcon } from './ui/folder-cog'
+import { CircleDollarSignIcon } from './ui/circle-dollar-sign'
 import { supabase } from '../lib/supabase'
 import { Drawer } from './Drawer'
 
@@ -40,9 +43,9 @@ const EMPTY_FORM = {
 }
 
 const TABS = [
-  { key: 'personal', label: 'Personal Info' },
-  { key: 'employment', label: 'Employment Info' },
-  { key: 'salary', label: 'Salary Info' },
+  { key: 'personal', label: 'Personal Info', icon: ScanFaceIcon },
+  { key: 'employment', label: 'Employment Info', icon: FolderCogIcon },
+  { key: 'salary', label: 'Salary Info', icon: CircleDollarSignIcon },
 ]
 
 function formFromEmployee(emp) {
@@ -143,7 +146,7 @@ export function EmployeeFormDrawer({ open, onClose, initialData, company, lookup
       <div className="tabs" style={{ margin: '0 24px 20px' }}>
         {TABS.map((t) => (
           <button key={t.key} type="button" className={`tab-button${tab === t.key ? ' active' : ''}`} onClick={() => setTab(t.key)}>
-            {t.label}
+            <t.icon size={15} /> {t.label}
           </button>
         ))}
       </div>

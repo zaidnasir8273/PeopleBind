@@ -6,6 +6,11 @@ import { ChevronLeftIcon } from '../components/ui/chevron-left'
 import { WalletIcon } from '../components/ui/wallet'
 import { ReceiptIcon } from '../components/ui/receipt'
 import { SendIcon } from '../components/ui/send'
+import { WorkflowIcon } from '../components/ui/workflow'
+import { LayoutGridIcon } from '../components/ui/layout-grid'
+import { GavelIcon } from '../components/ui/gavel'
+import { HandHelpingIcon } from '../components/ui/hand-helping'
+import { HourglassIcon } from '../components/ui/hourglass'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -53,13 +58,13 @@ export default function Payroll() {
 
       <div className="tabs">
         <button className={`tab-button${tab === 'runs' ? ' active' : ''}`} onClick={() => setTab('runs')}>
-          Runs
+          <WorkflowIcon size={15} /> Runs
         </button>
         <button className={`tab-button${tab === 'structures' ? ' active' : ''}`} onClick={() => setTab('structures')}>
-          Salary structures
+          <LayoutGridIcon size={15} /> Salary structures
         </button>
         <button className={`tab-button${tab === 'loans' ? ' active' : ''}`} onClick={() => setTab('loans')}>
-          Loans & overtime
+          <GavelIcon size={15} /> Loans & overtime
         </button>
       </div>
 
@@ -753,8 +758,8 @@ function LoansOvertimeTab({ profile, company }) {
   return (
     <>
       <div className="tabs" style={{ marginBottom: 16 }}>
-        <button className={`tab-button${subTab === 'loans' ? ' active' : ''}`} onClick={() => setSubTab('loans')}>Loans & advances</button>
-        <button className={`tab-button${subTab === 'overtime' ? ' active' : ''}`} onClick={() => setSubTab('overtime')}>Overtime</button>
+        <button className={`tab-button${subTab === 'loans' ? ' active' : ''}`} onClick={() => setSubTab('loans')}><HandHelpingIcon size={15} /> Loans & advances</button>
+        <button className={`tab-button${subTab === 'overtime' ? ' active' : ''}`} onClick={() => setSubTab('overtime')}><HourglassIcon size={15} /> Overtime</button>
       </div>
       {subTab === 'loans' ? <LoansSection employees={employees} profile={profile} company={company} /> : <OvertimeSection />}
     </>

@@ -6,6 +6,8 @@ import { ChevronRightIcon } from '../components/ui/chevron-right'
 import { CheckIcon } from '../components/ui/check'
 import { XIcon } from '../components/ui/x'
 import { UploadIcon } from '../components/ui/upload'
+import { HistoryIcon } from '../components/ui/history'
+import { FilePenLineIcon } from '../components/ui/file-pen-line'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -196,10 +198,10 @@ export default function Attendance() {
 
       <div className="tabs">
         <button className={`tab-button${tab === 'roster' ? ' active' : ''}`} onClick={() => setTab('roster')}>
-          Daily roster
+          <HistoryIcon size={15} /> Daily roster
         </button>
         <button className={`tab-button${tab === 'corrections' ? ' active' : ''}`} onClick={() => setTab('corrections')}>
-          Correction requests
+          <FilePenLineIcon size={15} /> Correction requests
           {pendingCount > 0 && <span className="tab-count">{pendingCount}</span>}
         </button>
       </div>

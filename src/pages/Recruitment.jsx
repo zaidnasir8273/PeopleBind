@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { PlusIcon } from '../components/ui/plus'
 import { ChevronLeftIcon } from '../components/ui/chevron-left'
+import { UserRoundCheckIcon } from '../components/ui/user-round-check'
+import { UserRoundPlusIcon } from '../components/ui/user-round-plus'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -352,10 +354,10 @@ function PipelineView({ openingId, profile, company, onBack }) {
         <form onSubmit={handleAddSubmit} className="drawer-form">
           <div className="tabs" style={{ marginBottom: 0 }}>
             <button type="button" className={`tab-button${candidateMode === 'existing' ? ' active' : ''}`} onClick={() => setCandidateMode('existing')}>
-              Existing candidate
+              <UserRoundCheckIcon size={15} /> Existing candidate
             </button>
             <button type="button" className={`tab-button${candidateMode === 'new' ? ' active' : ''}`} onClick={() => setCandidateMode('new')}>
-              New candidate
+              <UserRoundPlusIcon size={15} /> New candidate
             </button>
           </div>
 

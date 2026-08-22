@@ -9,6 +9,9 @@ import { WalletIcon } from '../components/ui/wallet'
 import { BanIcon } from '../components/ui/ban'
 import { SendIcon } from '../components/ui/send'
 import { CircleCheckIcon } from '../components/ui/circle-check'
+import { UsersRoundIcon } from '../components/ui/users-round'
+import { ReceiptTextIcon } from '../components/ui/receipt-text'
+import { CircleGaugeIcon } from '../components/ui/circle-gauge'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -223,9 +226,9 @@ export default function Timesheet() {
       </div>
 
       <div className="tabs" style={{ marginBottom: 20 }}>
-        <button className={`tab-button ${view === 'team' ? 'active' : ''}`} onClick={() => setView('team')}>Team timesheets</button>
-        <button className={`tab-button ${view === 'entries' ? 'active' : ''}`} onClick={() => setView('entries')}>Entries</button>
-        <button className={`tab-button ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}>Dashboard</button>
+        <button className={`tab-button ${view === 'team' ? 'active' : ''}`} onClick={() => setView('team')}><UsersRoundIcon size={15} /> Team timesheets</button>
+        <button className={`tab-button ${view === 'entries' ? 'active' : ''}`} onClick={() => setView('entries')}><ReceiptTextIcon size={15} /> Entries</button>
+        <button className={`tab-button ${view === 'dashboard' ? 'active' : ''}`} onClick={() => setView('dashboard')}><CircleGaugeIcon size={15} /> Dashboard</button>
       </div>
 
       {view === 'team' && (

@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import { PlusIcon } from '../components/ui/plus'
 import { CheckIcon } from '../components/ui/check'
 import { XIcon } from '../components/ui/x'
+import { MailCheckIcon } from '../components/ui/mail-check'
+import { BatteryMediumIcon } from '../components/ui/battery-medium'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -243,11 +245,11 @@ export default function Leave() {
 
       <div className="tabs">
         <button className={`tab-button${tab === 'requests' ? ' active' : ''}`} onClick={() => setTab('requests')}>
-          Requests
+          <MailCheckIcon size={15} /> Requests
           {pendingCount > 0 && <span className="tab-count">{pendingCount}</span>}
         </button>
         <button className={`tab-button${tab === 'balances' ? ' active' : ''}`} onClick={() => setTab('balances')}>
-          Balances
+          <BatteryMediumIcon size={15} /> Balances
         </button>
       </div>
 

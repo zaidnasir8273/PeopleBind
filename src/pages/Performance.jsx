@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { PlusIcon } from '../components/ui/plus'
+import { WaypointsIcon } from '../components/ui/waypoints'
+import { StampIcon } from '../components/ui/stamp'
+import { MessageSquareIcon } from '../components/ui/message-square'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -45,9 +48,9 @@ export default function Performance() {
       </div>
 
       <div className="tabs">
-        <button className={`tab-button${tab === 'goals' ? ' active' : ''}`} onClick={() => setTab('goals')}>Goals</button>
-        <button className={`tab-button${tab === 'reviews' ? ' active' : ''}`} onClick={() => setTab('reviews')}>Reviews</button>
-        <button className={`tab-button${tab === 'feedback' ? ' active' : ''}`} onClick={() => setTab('feedback')}>Feedback</button>
+        <button className={`tab-button${tab === 'goals' ? ' active' : ''}`} onClick={() => setTab('goals')}><WaypointsIcon size={15} /> Goals</button>
+        <button className={`tab-button${tab === 'reviews' ? ' active' : ''}`} onClick={() => setTab('reviews')}><StampIcon size={15} /> Reviews</button>
+        <button className={`tab-button${tab === 'feedback' ? ' active' : ''}`} onClick={() => setTab('feedback')}><MessageSquareIcon size={15} /> Feedback</button>
       </div>
 
       {tab === 'goals' && <GoalsTab employees={employees} profile={profile} company={company} />}

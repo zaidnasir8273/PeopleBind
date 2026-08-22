@@ -20,6 +20,13 @@ import { CalendarCheckIcon } from '../components/ui/calendar-check'
 import { LogoutIcon } from '../components/ui/logout'
 import { WalletIcon } from '../components/ui/wallet'
 import { LayersIcon } from '../components/ui/layers'
+import { ScanFaceIcon } from '../components/ui/scan-face'
+import { FolderCogIcon } from '../components/ui/folder-cog'
+import { CircleDollarSignIcon } from '../components/ui/circle-dollar-sign'
+import { LeafIcon } from '../components/ui/leaf'
+import { MonitorCheckIcon } from '../components/ui/monitor-check'
+import { HandHeartIcon } from '../components/ui/hand-heart'
+import { FileCheckIcon } from '../components/ui/file-check'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -41,13 +48,13 @@ function capitalize(str) {
 }
 
 const TABS = [
-  { key: 'personal', label: 'Personal Info' },
-  { key: 'employment', label: 'Employment Info' },
-  { key: 'salary', label: 'Salary Info' },
-  { key: 'leaves', label: 'Leaves' },
-  { key: 'assets', label: 'Assets' },
-  { key: 'benefits', label: 'Benefits' },
-  { key: 'documents', label: 'Onboarding Docs' },
+  { key: 'personal', label: 'Personal Info', icon: ScanFaceIcon },
+  { key: 'employment', label: 'Employment Info', icon: FolderCogIcon },
+  { key: 'salary', label: 'Salary Info', icon: CircleDollarSignIcon },
+  { key: 'leaves', label: 'Leaves', icon: LeafIcon },
+  { key: 'assets', label: 'Assets', icon: MonitorCheckIcon },
+  { key: 'benefits', label: 'Benefits', icon: HandHeartIcon },
+  { key: 'documents', label: 'Onboarding Docs', icon: FileCheckIcon },
 ]
 
 export default function EmployeeDetail() {
@@ -206,7 +213,7 @@ export default function EmployeeDetail() {
       <div className="tabs">
         {TABS.map((t) => (
           <button key={t.key} className={`tab-button${tab === t.key ? ' active' : ''}`} onClick={() => setTab(t.key)}>
-            {t.label}
+            <t.icon size={15} /> {t.label}
           </button>
         ))}
       </div>
