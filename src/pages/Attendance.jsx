@@ -5,10 +5,12 @@ import { ChevronLeftIcon } from '../components/ui/chevron-left'
 import { ChevronRightIcon } from '../components/ui/chevron-right'
 import { CheckIcon } from '../components/ui/check'
 import { XIcon } from '../components/ui/x'
+import { UploadIcon } from '../components/ui/upload'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonTable } from '../components/Skeleton'
+import { ImportAttendanceDrawer } from '../components/ImportAttendanceDrawer'
 
 const EMPTY_FORM = {
   status: '',
@@ -68,6 +70,7 @@ export default function Attendance() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [importOpen, setImportOpen] = useState(false)
 
   const loadRoster = useCallback(async () => {
     const loadingTimer = setTimeout(() => setLoading(true), LOADING_DELAY)
@@ -186,6 +189,9 @@ export default function Attendance() {
         <div>
           <h1 className="page-title">Attendance</h1>
         </div>
+        <button className="btn-secondary btn-icon" onClick={() => setImportOpen(true)}>
+          <UploadIcon size={16} /> Import
+        </button>
       </div>
 
       <div className="tabs">
@@ -391,6 +397,14 @@ export default function Attendance() {
           </button>
         </form>
       </Drawer>
+
+      <ImportAttendanceDrawer
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        company={company}
+        employees={employees}
+        onImported={loadRoster}
+      />
     </div>
   )
 }
