@@ -5,6 +5,7 @@ import { PlusIcon } from '../components/ui/plus'
 import { ChevronLeftIcon } from '../components/ui/chevron-left'
 import { WalletIcon } from '../components/ui/wallet'
 import { ReceiptIcon } from '../components/ui/receipt'
+import { SendIcon } from '../components/ui/send'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -250,6 +251,7 @@ function RunDetail({ runId, profile, onBack }) {
   const [actionError, setActionError] = useState(null)
 
   const [payslipEmployee, setPayslipEmployee] = useState(null)
+  const [sendingEmail, setSendingEmail] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -261,7 +263,7 @@ function RunDetail({ runId, profile, onBack }) {
         .single(),
       supabase
         .from('payroll_items')
-        .select('id, employee_id, component_name, component_type, amount, notes, employees(full_name, employee_code, bank_name, bank_account_number, bank_iban)')
+        .select('id, employee_id, component_name, component_type, amount, notes, employees(full_name, employee_code, personal_email, bank_name, bank_account_number, bank_iban)')
         .eq('payroll_run_id', runId),
       supabase.rpc('get_payroll_exceptions', { p_payroll_run_id: runId }),
     ])
@@ -352,6 +354,49 @@ function RunDetail({ runId, profile, onBack }) {
     }
     toast.success('Payroll finalized', { description: 'This run is now locked.' })
     load()
+  }
+
+  async function emailPayslip() {
+    const to = payslipEmployee?.employee?.personal_email
+    if (!to) {
+      toast.error('This employee has no email address on file.')
+      return
+    }
+
+    setSendingEmail(true)
+    const rows = payslipEmployee.items.map((item) => `
+      <tr>
+        <td style="padding:6px 12px;">${item.component_name}${item.notes ? `<br/><span style="color:#71717a;font-size:12px;">${item.notes}</span>` : ''}</td>
+        <td style="padding:6px 12px;text-align:right;">${item.component_type === 'deduction' ? '– ' : ''}${fmt(item.amount)}</td>
+      </tr>`).join('')
+    const html = `
+      <h2>${payslipEmployee.employee?.full_name} — ${run.payroll_periods?.label}</h2>
+      <table style="border-collapse:collapse;width:100%;max-width:480px;">
+        ${rows}
+        <tr><td style="padding:10px 12px;font-weight:600;border-top:1px solid #e2ddd0;">Net salary</td>
+          <td style="padding:10px 12px;font-weight:600;text-align:right;border-top:1px solid #e2ddd0;">${fmt(payslipEmployee.earnings - payslipEmployee.deductions)}</td></tr>
+      </table>`
+
+    const { error } = await supabase.functions.invoke('send-email', {
+      body: { to, subject: `Payslip — ${run.payroll_periods?.label}`, html },
+    })
+    setSendingEmail(false)
+
+    if (error) {
+      // supabase-js only puts a generic "non-2xx status code" string on
+      // error.message -- the actual error body (e.g. "RESEND_API_KEY is
+      // not set") lives on error.context, a real Response object.
+      let message = error.message
+      try {
+        const body = await error.context.json()
+        if (body?.error) message = body.error
+      } catch {
+        // context wasn't JSON (e.g. a network-level failure) -- keep the generic message
+      }
+      toast.error(message || 'Failed to send payslip email')
+      return
+    }
+    toast.success(`Payslip emailed to ${to}`)
   }
 
   if (loading) return <SkeletonTable rows={4} columns={4} />
@@ -467,6 +512,10 @@ function RunDetail({ runId, profile, onBack }) {
               <span className="label">Net salary</span>
               <span className="amount">{fmt(payslipEmployee.earnings - payslipEmployee.deductions)}</span>
             </div>
+            <button type="button" className="btn-secondary btn-icon" disabled={sendingEmail} onClick={emailPayslip} style={{ alignSelf: 'flex-start' }}>
+              {sendingEmail ? <Loader2 size={14} className="btn-spinner" /> : <SendIcon size={14} />}
+              {sendingEmail ? 'Sending…' : 'Email payslip'}
+            </button>
           </div>
         )}
       </Drawer>
