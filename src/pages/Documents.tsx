@@ -25,6 +25,13 @@ function formatDate(dateStr: string | null | undefined) {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+// Same 30-day threshold as the page's own "expiring soon" banner above.
+function isExpiringSoon(dateStr: string | null | undefined) {
+  if (!dateStr) return false
+  const days = (new Date(`${dateStr}T00:00:00`).getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000
+  return days >= 0 && days <= 30
+}
+
 const COMMON_TYPES = ['CNIC', 'Employment contract', 'Degree / certificate', 'Experience letter', 'Offer letter', 'Bank details']
 
 export default function Documents() {
@@ -217,7 +224,9 @@ export default function Documents() {
               <TableRow key={d.id} style={{ cursor: 'default' }}>
                 <TableCell>{d.doc_type}</TableCell>
                 <TableCell className="mono">{formatDate(d.uploaded_at)}</TableCell>
-                <TableCell className="mono">{d.expiry_date ? formatDate(d.expiry_date) : '—'}</TableCell>
+                <TableCell className="mono" style={isExpiringSoon(d.expiry_date) ? { color: 'var(--gold)', fontWeight: 600 } : undefined}>
+                  {d.expiry_date ? formatDate(d.expiry_date) : '—'}
+                </TableCell>
                 <TableCell>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button className="btn-icon-round approve" onClick={() => handleView(d)} aria-label="View"><DownloadIcon size={14} /></button>
