@@ -50,6 +50,7 @@ const SETTINGS_MODULES = [
     submodules: [
       { key: 'payroll', label: 'Payroll components' },
       { key: 'tax', label: 'Tax slabs' },
+      { key: 'statutory', label: 'Statutory rates' },
     ],
   },
   {
@@ -189,6 +190,7 @@ export default function Settings() {
           {tab === 'leave' && <LeaveTab />}
           {tab === 'payroll' && <PayrollComponentsTab />}
           {tab === 'tax' && <TaxSlabsTab />}
+          {tab === 'statutory' && <StatutoryRatesTab />}
           {tab === 'roles' && <RolesTab />}
           {tab === 'audit' && <AuditLogTab />}
           {tab === 'onboarding' && <OnboardingTemplatesTab />}
@@ -1077,7 +1079,7 @@ function PayrollComponentsTab() {
       name: form.name,
       component_type: form.component_type,
       calculation_method: form.calculation_method,
-      percentage: form.calculation_method === 'percentage' ? Number(form.percentage) : null,
+      percentage: form.calculation_method === 'percentage_of_basic' ? Number(form.percentage) : null,
       taxable: form.taxable,
     })
     setSaving(false)
@@ -1117,7 +1119,7 @@ function PayrollComponentsTab() {
             <tr key={c.id} style={{ cursor: 'default' }}>
               <td>{c.name}</td>
               <td style={{ textTransform: 'capitalize' }}>{c.component_type}</td>
-              <td>{c.calculation_method === 'percentage' ? `${c.percentage}%` : 'Fixed'}</td>
+              <td>{c.calculation_method === 'percentage_of_basic' ? `${c.percentage}%` : 'Fixed'}</td>
               <td>{c.taxable ? 'Yes' : 'No'}</td>
               <td className="muted" style={{ fontSize: 12 }}>
                 {c.is_basic ? 'Basic · ' : ''}{c.is_statutory ? 'Statutory' : ''}
@@ -1145,11 +1147,11 @@ function PayrollComponentsTab() {
               <span>Method</span>
               <select value={form.calculation_method} onChange={(e) => setForm({ ...form, calculation_method: e.target.value })}>
                 <option value="fixed">Fixed amount</option>
-                <option value="percentage">% of basic</option>
+                <option value="percentage_of_basic">% of basic</option>
               </select>
             </label>
           </div>
-          {form.calculation_method === 'percentage' && (
+          {form.calculation_method === 'percentage_of_basic' && (
             <label className="field">
               <span>Percentage</span>
               <input type="number" min="0" max="100" step="0.1" value={form.percentage} onChange={(e) => setForm({ ...form, percentage: e.target.value })} />
@@ -1338,6 +1340,166 @@ function TaxSlabsTab() {
           <button type="submit" className="btn-primary" disabled={saving}>
             {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Adding…' : 'Add bracket'}
+          </button>
+        </form>
+      </Drawer>
+    </>
+  )
+}
+
+/* =========================== STATUTORY RATES =========================== */
+
+// Company-configured, same as EOBI already was -- PeopleBind doesn't hardcode
+// current legal rates (they vary by province and change over time), the
+// company enters what applies to them and dates it via effective_from/to,
+// exactly like tax_slabs above.
+const STATUTORY_RATE_TYPES = [
+  { value: 'eobi_employee', label: 'EOBI — Employee' },
+  { value: 'eobi_employer', label: 'EOBI — Employer' },
+  { value: 'sessi_employee', label: 'SESSI (Sindh) — Employee' },
+  { value: 'sessi_employer', label: 'SESSI (Sindh) — Employer' },
+  { value: 'pessi_employee', label: 'PESSI (Punjab) — Employee' },
+  { value: 'pessi_employer', label: 'PESSI (Punjab) — Employer' },
+  { value: 'kpessi_employee', label: 'KPESSI (KP) — Employee' },
+  { value: 'kpessi_employer', label: 'KPESSI (KP) — Employer' },
+  { value: 'bessi_employee', label: 'BESSI (Balochistan) — Employee' },
+  { value: 'bessi_employer', label: 'BESSI (Balochistan) — Employer' },
+  { value: 'pf_employee', label: 'Provident Fund — Employee' },
+  { value: 'pf_employer', label: 'Provident Fund — Employer' },
+]
+
+function statutoryRateLabel(value) {
+  return STATUTORY_RATE_TYPES.find((t) => t.value === value)?.label ?? value
+}
+
+function StatutoryRatesTab() {
+  const { company } = useAuth()
+  const [rates, setRates] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [form, setForm] = useState({ rate_type: 'eobi_employee', effective_from: '', effective_to: '', rate_percent: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('statutory_rates')
+      .select('id, rate_type, effective_from, effective_to, rate_percent')
+      .order('rate_type')
+      .order('effective_from', { ascending: false })
+    setRates(data ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  function openAdd() {
+    setForm({ rate_type: 'eobi_employee', effective_from: new Date().toISOString().slice(0, 10), effective_to: '', rate_percent: '' })
+    setError(null)
+    setDrawerOpen(true)
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
+    setSaving(true)
+
+    const { error: saveError } = await supabase.from('statutory_rates').insert({
+      company_id: company.id,
+      rate_type: form.rate_type,
+      effective_from: form.effective_from,
+      effective_to: form.effective_to || null,
+      rate_percent: Number(form.rate_percent),
+    })
+
+    setSaving(false)
+
+    if (saveError) {
+      setError(saveError.message)
+      toast.error(saveError.message)
+      return
+    }
+
+    toast.success('Statutory rate added')
+    setDrawerOpen(false)
+    load()
+  }
+
+  if (loading) return <SkeletonTable rows={3} columns={4} />
+
+  return (
+    <>
+      <p className="muted" style={{ marginTop: 0 }}>
+        These feed payroll's EOBI, provincial social security (SESSI/PESSI/KPESSI/BESSI), and Provident Fund
+        lines directly — a scheme with no active rate here is simply skipped for every employee. EOBI and
+        social-security rates apply to the company's minimum-wage base (set on the Company tab); Provident
+        Fund rates apply to each employee's basic salary.
+      </p>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <button className="btn-primary btn-icon" onClick={openAdd}>
+          <PlusIcon size={16} /> Add rate
+        </button>
+      </div>
+
+      {rates.length === 0 ? (
+        <div className="empty-state" style={{ marginTop: 20 }}>
+          <p>No statutory rates configured.</p>
+          <p className="muted">EOBI, social security, and Provident Fund will all be skipped in payroll until at least one rate is added.</p>
+        </div>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr><th>Scheme</th><th>Rate</th><th>Effective from</th><th>Effective to</th></tr>
+          </thead>
+          <tbody>
+            {rates.map((r) => (
+              <tr key={r.id} style={{ cursor: 'default' }}>
+                <td>{statutoryRateLabel(r.rate_type)}</td>
+                <td className="mono">{r.rate_percent}%</td>
+                <td className="mono">{formatDate(r.effective_from)}</td>
+                <td className="mono">{r.effective_to ? formatDate(r.effective_to) : 'Current'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title="Add statutory rate">
+        <form onSubmit={handleSubmit} className="drawer-form">
+          <label className="field">
+            <span>Scheme</span>
+            <select value={form.rate_type} onChange={(e) => setForm({ ...form, rate_type: e.target.value })}>
+              {STATUTORY_RATE_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </label>
+
+          <div className="field-row">
+            <label className="field">
+              <span>Effective from</span>
+              <input type="date" required value={form.effective_from} onChange={(e) => setForm({ ...form, effective_from: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Effective to</span>
+              <input type="date" value={form.effective_to} onChange={(e) => setForm({ ...form, effective_to: e.target.value })} placeholder="Open-ended" />
+            </label>
+          </div>
+
+          <label className="field">
+            <span>Rate (%)</span>
+            <input type="number" min="0" max="100" step="0.01" required value={form.rate_percent} onChange={(e) => setForm({ ...form, rate_percent: e.target.value })} />
+          </label>
+
+          {error && <p className="field-error">{error}</p>}
+
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Adding…' : 'Add rate'}
           </button>
         </form>
       </Drawer>
