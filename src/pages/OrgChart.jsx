@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { ZoomIn, ZoomOut } from 'lucide-react'
+import { toast } from 'sonner'
+import { ZoomIn, ZoomOut, Download, Loader2 } from 'lucide-react'
 import { RotateCCWIcon } from '../components/ui/rotate-ccw'
 import { supabase } from '../lib/supabase'
 import { Avatar } from '../components/Avatar'
@@ -42,6 +43,8 @@ export default function OrgChart() {
   const [childrenByManager, setChildrenByManager] = useState(new Map())
   const [unlinked, setUnlinked] = useState(0)
   const [zoom, setZoom] = useState(1)
+  const [exporting, setExporting] = useState(false)
+  const rootsRef = useRef(null)
 
   function zoomIn() {
     setZoom((z) => Math.min(ZOOM_MAX, Math.round((z + ZOOM_STEP) * 100) / 100))
@@ -87,6 +90,51 @@ export default function OrgChart() {
     load()
   }, [load])
 
+  async function exportPdf() {
+    if (!rootsRef.current) return
+    setExporting(true)
+    const previousZoom = zoom
+    setZoom(1)
+    // wait for the transform reset to actually paint before rasterizing
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
+
+      const canvas = await html2canvas(rootsRef.current, { scale: 2, backgroundColor: '#ffffff' })
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const pxPerPt = canvas.width / pageWidth
+      const pageHeightPx = pageHeight * pxPerPt
+
+      let renderedPx = 0
+      let first = true
+      while (renderedPx < canvas.height) {
+        const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx)
+        const pageCanvas = document.createElement('canvas')
+        pageCanvas.width = canvas.width
+        pageCanvas.height = sliceHeightPx
+        pageCanvas.getContext('2d').drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx)
+
+        if (!first) pdf.addPage()
+        pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, sliceHeightPx / pxPerPt)
+        renderedPx += sliceHeightPx
+        first = false
+      }
+
+      pdf.save(`org-chart-${new Date().toISOString().slice(0, 10)}.pdf`)
+    } catch (err) {
+      toast.error('Failed to generate PDF')
+    } finally {
+      setZoom(previousZoom)
+      setExporting(false)
+    }
+  }
+
   return (
     <div className="page-inner" style={{ maxWidth: 1180 }}>
       <div className="page-header-row">
@@ -106,6 +154,10 @@ export default function OrgChart() {
             <button type="button" className="btn-icon-round" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label="Reset zoom" data-tooltip="Reset zoom">
               <RotateCCWIcon size={14} />
             </button>
+            <button type="button" className="btn-secondary btn-icon" onClick={exportPdf} disabled={exporting} style={{ padding: '6px 12px', fontSize: 13 }}>
+              {exporting ? <Loader2 size={14} className="btn-spinner" /> : <Download size={14} />}
+              {exporting ? 'Generating…' : 'Download PDF'}
+            </button>
           </div>
         )}
       </div>
@@ -118,7 +170,7 @@ export default function OrgChart() {
         </div>
       ) : (
         <div className="org-chart-scroll">
-          <div className="org-roots" style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
+          <div ref={rootsRef} className="org-roots" style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
             {roots.map((e) => (
               <OrgNode key={e.id} employee={e} childrenByManager={childrenByManager} isRoot />
             ))}
