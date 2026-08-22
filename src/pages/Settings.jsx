@@ -223,6 +223,7 @@ function CompanyTab() {
         eobi_minimum_wage_base: company.eobi_minimum_wage_base ?? 37000,
         gratuity_days_per_year: company.gratuity_days_per_year ?? 30,
         gratuity_min_years: company.gratuity_min_years ?? 0,
+        payroll_run_day_of_month: company.payroll_run_day_of_month ?? '',
       })
     }
   }, [company])
@@ -245,6 +246,7 @@ function CompanyTab() {
         eobi_minimum_wage_base: Number(form.eobi_minimum_wage_base),
         gratuity_days_per_year: Number(form.gratuity_days_per_year),
         gratuity_min_years: Number(form.gratuity_min_years),
+        payroll_run_day_of_month: form.payroll_run_day_of_month === '' ? null : Number(form.payroll_run_day_of_month),
       })
       .eq('id', company.id)
 
@@ -296,6 +298,19 @@ function CompanyTab() {
         <span>EOBI minimum wage base (Rs.)</span>
         <input type="number" min="0" value={form.eobi_minimum_wage_base} onChange={(e) => setForm({ ...form, eobi_minimum_wage_base: e.target.value })} />
       </label>
+
+      <label className="field">
+        <span>Payroll runs on day of month</span>
+        <input
+          type="number"
+          min="1"
+          max="31"
+          placeholder="Not set — no reminder posted"
+          value={form.payroll_run_day_of_month}
+          onChange={(e) => setForm({ ...form, payroll_run_day_of_month: e.target.value })}
+        />
+      </label>
+      <p className="muted" style={{ marginTop: -4 }}>A company-wide announcement is posted a week before, so people review timesheets and attendance in time.</p>
 
       <p className="section-heading" style={{ marginTop: 10, marginBottom: 4, fontSize: 14 }}>Gratuity</p>
       <p className="muted" style={{ marginTop: 0 }}>Used when offboarding an employee to compute their Full &amp; Final Settlement.</p>

@@ -104,7 +104,7 @@ export default function Announcements() {
               </div>
               <p className="feed-card-body">{a.body}</p>
               <span className="feed-card-meta">
-                {a.profiles?.full_name || a.profiles?.email || 'Someone'} · {formatDateTime(a.created_at)}
+                {a.author_profile_id ? (a.profiles?.full_name || a.profiles?.email || 'Someone') : 'PeopleBind'} · {formatDateTime(a.created_at)}
               </span>
             </div>
           ))}
