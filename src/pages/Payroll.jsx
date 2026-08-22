@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonTable } from '../components/Skeleton'
+import { exportCsv } from '../lib/csv'
 
 function fmt(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
@@ -260,7 +261,7 @@ function RunDetail({ runId, profile, onBack }) {
         .single(),
       supabase
         .from('payroll_items')
-        .select('id, employee_id, component_name, component_type, amount, notes, employees(full_name, employee_code)')
+        .select('id, employee_id, component_name, component_type, amount, notes, employees(full_name, employee_code, bank_name, bank_account_number, bank_iban)')
         .eq('payroll_run_id', runId),
       supabase.rpc('get_payroll_exceptions', { p_payroll_run_id: runId }),
     ])
@@ -291,6 +292,25 @@ function RunDetail({ runId, profile, onBack }) {
     }
     return Object.entries(map).map(([employeeId, v]) => ({ employeeId, ...v }))
   }, [items])
+
+  function exportBankFile() {
+    const rows = byEmployee.map((row) => ({
+      employee_code: row.employee?.employee_code,
+      full_name: row.employee?.full_name,
+      bank_name: row.employee?.bank_name || '',
+      account_number: row.employee?.bank_account_number || '',
+      iban: row.employee?.bank_iban || '',
+      net_pay: (row.earnings - row.deductions).toFixed(2),
+    }))
+    exportCsv(`bank-transfer-${run.payroll_periods?.label ?? ''}`, [
+      { key: 'employee_code', label: 'Employee Code' },
+      { key: 'full_name', label: 'Employee Name' },
+      { key: 'bank_name', label: 'Bank Name' },
+      { key: 'account_number', label: 'Account Number' },
+      { key: 'iban', label: 'IBAN' },
+      { key: 'net_pay', label: 'Net Pay' },
+    ], rows)
+  }
 
   async function runCalculation() {
     setActionError(null)
@@ -368,6 +388,11 @@ function RunDetail({ runId, profile, onBack }) {
           )}
           {isApproved && (
             <button className="btn-primary" onClick={finalize} disabled={busy}>Finalize</button>
+          )}
+          {isFinalized && (
+            <button className="btn-secondary" onClick={exportBankFile} data-tooltip="Generic CSV — name, bank, account/IBAN, net pay. Not a specific bank's proprietary layout.">
+              Export bank file
+            </button>
           )}
         </div>
       </div>

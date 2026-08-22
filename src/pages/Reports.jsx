@@ -7,6 +7,7 @@ import { DownloadIcon } from '../components/ui/download'
 import { supabase } from '../lib/supabase'
 import { SkeletonBlock, SkeletonTable } from '../components/Skeleton'
 import { REPORT_CATEGORIES, REPORT_DEFINITIONS } from '../lib/reportCatalog'
+import { csvEscape, exportCsv } from '../lib/csv'
 
 const TEAL = '#1f7a63'
 const TEAL_DEEP = '#123f33'
@@ -106,23 +107,6 @@ function ReportsNav({ tab, setTab }) {
       })}
     </nav>
   )
-}
-
-function csvEscape(value) {
-  const s = String(value ?? '')
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
-
-function exportCsv(label, columns, rows) {
-  const header = columns.map((c) => csvEscape(c.label)).join(',')
-  const body = rows.map((r) => columns.map((c) => csvEscape(r[c.key])).join(',')).join('\n')
-  const blob = new Blob([header + '\n' + body], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 function ReportTable({ reportKey, label }) {

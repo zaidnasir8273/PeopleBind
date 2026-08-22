@@ -24,6 +24,46 @@ function fmtMoney(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
 }
 
+// Merges an employee-side payroll_items deduction with the matching
+// employer-side payroll_employer_contributions row, keyed by
+// (component/contribution name, employee, payroll run) -- a scheme that's
+// entirely employer-funded (no employee row) or entirely employee-funded
+// still shows up correctly, with the missing side reported as 0, rather
+// than only ever reflecting whichever side has a payroll_items row.
+async function fetchStatutoryContribution(names) {
+  const [{ data: empData }, { data: erData }] = await Promise.all([
+    supabase
+      .from('payroll_items')
+      .select('component_name, amount, employee_id, payroll_run_id, employees(full_name, employee_code), payroll_runs(payroll_periods(label))')
+      .in('component_name', names),
+    supabase
+      .from('payroll_employer_contributions')
+      .select('contribution_type, amount, employee_id, payroll_run_id, employees(full_name, employee_code), payroll_runs(payroll_periods(label))')
+      .in('contribution_type', names),
+  ])
+
+  const key = (scheme, employeeId, runId) => `${scheme}_${employeeId}_${runId}`
+  const rows = new Map()
+
+  for (const r of empData ?? []) {
+    rows.set(key(r.component_name, r.employee_id, r.payroll_run_id), {
+      scheme: r.component_name, code: r.employees?.employee_code ?? '—', employee: r.employees?.full_name ?? '—',
+      period: r.payroll_runs?.payroll_periods?.label ?? '—', employee_amount: Number(r.amount ?? 0), employer_amount: 0,
+    })
+  }
+  for (const r of erData ?? []) {
+    const k = key(r.contribution_type, r.employee_id, r.payroll_run_id)
+    const existing = rows.get(k)
+    if (existing) existing.employer_amount = Number(r.amount ?? 0)
+    else rows.set(k, {
+      scheme: r.contribution_type, code: r.employees?.employee_code ?? '—', employee: r.employees?.full_name ?? '—',
+      period: r.payroll_runs?.payroll_periods?.label ?? '—', employee_amount: 0, employer_amount: Number(r.amount ?? 0),
+    })
+  }
+
+  return [...rows.values()]
+}
+
 export const REPORT_CATEGORIES = [
   {
     key: 'overview',
@@ -66,6 +106,7 @@ export const REPORT_CATEGORIES = [
     submodules: [
       { key: 'fund-pf-summary', label: 'Provident Fund Summary' },
       { key: 'fund-pf-detail', label: 'Provident Fund Detail' },
+      { key: 'fund-social-security', label: 'Provincial Social Security' },
     ],
   },
   {
@@ -77,6 +118,7 @@ export const REPORT_CATEGORIES = [
       { key: 'inc-bank-transaction', label: 'Bank Transaction' },
       { key: 'inc-tax-summary', label: 'Income Tax Summary' },
       { key: 'inc-tax-detail', label: 'Income Tax Detail' },
+      { key: 'inc-fbr-withholding', label: 'FBR Monthly Withholding Statement' },
     ],
   },
   {
@@ -91,6 +133,7 @@ export const REPORT_CATEGORIES = [
       { key: 'pay-reconciliation', label: 'Payroll Reconciliation' },
       { key: 'pay-expenses', label: 'Expense Report' },
       { key: 'pay-eobi', label: 'EOBI' },
+      { key: 'pay-professional-tax', label: 'Professional Tax' },
       { key: 'pay-tax-certificate', label: 'Tax Certificate' },
       { key: 'pay-dept-summary', label: 'Department-wise Payroll Summary' },
     ],
@@ -370,8 +413,46 @@ export const REPORT_DEFINITIONS = {
   },
 
   // ---------- Fund ----------
-  'fund-pf-summary': { unavailable: "Provident Fund isn't tracked in PeopleBind yet — this needs a new contribution ledger (distinct from EOBI). Flagging as a follow-up rather than guessing at a table." },
-  'fund-pf-detail': { unavailable: "Same as Provident Fund Summary — needs new schema first." },
+  'fund-pf-summary': {
+    fetch: async () => {
+      const rows = await fetchStatutoryContribution(['Provident Fund'])
+      const byEmployee = new Map()
+      for (const r of rows) {
+        if (!byEmployee.has(r.code)) byEmployee.set(r.code, { code: r.code, employee: r.employee, employee_total: 0, employer_total: 0 })
+        const row = byEmployee.get(r.code)
+        row.employee_total += r.employee_amount
+        row.employer_total += r.employer_amount
+      }
+      return [...byEmployee.values()].map((r) => ({ ...r, employee_total: fmtMoney(r.employee_total), employer_total: fmtMoney(r.employer_total) }))
+    },
+    columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'employee_total', label: 'Employee contributed' }, { key: 'employer_total', label: 'Employer contributed' }],
+  },
+  'fund-pf-detail': {
+    fetch: async () => {
+      const rows = await fetchStatutoryContribution(['Provident Fund'])
+      return rows.map((r) => ({
+        code: r.code, employee: r.employee, period: r.period,
+        employee_amount: fmtMoney(r.employee_amount), employer_amount: fmtMoney(r.employer_amount),
+      }))
+    },
+    columns: [
+      { key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'period', label: 'Period' },
+      { key: 'employee_amount', label: 'Employee contributed' }, { key: 'employer_amount', label: 'Employer contributed' },
+    ],
+  },
+  'fund-social-security': {
+    fetch: async () => {
+      const rows = await fetchStatutoryContribution(['SESSI', 'PESSI', 'KPESSI', 'BESSI'])
+      return rows.map((r) => ({
+        scheme: r.scheme, code: r.code, employee: r.employee, period: r.period,
+        employee_amount: fmtMoney(r.employee_amount), employer_amount: fmtMoney(r.employer_amount),
+      }))
+    },
+    columns: [
+      { key: 'scheme', label: 'Scheme' }, { key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'period', label: 'Period' },
+      { key: 'employee_amount', label: 'Employee deducted' }, { key: 'employer_amount', label: 'Employer contribution' },
+    ],
+  },
 
   // ---------- Income ----------
   'inc-bank-transaction': {
@@ -420,6 +501,23 @@ export const REPORT_DEFINITIONS = {
       }))
     },
     columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'period', label: 'Period' }, { key: 'amount', label: 'Tax deducted' }],
+  },
+  'inc-fbr-withholding': {
+    fetch: async () => {
+      const { data } = await supabase
+        .from('payroll_items')
+        .select('amount, employees(full_name, employee_code, cnic), payroll_runs(payroll_periods(label))')
+        .eq('component_name', 'Income Tax')
+        .order('created_at', { ascending: false })
+      return (data ?? []).map((r) => ({
+        cnic: r.employees?.cnic ?? '—', code: r.employees?.employee_code ?? '—', employee: r.employees?.full_name ?? '—',
+        period: r.payroll_runs?.payroll_periods?.label ?? '—', withheld: fmtMoney(r.amount),
+      }))
+    },
+    columns: [
+      { key: 'cnic', label: 'CNIC' }, { key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' },
+      { key: 'period', label: 'Period' }, { key: 'withheld', label: 'Tax withheld' },
+    ],
   },
 
   // ---------- Payroll ----------
@@ -470,10 +568,27 @@ export const REPORT_DEFINITIONS = {
   'pay-expenses': { chart: true },
   'pay-eobi': {
     fetch: async () => {
-      const { data } = await supabase.from('payroll_items').select('amount, employees(full_name, employee_code), payroll_runs(payroll_periods(label))').eq('component_name', 'EOBI').order('created_at', { ascending: false })
+      const rows = await fetchStatutoryContribution(['EOBI'])
+      return rows.map((r) => ({
+        code: r.code, employee: r.employee, period: r.period,
+        employee_amount: fmtMoney(r.employee_amount), employer_amount: fmtMoney(r.employer_amount),
+      }))
+    },
+    columns: [
+      { key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'period', label: 'Period' },
+      { key: 'employee_amount', label: 'Employee deducted' }, { key: 'employer_amount', label: 'Employer contribution' },
+    ],
+  },
+  'pay-professional-tax': {
+    fetch: async () => {
+      const { data } = await supabase
+        .from('payroll_items')
+        .select('amount, employees(full_name, employee_code), payroll_runs(payroll_periods(label))')
+        .eq('component_name', 'Professional Tax')
+        .order('created_at', { ascending: false })
       return (data ?? []).map((r) => ({ code: r.employees?.employee_code ?? '—', employee: r.employees?.full_name ?? '—', period: r.payroll_runs?.payroll_periods?.label ?? '—', amount: fmtMoney(r.amount) }))
     },
-    columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'period', label: 'Period' }, { key: 'amount', label: 'EOBI deducted' }],
+    columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'period', label: 'Period' }, { key: 'amount', label: 'Professional tax deducted' }],
   },
   'pay-tax-certificate': {
     fetch: async () => {
