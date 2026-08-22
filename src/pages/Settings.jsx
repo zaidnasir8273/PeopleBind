@@ -779,7 +779,7 @@ function LeaveTab() {
   const load = useCallback(async () => {
     setLoading(true)
     const [{ data: lt }, { data: p }, { data: et }] = await Promise.all([
-      supabase.from('leave_types').select('id, name, is_paid, is_encashable').order('name'),
+      supabase.from('leave_types').select('id, name, is_paid, is_encashable, applicable_gender').order('name'),
       supabase
         .from('leave_policies')
         .select('id, name, annual_entitlement_days, carry_forward_enabled, carry_forward_max_days, requires_approval, leave_types(name), employment_types(name)')
@@ -988,20 +988,26 @@ function LeaveTab() {
 }
 
 function LeaveTypesCard({ rows, company, onChanged }) {
-  const [form, setForm] = useState({ name: '', is_paid: true, is_encashable: false })
+  const [form, setForm] = useState({ name: '', is_paid: true, is_encashable: false, applicable_gender: '' })
   const [saving, setSaving] = useState(false)
   const [removingId, setRemovingId] = useState(null)
 
   async function add() {
     if (!form.name.trim()) return
     setSaving(true)
-    const { error } = await supabase.from('leave_types').insert({ company_id: company.id, name: form.name.trim(), is_paid: form.is_paid, is_encashable: form.is_encashable })
+    const { error } = await supabase.from('leave_types').insert({
+      company_id: company.id,
+      name: form.name.trim(),
+      is_paid: form.is_paid,
+      is_encashable: form.is_encashable,
+      applicable_gender: form.applicable_gender || null,
+    })
     setSaving(false)
     if (error) {
       toast.error(error.message || 'Failed to add leave type')
       return
     }
-    setForm({ name: '', is_paid: true, is_encashable: false })
+    setForm({ name: '', is_paid: true, is_encashable: false, applicable_gender: '' })
     onChanged()
   }
 
@@ -1034,6 +1040,7 @@ function LeaveTypesCard({ rows, company, onChanged }) {
                 {r.name}
                 {!r.is_paid && <span className="muted" style={{ marginLeft: 6 }}>· unpaid</span>}
                 {r.is_encashable && <span className="muted" style={{ marginLeft: 6 }}>· encashable</span>}
+                {r.applicable_gender && <span className="muted" style={{ marginLeft: 6 }}>· {r.applicable_gender} only</span>}
               </span>
               <button
                 type="button"
@@ -1063,6 +1070,14 @@ function LeaveTypesCard({ rows, company, onChanged }) {
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <input type="checkbox" checked={form.is_encashable} onChange={(e) => setForm({ ...form, is_encashable: e.target.checked })} />
           Encashable at exit
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+          Applies to
+          <select value={form.applicable_gender} onChange={(e) => setForm({ ...form, applicable_gender: e.target.value })}>
+            <option value="">All</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
         </label>
         <button type="button" className="btn-primary" style={{ alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
           {saving ? 'Adding…' : 'Add leave type'}

@@ -38,7 +38,7 @@ export default function EmployeeLeave() {
     const [{ data: b }, { data: r }, { data: t }] = await Promise.all([
       supabase.from('v_leave_usage').select('leave_type, entitled_days, used_days, remaining_days').eq('employee_id', employeeRecord.id).eq('year', year),
       supabase.from('leave_requests').select('id, start_date, end_date, days_requested, reason, status, leave_types(name)').eq('employee_id', employeeRecord.id).order('created_at', { ascending: false }),
-      supabase.from('leave_types').select('id, name, is_paid').order('name'),
+      supabase.from('leave_types').select('id, name, is_paid, applicable_gender').order('name'),
     ])
     setBalances(b ?? [])
     setRequests(r ?? [])
@@ -144,9 +144,11 @@ export default function EmployeeLeave() {
             <span>Leave type</span>
             <select required value={form.leave_type_id} onChange={(e) => setForm({ ...form, leave_type_id: e.target.value })}>
               <option value="">— Select —</option>
-              {leaveTypes.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}{!t.is_paid ? ' (unpaid)' : ''}</option>
-              ))}
+              {leaveTypes
+                .filter((t) => !t.applicable_gender || t.applicable_gender === employeeRecord?.gender)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}{!t.is_paid ? ' (unpaid)' : ''}</option>
+                ))}
             </select>
           </label>
 

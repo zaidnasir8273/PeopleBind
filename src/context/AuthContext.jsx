@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
 
     const { data: employeeRow, error: employeeError } = await supabase
       .from('employees')
-      .select('id, employee_code, full_name, personal_email, phone, address, emergency_contact_name, emergency_contact_phone, bank_name, bank_account_number, bank_iban, joining_date, photo_url, department_id, designation_id, departments!employees_department_id_fkey(name), designations(name)')
+      .select('id, employee_code, full_name, gender, personal_email, phone, address, emergency_contact_name, emergency_contact_phone, bank_name, bank_account_number, bank_iban, joining_date, photo_url, department_id, designation_id, departments!employees_department_id_fkey(name), designations(name)')
       .eq('user_id', userId)
       .maybeSingle()
 

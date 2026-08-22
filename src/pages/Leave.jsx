@@ -60,8 +60,8 @@ export default function Leave() {
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: types }] = await Promise.all([
-      supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
-      supabase.from('leave_types').select('id, name, is_paid').order('name'),
+      supabase.from('employees').select('id, employee_code, full_name, gender').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
+      supabase.from('leave_types').select('id, name, is_paid, applicable_gender').order('name'),
     ])
     setEmployees(emps ?? [])
     setLeaveTypes(types ?? [])
@@ -424,9 +424,11 @@ export default function Leave() {
               onChange={(e) => setRequestForm({ ...requestForm, leave_type_id: e.target.value })}
             >
               <option value="">— Select —</option>
-              {leaveTypes.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}{!t.is_paid ? ' (unpaid)' : ''}</option>
-              ))}
+              {leaveTypes
+                .filter((t) => !t.applicable_gender || t.applicable_gender === employeeById[requestForm.employee_id]?.gender)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}{!t.is_paid ? ' (unpaid)' : ''}</option>
+                ))}
             </select>
           </label>
 
@@ -497,9 +499,11 @@ export default function Leave() {
               onChange={(e) => setBalanceForm({ ...balanceForm, leave_type_id: e.target.value })}
             >
               <option value="">— Select —</option>
-              {leaveTypes.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
+              {leaveTypes
+                .filter((t) => !t.applicable_gender || t.applicable_gender === employeeById[balanceForm.employee_id]?.gender)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
             </select>
           </label>
 
