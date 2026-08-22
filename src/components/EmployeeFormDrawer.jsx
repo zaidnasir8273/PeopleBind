@@ -27,6 +27,7 @@ const EMPTY_FORM = {
   department_id: '',
   employment_type_id: '',
   branch_id: '',
+  shift_id: '',
   employment_status: 'probation',
   manager_id: '',
   hire_date: '',
@@ -105,6 +106,7 @@ export function EmployeeFormDrawer({ open, onClose, initialData, company, lookup
       department_id: form.department_id || null,
       employment_type_id: form.employment_type_id || null,
       branch_id: form.branch_id || null,
+      shift_id: form.shift_id || null,
       employment_status: form.employment_status || 'probation',
       manager_id: form.manager_id || null,
       hire_date: form.hire_date || null,
@@ -282,15 +284,24 @@ export function EmployeeFormDrawer({ open, onClose, initialData, company, lookup
                 </select>
               </label>
             </div>
-            <label className="field">
-              <span>Reporting manager</span>
-              <select value={form.manager_id} onChange={set('manager_id')}>
-                <option value="">—</option>
-                {managerOptions.filter((m) => m.id !== editingId).map((m) => (
-                  <option key={m.id} value={m.id}>{m.full_name}</option>
-                ))}
-              </select>
-            </label>
+            <div className="field-row">
+              <label className="field">
+                <span>Shift</span>
+                <select value={form.shift_id} onChange={set('shift_id')}>
+                  <option value="">—</option>
+                  {lookups.shifts.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </label>
+              <label className="field">
+                <span>Reporting manager</span>
+                <select value={form.manager_id} onChange={set('manager_id')}>
+                  <option value="">—</option>
+                  {managerOptions.filter((m) => m.id !== editingId).map((m) => (
+                    <option key={m.id} value={m.id}>{m.full_name}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <div className="field-row">
               <label className="field">
                 <span>Hire date</span>

@@ -66,7 +66,7 @@ export default function EmployeeDetail() {
   const [tab, setTab] = useState('personal')
   const [editOpen, setEditOpen] = useState(false)
   const [managerName, setManagerName] = useState(null)
-  const [lookups, setLookups] = useState({ departments: [], designations: [], teams: [], employmentTypes: [], branches: [] })
+  const [lookups, setLookups] = useState({ departments: [], designations: [], teams: [], employmentTypes: [], branches: [], shifts: [] })
   const [employees, setEmployees] = useState([])
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const photoInputRef = useRef(null)
@@ -93,13 +93,14 @@ export default function EmployeeDetail() {
   }, [id])
 
   const loadLookups = useCallback(async () => {
-    const [{ data: departments }, { data: designations }, { data: teams }, { data: employmentTypes }, { data: branches }, { data: allEmployees }] = await Promise.all([
+    const [{ data: departments }, { data: designations }, { data: teams }, { data: employmentTypes }, { data: branches }, { data: allEmployees }, { data: shifts }] = await Promise.all([
       supabase.from('departments').select('id,name').eq('status', 'active').order('name'),
       supabase.from('designations').select('id,name').eq('status', 'active').order('name'),
       supabase.from('teams').select('id,name').eq('status', 'active').order('name'),
       supabase.from('employment_types').select('id,name').order('name'),
       supabase.from('branches').select('id,name').order('name'),
       supabase.from('employees').select('id, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
+      supabase.from('shifts').select('id,name').eq('status', 'active').order('name'),
     ])
     setLookups({
       departments: departments ?? [],
@@ -107,6 +108,7 @@ export default function EmployeeDetail() {
       teams: teams ?? [],
       employmentTypes: employmentTypes ?? [],
       branches: branches ?? [],
+      shifts: shifts ?? [],
     })
     setEmployees(allEmployees ?? [])
   }, [])

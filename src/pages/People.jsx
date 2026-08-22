@@ -18,7 +18,7 @@ export default function People() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
-  const [lookups, setLookups] = useState({ departments: [], designations: [], teams: [], employmentTypes: [], branches: [] })
+  const [lookups, setLookups] = useState({ departments: [], designations: [], teams: [], employmentTypes: [], branches: [], shifts: [] })
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
@@ -37,12 +37,13 @@ export default function People() {
   }, [])
 
   const loadLookups = useCallback(async () => {
-    const [{ data: departments }, { data: designations }, { data: teams }, { data: employmentTypes }, { data: branches }] = await Promise.all([
+    const [{ data: departments }, { data: designations }, { data: teams }, { data: employmentTypes }, { data: branches }, { data: shifts }] = await Promise.all([
       supabase.from('departments').select('id,name').eq('status', 'active').order('name'),
       supabase.from('designations').select('id,name').eq('status', 'active').order('name'),
       supabase.from('teams').select('id,name').eq('status', 'active').order('name'),
       supabase.from('employment_types').select('id,name').order('name'),
       supabase.from('branches').select('id,name').order('name'),
+      supabase.from('shifts').select('id,name').eq('status', 'active').order('name'),
     ])
     setLookups({
       departments: departments ?? [],
@@ -50,6 +51,7 @@ export default function People() {
       teams: teams ?? [],
       employmentTypes: employmentTypes ?? [],
       branches: branches ?? [],
+      shifts: shifts ?? [],
     })
   }, [])
 
