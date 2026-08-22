@@ -218,6 +218,7 @@ export default function EmployeeDetail() {
           managerName={managerName}
           onEdit={() => setEditOpen(true)}
           onDeleted={() => navigate('/app/people')}
+          onOffboarded={load}
         />
       )}
       {tab === 'salary' && <SalaryTab employee={employee} onEdit={() => setEditOpen(true)} />}
@@ -282,7 +283,7 @@ function PersonalTab({ employee: e, onEdit }) {
   )
 }
 
-function EmploymentTab({ employee: e, managerName, onEdit, onDeleted }) {
+function EmploymentTab({ employee: e, managerName, onEdit, onDeleted, onOffboarded }) {
   const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(true)
 
@@ -344,8 +345,172 @@ function EmploymentTab({ employee: e, managerName, onEdit, onDeleted }) {
         </div>
       )}
 
+      <OffboardCard employee={e} onOffboarded={onOffboarded} />
       <DangerZoneCard employee={e} onDeleted={onDeleted} />
     </>
+  )
+}
+
+function OffboardCard({ employee, onOffboarded }) {
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [statementOpen, setStatementOpen] = useState(false)
+  const [form, setForm] = useState({ exit_date: new Date().toISOString().slice(0, 10), last_working_day: '', notice_pay_adjustment: '0', notes: '' })
+  const [settlement, setSettlement] = useState(null)
+  const [calculating, setCalculating] = useState(false)
+  const [finalizing, setFinalizing] = useState(false)
+  const [latest, setLatest] = useState(null)
+  const [loadingLatest, setLoadingLatest] = useState(true)
+
+  const loadLatest = useCallback(async () => {
+    setLoadingLatest(true)
+    const { data } = await supabase
+      .from('employee_settlements')
+      .select('id, exit_date, last_working_day, gratuity_amount, leave_encashment_amount, notice_pay_adjustment, loan_recovery_amount, net_settlement_amount, status, notes, finalized_at')
+      .eq('employee_id', employee.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    setLatest(data ?? null)
+    setLoadingLatest(false)
+  }, [employee.id])
+
+  useEffect(() => {
+    loadLatest()
+  }, [loadLatest])
+
+  function openDrawer() {
+    setForm({
+      exit_date: new Date().toISOString().slice(0, 10),
+      last_working_day: '',
+      notice_pay_adjustment: '0',
+      notes: '',
+    })
+    setSettlement(null)
+    setDrawerOpen(true)
+  }
+
+  async function preview() {
+    setCalculating(true)
+    const { data, error } = await supabase.rpc('calculate_employee_settlement', {
+      p_employee_id: employee.id,
+      p_exit_date: form.exit_date,
+      p_last_working_day: form.last_working_day || null,
+      p_notice_pay_adjustment: Number(form.notice_pay_adjustment || 0),
+      p_notes: form.notes || null,
+    })
+    setCalculating(false)
+    if (error) {
+      toast.error(error.message || 'Failed to calculate settlement')
+      return
+    }
+    setSettlement(data)
+  }
+
+  async function finalize() {
+    if (!settlement) return
+    setFinalizing(true)
+    const { error } = await supabase.rpc('finalize_employee_settlement', { p_settlement_id: settlement.id })
+    setFinalizing(false)
+    if (error) {
+      toast.error(error.message || 'Failed to finalize settlement')
+      return
+    }
+    toast.success(`${employee.full_name} has been offboarded`)
+    setDrawerOpen(false)
+    loadLatest()
+    onOffboarded?.()
+  }
+
+  if (loadingLatest) return null
+
+  const alreadyOffboarded = employee.employment_status === 'terminated' || employee.employment_status === 'resigned'
+
+  return (
+    <div className="report-section">
+      <p className="section-heading">Offboarding</p>
+
+      {latest?.status === 'finalized' ? (
+        <>
+          <p className="muted" style={{ marginTop: 0 }}>
+            {employee.full_name} was offboarded on {formatDate(latest.exit_date)}. Net settlement: Rs. {Number(latest.net_settlement_amount).toLocaleString('en-PK')}.
+          </p>
+          <button type="button" className="btn-secondary" onClick={() => setStatementOpen(true)}>View settlement statement</button>
+        </>
+      ) : alreadyOffboarded ? (
+        <p className="muted" style={{ marginTop: 0 }}>
+          {employee.full_name} is marked {employee.employment_status}. Run a Full &amp; Final Settlement to record their gratuity, leave encashment, and loan recovery.
+        </p>
+      ) : (
+        <p className="muted" style={{ marginTop: 0 }}>
+          When {employee.full_name} leaves the company, run their Full &amp; Final Settlement here — it computes gratuity,
+          unused encashable leave, and any outstanding loan recovery, then marks them Terminated.
+        </p>
+      )}
+
+      {!(latest?.status === 'finalized') && (
+        <button type="button" className="btn-primary" onClick={openDrawer}>Offboard employee</button>
+      )}
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={`Offboard ${employee.full_name}`}>
+        <div className="drawer-form">
+          <div className="field-row">
+            <label className="field">
+              <span>Exit date</span>
+              <input type="date" required value={form.exit_date} onChange={(e) => { setForm({ ...form, exit_date: e.target.value }); setSettlement(null) }} />
+            </label>
+            <label className="field">
+              <span>Last working day</span>
+              <input type="date" value={form.last_working_day} onChange={(e) => { setForm({ ...form, last_working_day: e.target.value }); setSettlement(null) }} />
+            </label>
+          </div>
+
+          <label className="field">
+            <span>Notice pay adjustment (Rs., +/-)</span>
+            <input type="number" value={form.notice_pay_adjustment} onChange={(e) => { setForm({ ...form, notice_pay_adjustment: e.target.value }); setSettlement(null) }} />
+          </label>
+
+          <label className="field">
+            <span>Notes</span>
+            <textarea rows={2} value={form.notes} onChange={(e) => { setForm({ ...form, notes: e.target.value }); setSettlement(null) }} />
+          </label>
+
+          {!settlement ? (
+            <button type="button" className="btn-secondary" disabled={calculating} onClick={preview}>
+              {calculating && <Loader2 size={14} className="btn-spinner" />}
+              {calculating ? 'Calculating…' : 'Preview settlement'}
+            </button>
+          ) : (
+            <>
+              <div className="payslip-row"><div><span className="label">Gratuity</span></div><span className="amount">{Number(settlement.gratuity_amount).toLocaleString('en-PK')}</span></div>
+              <div className="payslip-row"><div><span className="label">Leave encashment</span></div><span className="amount">{Number(settlement.leave_encashment_amount).toLocaleString('en-PK')}</span></div>
+              <div className="payslip-row"><div><span className="label">Notice pay adjustment</span></div><span className="amount">{Number(settlement.notice_pay_adjustment).toLocaleString('en-PK')}</span></div>
+              <div className="payslip-row deduction"><div><span className="label">Loan recovery</span></div><span className="amount">– {Number(settlement.loan_recovery_amount).toLocaleString('en-PK')}</span></div>
+              <div className="payslip-row total"><span className="label">Net settlement</span><span className="amount">{Number(settlement.net_settlement_amount).toLocaleString('en-PK')}</span></div>
+
+              <button type="button" className="btn-secondary" disabled={calculating} onClick={preview}>Recalculate</button>
+              <button type="button" className="btn-primary" disabled={finalizing} onClick={finalize}>
+                {finalizing && <Loader2 size={14} className="btn-spinner" />}
+                {finalizing ? 'Finalizing…' : 'Finalize & mark Terminated'}
+              </button>
+            </>
+          )}
+        </div>
+      </Drawer>
+
+      <Drawer open={statementOpen} onClose={() => setStatementOpen(false)} title="Settlement statement">
+        {latest && (
+          <div className="drawer-form">
+            <p className="muted" style={{ marginTop: 0 }}>Exit date: {formatDate(latest.exit_date)}</p>
+            <div className="payslip-row"><div><span className="label">Gratuity</span></div><span className="amount">{Number(latest.gratuity_amount).toLocaleString('en-PK')}</span></div>
+            <div className="payslip-row"><div><span className="label">Leave encashment</span></div><span className="amount">{Number(latest.leave_encashment_amount).toLocaleString('en-PK')}</span></div>
+            <div className="payslip-row"><div><span className="label">Notice pay adjustment</span></div><span className="amount">{Number(latest.notice_pay_adjustment).toLocaleString('en-PK')}</span></div>
+            <div className="payslip-row deduction"><div><span className="label">Loan recovery</span></div><span className="amount">– {Number(latest.loan_recovery_amount).toLocaleString('en-PK')}</span></div>
+            <div className="payslip-row total"><span className="label">Net settlement</span><span className="amount">{Number(latest.net_settlement_amount).toLocaleString('en-PK')}</span></div>
+            {latest.notes && <p className="muted">{latest.notes}</p>}
+          </div>
+        )}
+      </Drawer>
+    </div>
   )
 }
 
@@ -378,12 +543,9 @@ function DangerZoneCard({ employee, onDeleted }) {
     <div className="report-section" style={{ borderColor: 'var(--danger-soft)' }}>
       <p className="section-heading">Danger zone</p>
       <p className="muted" style={{ marginTop: 0 }}>
-        If {employee.full_name} has left the company, marking them <strong>Terminated</strong> or <strong>Resigned</strong> from
-        the Edit form keeps their full record — attendance, leave, payroll, performance — intact for reporting and compliance.
-      </p>
-      <p className="muted">
-        Deleting instead permanently removes their attendance, leave, benefits, documents, performance reviews, and
-        timesheet history. This can't be undone. Employees with actual payroll history can't be deleted this way.
+        Deleting permanently removes {employee.full_name}'s attendance, leave, benefits, documents, performance
+        reviews, and timesheet history. This can't be undone. Employees with actual payroll history can't be
+        deleted this way — use Offboarding above instead.
       </p>
       <button type="button" className="btn-danger" onClick={() => setDrawerOpen(true)}>Delete employee</button>
 

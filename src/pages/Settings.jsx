@@ -221,6 +221,8 @@ function CompanyTab() {
         standard_monthly_hours: company.standard_monthly_hours ?? 208,
         standard_monthly_days: company.standard_monthly_days ?? 26,
         eobi_minimum_wage_base: company.eobi_minimum_wage_base ?? 37000,
+        gratuity_days_per_year: company.gratuity_days_per_year ?? 30,
+        gratuity_min_years: company.gratuity_min_years ?? 0,
       })
     }
   }, [company])
@@ -241,6 +243,8 @@ function CompanyTab() {
         standard_monthly_hours: Number(form.standard_monthly_hours),
         standard_monthly_days: Number(form.standard_monthly_days),
         eobi_minimum_wage_base: Number(form.eobi_minimum_wage_base),
+        gratuity_days_per_year: Number(form.gratuity_days_per_year),
+        gratuity_min_years: Number(form.gratuity_min_years),
       })
       .eq('id', company.id)
 
@@ -292,6 +296,20 @@ function CompanyTab() {
         <span>EOBI minimum wage base (Rs.)</span>
         <input type="number" min="0" value={form.eobi_minimum_wage_base} onChange={(e) => setForm({ ...form, eobi_minimum_wage_base: e.target.value })} />
       </label>
+
+      <p className="section-heading" style={{ marginTop: 10, marginBottom: 4, fontSize: 14 }}>Gratuity</p>
+      <p className="muted" style={{ marginTop: 0 }}>Used when offboarding an employee to compute their Full &amp; Final Settlement.</p>
+
+      <div className="field-row">
+        <label className="field">
+          <span>Days of basic salary per year of service</span>
+          <input type="number" min="0" value={form.gratuity_days_per_year} onChange={(e) => setForm({ ...form, gratuity_days_per_year: e.target.value })} />
+        </label>
+        <label className="field">
+          <span>Minimum years of service to qualify</span>
+          <input type="number" min="0" step="0.5" value={form.gratuity_min_years} onChange={(e) => setForm({ ...form, gratuity_min_years: e.target.value })} />
+        </label>
+      </div>
 
       {error && <p className="field-error">{error}</p>}
 
@@ -761,7 +779,7 @@ function LeaveTab() {
   const load = useCallback(async () => {
     setLoading(true)
     const [{ data: lt }, { data: p }, { data: et }] = await Promise.all([
-      supabase.from('leave_types').select('id, name, is_paid').order('name'),
+      supabase.from('leave_types').select('id, name, is_paid, is_encashable').order('name'),
       supabase
         .from('leave_policies')
         .select('id, name, annual_entitlement_days, carry_forward_enabled, carry_forward_max_days, requires_approval, leave_types(name), employment_types(name)')
@@ -970,20 +988,20 @@ function LeaveTab() {
 }
 
 function LeaveTypesCard({ rows, company, onChanged }) {
-  const [form, setForm] = useState({ name: '', is_paid: true })
+  const [form, setForm] = useState({ name: '', is_paid: true, is_encashable: false })
   const [saving, setSaving] = useState(false)
   const [removingId, setRemovingId] = useState(null)
 
   async function add() {
     if (!form.name.trim()) return
     setSaving(true)
-    const { error } = await supabase.from('leave_types').insert({ company_id: company.id, name: form.name.trim(), is_paid: form.is_paid })
+    const { error } = await supabase.from('leave_types').insert({ company_id: company.id, name: form.name.trim(), is_paid: form.is_paid, is_encashable: form.is_encashable })
     setSaving(false)
     if (error) {
       toast.error(error.message || 'Failed to add leave type')
       return
     }
-    setForm({ name: '', is_paid: true })
+    setForm({ name: '', is_paid: true, is_encashable: false })
     onChanged()
   }
 
@@ -1012,7 +1030,11 @@ function LeaveTypesCard({ rows, company, onChanged }) {
         <div className="lookup-list">
           {rows.map((r) => (
             <div key={r.id} className="lookup-row">
-              <span>{r.name}{!r.is_paid && <span className="muted" style={{ marginLeft: 6 }}>· unpaid</span>}</span>
+              <span>
+                {r.name}
+                {!r.is_paid && <span className="muted" style={{ marginLeft: 6 }}>· unpaid</span>}
+                {r.is_encashable && <span className="muted" style={{ marginLeft: 6 }}>· encashable</span>}
+              </span>
               <button
                 type="button"
                 className="btn-icon-round reject lookup-row-remove"
@@ -1037,6 +1059,10 @@ function LeaveTypesCard({ rows, company, onChanged }) {
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <input type="checkbox" checked={form.is_paid} onChange={(e) => setForm({ ...form, is_paid: e.target.checked })} />
           Paid leave
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+          <input type="checkbox" checked={form.is_encashable} onChange={(e) => setForm({ ...form, is_encashable: e.target.checked })} />
+          Encashable at exit
         </label>
         <button type="button" className="btn-primary" style={{ alignSelf: 'flex-start' }} disabled={saving} onClick={add}>
           {saving ? 'Adding…' : 'Add leave type'}
