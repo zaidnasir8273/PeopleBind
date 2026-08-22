@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Loader2, Camera, Mail, BadgeCheck, Building2, UserCog, Landmark, Hash } from 'lucide-react'
 import { DeleteIcon } from '../components/ui/delete'
@@ -578,28 +578,114 @@ function DangerZoneCard({ employee, onDeleted }) {
   )
 }
 
+function addDays(dateStr, delta) {
+  const d = new Date(`${dateStr}T00:00:00`)
+  d.setDate(d.getDate() + delta)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const EMPTY_SALARY_CHANGE_FORM = {
+  payroll_component_id: '',
+  amount: '',
+  effective_from: new Date().toISOString().slice(0, 10),
+}
+
 function SalaryTab({ employee: e, onEdit }) {
+  const { profile, company } = useAuth()
   const [components, setComponents] = useState([])
+  const [payrollComponents, setPayrollComponents] = useState([])
+  const [lockedRuns, setLockedRuns] = useState([])
   const [loading, setLoading] = useState(true)
+
+  const [changeOpen, setChangeOpen] = useState(false)
+  const [form, setForm] = useState(EMPTY_SALARY_CHANGE_FORM)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const loadComponents = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('employee_salary_components')
+      .select('id, amount, effective_from, effective_to, payroll_components(name, component_type)')
+      .eq('employee_id', e.id)
+      .is('effective_to', null)
+      .order('effective_from', { ascending: false })
+    setComponents(data ?? [])
+    setLoading(false)
+  }, [e.id])
+
+  useEffect(() => {
+    loadComponents()
+  }, [loadComponents])
 
   useEffect(() => {
     let active = true
-    async function loadComponents() {
-      setLoading(true)
-      const { data } = await supabase
-        .from('employee_salary_components')
-        .select('id, amount, effective_from, effective_to, payroll_components(name, component_type)')
-        .eq('employee_id', e.id)
-        .is('effective_to', null)
-        .order('effective_from', { ascending: false })
+    async function loadLookups() {
+      const [{ data: comps }, { data: runs }] = await Promise.all([
+        supabase.from('payroll_components').select('id, name, component_type').eq('status', 'active').order('component_type').order('name'),
+        supabase.from('payroll_runs').select('id, status, payroll_periods(period_start, period_end, label)').neq('status', 'draft'),
+      ])
       if (active) {
-        setComponents(data ?? [])
-        setLoading(false)
+        setPayrollComponents(comps ?? [])
+        setLockedRuns(runs ?? [])
       }
     }
-    loadComponents()
+    loadLookups()
     return () => { active = false }
-  }, [e.id])
+  }, [])
+
+  const overlappingLockedRun = form.effective_from
+    ? lockedRuns.find((r) => r.payroll_periods && r.payroll_periods.period_end >= form.effective_from)
+    : null
+
+  function openChange() {
+    setForm({ ...EMPTY_SALARY_CHANGE_FORM })
+    setError(null)
+    setChangeOpen(true)
+  }
+
+  async function handleSubmit(ev) {
+    ev.preventDefault()
+    setError(null)
+    setSaving(true)
+
+    const { data: overlapping } = await supabase
+      .from('employee_salary_components')
+      .select('id, effective_from')
+      .eq('employee_id', e.id)
+      .eq('payroll_component_id', form.payroll_component_id)
+      .is('effective_to', null)
+
+    for (const row of overlapping ?? []) {
+      if (row.effective_from < form.effective_from) {
+        await supabase
+          .from('employee_salary_components')
+          .update({ effective_to: addDays(form.effective_from, -1) })
+          .eq('id', row.id)
+      }
+    }
+
+    const { error: saveError } = await supabase.from('employee_salary_components').insert({
+      company_id: company.id,
+      employee_id: e.id,
+      payroll_component_id: form.payroll_component_id,
+      amount: Number(form.amount),
+      effective_from: form.effective_from,
+      created_by: profile.id,
+    })
+
+    setSaving(false)
+
+    if (saveError) {
+      setError(saveError.message)
+      toast.error(saveError.message)
+      return
+    }
+
+    toast.success('Salary change saved')
+    setChangeOpen(false)
+    loadComponents()
+  }
 
   return (
     <>
@@ -614,7 +700,9 @@ function SalaryTab({ employee: e, onEdit }) {
       <div className="report-section">
         <div className="report-section-head">
           <p className="section-heading">Active salary components</p>
-          <Link to="/app/payroll" className="btn-secondary" style={{ padding: '6px 12px', fontSize: 13, textDecoration: 'none' }}>Manage in Payroll</Link>
+          <button className="btn-primary btn-icon" onClick={openChange} style={{ padding: '6px 12px', fontSize: 13 }}>
+            <PlusIcon size={14} /> Add salary change
+          </button>
         </div>
         {loading ? (
           <SkeletonBlock rows={2} />
@@ -636,6 +724,63 @@ function SalaryTab({ employee: e, onEdit }) {
           </table>
         )}
       </div>
+
+      <Drawer open={changeOpen} onClose={() => setChangeOpen(false)} title="Add salary change">
+        <form onSubmit={handleSubmit} className="drawer-form">
+          <label className="field">
+            <span>Component</span>
+            <select
+              required
+              value={form.payroll_component_id}
+              onChange={(ev) => setForm({ ...form, payroll_component_id: ev.target.value })}
+            >
+              <option value="">— Select —</option>
+              {payrollComponents.map((c) => (
+                <option key={c.id} value={c.id}>{c.name} ({c.component_type})</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field">
+            <span>Amount</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              required
+              value={form.amount}
+              onChange={(ev) => setForm({ ...form, amount: ev.target.value })}
+            />
+          </label>
+
+          <label className="field">
+            <span>Effective from</span>
+            <input
+              type="date"
+              required
+              value={form.effective_from}
+              onChange={(ev) => setForm({ ...form, effective_from: ev.target.value })}
+            />
+          </label>
+
+          <p className="muted" style={{ margin: 0 }}>
+            If this component is already active, its previous amount will be closed out the day before this one starts.
+          </p>
+
+          {overlappingLockedRun && (
+            <p className="field-error" style={{ margin: 0 }}>
+              {overlappingLockedRun.payroll_periods?.label || 'A payroll run'} covering this date is already {overlappingLockedRun.status} — this change will apply from the next run onward, not retroactively.
+            </p>
+          )}
+
+          {error && <p className="field-error">{error}</p>}
+
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Saving…' : 'Save change'}
+          </button>
+        </form>
+      </Drawer>
     </>
   )
 }
