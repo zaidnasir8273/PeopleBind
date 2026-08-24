@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Building2, LifeBuoy, LayoutDashboard } from 'lucide-react'
+import { GaugeIcon } from '../components/ui/gauge'
+import { BoxesIcon } from '../components/ui/boxes'
+import { TicketIcon } from '../components/ui/ticket'
 import { MessageCircleIcon } from '../components/ui/message-circle'
 import { WalletIcon } from '../components/ui/wallet'
 import { LogoutIcon } from '../components/ui/logout'
@@ -10,10 +12,10 @@ import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
 const NAV_ITEMS = [
-  { to: '/platform-admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/platform-admin/companies', label: 'Companies', icon: Building2 },
+  { to: '/platform-admin', label: 'Dashboard', icon: GaugeIcon, end: true },
+  { to: '/platform-admin/companies', label: 'Companies', icon: BoxesIcon },
   { to: '/platform-admin/chat', label: 'Live chat', icon: MessageCircleIcon },
-  { to: '/platform-admin/tickets', label: 'Support tickets', icon: LifeBuoy },
+  { to: '/platform-admin/tickets', label: 'Support tickets', icon: TicketIcon },
   { to: '/platform-admin/payroll', label: 'Payroll monitor', icon: WalletIcon },
 ]
 
