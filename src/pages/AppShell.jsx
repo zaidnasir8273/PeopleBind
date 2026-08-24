@@ -1,8 +1,6 @@
-import { useEffect } from 'react'
 import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'motion/react'
 import { ShieldAlert } from 'lucide-react'
-import { toast } from 'sonner'
 import { Sidebar } from '../components/Sidebar'
 import { NotificationBell } from '../components/NotificationBell'
 import { SupportChat } from '../components/SupportChat'
@@ -20,12 +18,6 @@ export default function AppShell() {
   // has nothing to manage here -- every save on these pages assumes a
   // company is selected, so let them in only once one is.
   const strandedAdmin = profile?.is_platform_admin && !company
-
-  useEffect(() => {
-    if (strandedAdmin) {
-      toast.error('Pick a company to manage first — use "View as" from Platform Admin → Companies.')
-    }
-  }, [strandedAdmin])
 
   if (strandedAdmin) {
     return <Navigate to="/platform-admin" replace />

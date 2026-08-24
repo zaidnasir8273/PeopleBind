@@ -1744,9 +1744,24 @@ function RolesTab() {
   const [userRoles, setUserRoles] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedRoleId, setSelectedRoleId] = useState(null)
+  const [hasAccess, setHasAccess] = useState(null)
 
   const [newRoleName, setNewRoleName] = useState('')
   const [creatingRole, setCreatingRole] = useState(false)
+
+  useEffect(() => {
+    if (profile?.is_platform_admin) {
+      setHasAccess(true)
+      return
+    }
+    let cancelled = false
+    supabase.rpc('auth_has_permission', { p_resource: 'settings', p_action: 'manage' }).then(({ data }) => {
+      if (!cancelled) setHasAccess(!!data)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [profile?.is_platform_admin])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -1766,8 +1781,8 @@ function RolesTab() {
   }, [company.id])
 
   useEffect(() => {
-    load()
-  }, [load])
+    if (hasAccess) load()
+  }, [load, hasAccess])
 
   async function createRole() {
     if (!newRoleName.trim()) return
@@ -1801,6 +1816,17 @@ function RolesTab() {
       await supabase.from('user_roles').insert({ company_id: company.id, user_id: userId, role_id: roleId })
     }
     load()
+  }
+
+  if (hasAccess === null) return <SkeletonBlock rows={8} />
+
+  if (!hasAccess) {
+    return (
+      <div className="empty-state" style={{ marginTop: 20 }}>
+        <p>You don't have access to manage roles and users.</p>
+        <p className="muted">Ask a company admin to grant you the "Manage company settings" permission.</p>
+      </div>
+    )
   }
 
   if (loading) return <SkeletonBlock rows={8} />
