@@ -1409,10 +1409,10 @@ button:active:not(:disabled) {
 }
 
 .stat-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
   margin-bottom: 28px;
-  flex-wrap: wrap;
 }
 
 .quick-actions-row {
