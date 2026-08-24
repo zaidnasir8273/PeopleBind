@@ -7,6 +7,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import InviteAccept from './pages/InviteAccept'
 import Onboarding from './pages/Onboarding'
 import AppShell from './pages/AppShell'
 import Home from './pages/Home'
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/invite/:token" element={<InviteAccept />} />
           <Route
             path="/onboarding"
             element={

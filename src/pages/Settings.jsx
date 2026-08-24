@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { ChevronDown, Loader2 } from 'lucide-react'
 import { DeleteIcon } from '../components/ui/delete'
 import { PlusIcon } from '../components/ui/plus'
+import { SendIcon } from '../components/ui/send'
 import { ClockIcon } from '../components/ui/clock'
 import { UserIcon } from '../components/ui/user'
 import { UsersIcon } from '../components/ui/users'
@@ -1749,6 +1750,12 @@ function RolesTab() {
   const [newRoleName, setNewRoleName] = useState('')
   const [creatingRole, setCreatingRole] = useState(false)
 
+  const [invites, setInvites] = useState([])
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRoleId, setInviteRoleId] = useState('')
+  const [sendingInvite, setSendingInvite] = useState(false)
+  const [revokingInviteId, setRevokingInviteId] = useState(null)
+
   useEffect(() => {
     if (profile?.is_platform_admin) {
       setHasAccess(true)
@@ -1765,18 +1772,20 @@ function RolesTab() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [{ data: r }, { data: p }, { data: rp }, { data: u }, { data: ur }] = await Promise.all([
+    const [{ data: r }, { data: p }, { data: rp }, { data: u }, { data: ur }, { data: inv }] = await Promise.all([
       supabase.from('roles').select('id, name, is_system_role, company_id').order('is_system_role', { ascending: false }).order('name'),
       supabase.from('permissions').select('id, resource, action, description').order('resource').order('action'),
       supabase.from('role_permissions').select('role_id, permission_id'),
       supabase.from('profiles').select('id, full_name, email, status').eq('company_id', company.id).order('full_name'),
       supabase.from('user_roles').select('id, user_id, role_id'),
+      supabase.from('invites').select('id, email, role_id, created_at').eq('company_id', company.id).eq('status', 'pending').order('created_at', { ascending: false }),
     ])
     setRoles(r ?? [])
     setPermissions(p ?? [])
     setRolePermissions(rp ?? [])
     setUsers(u ?? [])
     setUserRoles(ur ?? [])
+    setInvites(inv ?? [])
     setLoading(false)
   }, [company.id])
 
@@ -1816,6 +1825,64 @@ function RolesTab() {
       await supabase.from('user_roles').insert({ company_id: company.id, user_id: userId, role_id: roleId })
     }
     load()
+  }
+
+  async function sendInvite() {
+    const email = inviteEmail.trim()
+    if (!email || !inviteRoleId) return
+    setSendingInvite(true)
+
+    const { data: invite, error } = await supabase
+      .from('invites')
+      .insert({ company_id: company.id, email, role_id: inviteRoleId, invited_by: profile.id })
+      .select()
+      .single()
+
+    if (error) {
+      setSendingInvite(false)
+      toast.error(error.message)
+      return
+    }
+
+    const roleName = roles.find((r) => r.id === inviteRoleId)?.name
+    const link = `${window.location.origin}/invite/${invite.token}`
+    const { error: emailError } = await supabase.functions.invoke('send-email', {
+      body: {
+        to: email,
+        subject: `You've been invited to join ${company.name} on PeopleBind`,
+        html: `<p>You've been invited to join <strong>${company.name}</strong> on PeopleBind as <strong>${roleName}</strong>.</p><p><a href="${link}">Accept your invite</a></p><p>This link expires in 7 days.</p>`,
+      },
+    })
+    setSendingInvite(false)
+
+    if (emailError) {
+      let message = emailError.message
+      try {
+        const body = await emailError.context.json()
+        if (body?.error) message = body.error
+      } catch {
+        // context wasn't JSON -- keep the generic message
+      }
+      toast.error(message || 'Invite created, but the email failed to send')
+      await load()
+      return
+    }
+
+    toast.success(`Invite sent to ${email}`)
+    setInviteEmail('')
+    setInviteRoleId('')
+    await load()
+  }
+
+  async function revokeInvite(id) {
+    setRevokingInviteId(id)
+    const { error } = await supabase.from('invites').update({ status: 'revoked' }).eq('id', id)
+    setRevokingInviteId(null)
+    if (error) {
+      toast.error(error.message)
+      return
+    }
+    await load()
   }
 
   if (hasAccess === null) return <SkeletonBlock rows={8} />
@@ -1870,9 +1937,57 @@ function RolesTab() {
             </div>
           )
         })}
-        <p className="muted" style={{ fontSize: 12 }}>
-          Adding brand-new users isn't wired up yet — that needs an invite flow we haven't built.
-        </p>
+        <p className="section-heading" style={{ marginTop: 28 }}>Invite someone new</p>
+        <div className="lookup-add-group">
+          <input
+            className="input-ghost"
+            type="email"
+            placeholder="email@company.com"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && sendInvite()}
+          />
+          <select className="input-ghost" value={inviteRoleId} onChange={(e) => setInviteRoleId(e.target.value)}>
+            <option value="">Role…</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="btn-primary"
+            style={{ alignSelf: 'flex-start' }}
+            disabled={sendingInvite || !inviteEmail.trim() || !inviteRoleId}
+            onClick={sendInvite}
+          >
+            {sendingInvite && <Loader2 size={14} className="btn-spinner" />}
+            {sendingInvite ? 'Sending…' : <><SendIcon size={14} /> Send invite</>}
+          </button>
+        </div>
+
+        {invites.length > 0 && (
+          <div className="lookup-list" style={{ marginTop: 8 }}>
+            {invites.map((inv) => (
+              <div key={inv.id} className="lookup-row">
+                <span>
+                  {inv.email}
+                  <span className="muted" style={{ display: 'block', fontSize: 11 }}>
+                    {roles.find((r) => r.id === inv.role_id)?.name} · sent {new Date(inv.created_at).toLocaleDateString()}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="btn-icon-round reject lookup-row-remove"
+                  onClick={() => revokeInvite(inv.id)}
+                  disabled={revokingInviteId === inv.id}
+                  aria-label="Revoke invite"
+                >
+                  <DeleteIcon size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
