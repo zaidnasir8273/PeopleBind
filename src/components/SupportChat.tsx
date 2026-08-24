@@ -7,6 +7,9 @@ import type { Database } from '../lib/database.types'
 
 type Message = Database['public']['Tables']['support_messages']['Row']
 
+const WAITING_LABELS = ['Typing', 'Processing', 'Baking your reply']
+const WAITING_TIMEOUT_MS = 45000
+
 function relativeTime(ts: string) {
   const diffMs = Date.now() - new Date(ts).getTime()
   const mins = Math.round(diffMs / 60000)
@@ -26,8 +29,11 @@ export function SupportChat() {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [unread, setUnread] = useState(0)
+  const [waiting, setWaiting] = useState(false)
+  const [waitingLabelIndex, setWaitingLabelIndex] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const waitingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const ensureThread = useCallback(async () => {
     if (!company) return null
@@ -78,8 +84,10 @@ export function SupportChat() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_messages', filter: `thread_id=eq.${threadId}` }, (payload) => {
         const msg = payload.new as Message
         setMessages((prev) => [...prev, msg])
-        if (msg.sender_is_platform_admin && !open) {
-          setUnread((n) => n + 1)
+        if (msg.sender_is_platform_admin) {
+          setWaiting(false)
+          if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current)
+          if (!open) setUnread((n) => n + 1)
         }
       })
       .subscribe()
@@ -96,7 +104,7 @@ export function SupportChat() {
     if (open && listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight
     }
-  }, [open, messages.length])
+  }, [open, messages.length, waiting])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -123,9 +131,27 @@ export function SupportChat() {
         sender_is_platform_admin: false,
         body,
       })
+      setWaiting(true)
+      if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current)
+      waitingTimeoutRef.current = setTimeout(() => setWaiting(false), WAITING_TIMEOUT_MS)
     }
     setSending(false)
   }
+
+  useEffect(() => {
+    if (!waiting) return
+    setWaitingLabelIndex(0)
+    const interval = setInterval(() => {
+      setWaitingLabelIndex((i) => (i + 1) % WAITING_LABELS.length)
+    }, 1600)
+    return () => clearInterval(interval)
+  }, [waiting])
+
+  useEffect(() => {
+    return () => {
+      if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current)
+    }
+  }, [])
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -159,6 +185,16 @@ export function SupportChat() {
                   <span className="support-chat-msg-time">{relativeTime(m.created_at)}</span>
                 </div>
               ))
+            )}
+            {waiting && (
+              <div className="support-chat-typing">
+                <div className="support-chat-typing-bubble">
+                  <span className="support-chat-typing-dot" />
+                  <span className="support-chat-typing-dot" />
+                  <span className="support-chat-typing-dot" />
+                </div>
+                <span className="support-chat-typing-label">{WAITING_LABELS[waitingLabelIndex]}…</span>
+              </div>
             )}
           </div>
 

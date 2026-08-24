@@ -2498,6 +2498,57 @@ a.attention-item:hover {
   padding: 0 2px;
 }
 
+.support-chat-typing {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.support-chat-typing-label {
+  font-size: 10px;
+  color: var(--ink-soft);
+  padding: 0 2px;
+}
+
+.support-chat-typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  border-bottom-left-radius: 4px;
+  background: var(--bg-subtle);
+}
+
+.support-chat-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-soft);
+  animation: support-chat-typing-bounce 1.2s infinite ease-in-out;
+}
+
+.support-chat-typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.support-chat-typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes support-chat-typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
 .support-chat-input-row {
   display: flex;
   align-items: flex-end;
