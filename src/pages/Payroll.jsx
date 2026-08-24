@@ -11,11 +11,13 @@ import { LayoutGridIcon } from '../components/ui/layout-grid'
 import { GavelIcon } from '../components/ui/gavel'
 import { HandHelpingIcon } from '../components/ui/hand-helping'
 import { HourglassIcon } from '../components/ui/hourglass'
+import { UploadIcon } from '../components/ui/upload'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonTable } from '../components/Skeleton'
 import { exportCsv } from '../lib/csv'
+import { ImportSalaryComponentsDrawer } from '../components/ImportSalaryComponentsDrawer'
 
 function fmt(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
@@ -541,6 +543,7 @@ function StructuresTab({ profile, company }) {
   const [form, setForm] = useState(EMPTY_COMPONENT_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [importOpen, setImportOpen] = useState(false)
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: comps }] = await Promise.all([
@@ -625,21 +628,26 @@ function StructuresTab({ profile, company }) {
 
   return (
     <>
-      <div className="field-row" style={{ maxWidth: 320, marginBottom: 4, alignItems: 'flex-end', gap: 12 }}>
-        <label className="field" style={{ flex: 1 }}>
-          <span>Employee</span>
-          <select value={selectedEmployeeId} onChange={(e) => setSelectedEmployeeId(e.target.value)}>
-            <option value="">— Select employee —</option>
-            {employees.map((emp) => (
-              <option key={emp.id} value={emp.id}>{emp.full_name}</option>
-            ))}
-          </select>
-        </label>
-        {selectedEmployeeId && (
-          <button className="btn-primary btn-icon" onClick={openAdd} style={{ marginBottom: 2 }}>
-            <PlusIcon size={16} /> Add component
-          </button>
-        )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 4, gap: 12 }}>
+        <div className="field-row" style={{ maxWidth: 320, alignItems: 'flex-end', gap: 12 }}>
+          <label className="field" style={{ flex: 1 }}>
+            <span>Employee</span>
+            <select value={selectedEmployeeId} onChange={(e) => setSelectedEmployeeId(e.target.value)}>
+              <option value="">— Select employee —</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+              ))}
+            </select>
+          </label>
+          {selectedEmployeeId && (
+            <button className="btn-primary btn-icon" onClick={openAdd} style={{ marginBottom: 2 }}>
+              <PlusIcon size={16} /> Add component
+            </button>
+          )}
+        </div>
+        <button className="btn-secondary btn-icon" onClick={() => setImportOpen(true)} style={{ marginBottom: 2 }}>
+          <UploadIcon size={16} /> Import
+        </button>
       </div>
 
       {!selectedEmployeeId ? (
@@ -728,6 +736,16 @@ function StructuresTab({ profile, company }) {
           </button>
         </form>
       </Drawer>
+
+      <ImportSalaryComponentsDrawer
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        company={company}
+        profile={profile}
+        employees={employees}
+        payrollComponents={components}
+        onImported={loadRows}
+      />
     </>
   )
 }

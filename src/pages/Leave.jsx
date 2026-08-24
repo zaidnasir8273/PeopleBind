@@ -5,10 +5,12 @@ import { CheckIcon } from '../components/ui/check'
 import { XIcon } from '../components/ui/x'
 import { MailCheckIcon } from '../components/ui/mail-check'
 import { BatteryMediumIcon } from '../components/ui/battery-medium'
+import { UploadIcon } from '../components/ui/upload'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonTable } from '../components/Skeleton'
+import { ImportLeaveBalancesDrawer } from '../components/ImportLeaveBalancesDrawer'
 
 const EMPTY_REQUEST = {
   employee_id: '',
@@ -57,6 +59,7 @@ export default function Leave() {
   const [balanceForm, setBalanceForm] = useState(EMPTY_BALANCE)
   const [balanceSaving, setBalanceSaving] = useState(false)
   const [balanceError, setBalanceError] = useState(null)
+  const [importOpen, setImportOpen] = useState(false)
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: types }] = await Promise.all([
@@ -237,9 +240,14 @@ export default function Leave() {
             <PlusIcon size={16} /> New request
           </button>
         ) : (
-          <button className="btn-primary btn-icon" onClick={openSetBalance}>
-            <PlusIcon size={16} /> Set balance
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-secondary btn-icon" onClick={() => setImportOpen(true)}>
+              <UploadIcon size={16} /> Import
+            </button>
+            <button className="btn-primary btn-icon" onClick={openSetBalance}>
+              <PlusIcon size={16} /> Set balance
+            </button>
+          </div>
         )}
       </div>
 
@@ -530,6 +538,15 @@ export default function Leave() {
           </button>
         </form>
       </Drawer>
+
+      <ImportLeaveBalancesDrawer
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        company={company}
+        employees={employees}
+        leaveTypes={leaveTypes}
+        onImported={loadBalances}
+      />
     </div>
   )
 }

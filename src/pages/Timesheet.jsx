@@ -12,6 +12,7 @@ import { CircleCheckIcon } from '../components/ui/circle-check'
 import { UsersRoundIcon } from '../components/ui/users-round'
 import { ReceiptTextIcon } from '../components/ui/receipt-text'
 import { CircleGaugeIcon } from '../components/ui/circle-gauge'
+import { UploadIcon } from '../components/ui/upload'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -19,6 +20,7 @@ import { Drawer } from '../components/Drawer'
 import { SkeletonTable, SkeletonBlock } from '../components/Skeleton'
 import { TimesheetWeekGrid } from '../components/TimesheetWeekGrid'
 import { SearchableSelect } from '../components/SearchableSelect'
+import { ImportTimeEntriesDrawer } from '../components/ImportTimeEntriesDrawer'
 
 const TEAL = '#1f7a63'
 const TEAL_DEEP = '#123f33'
@@ -94,6 +96,7 @@ export default function Timesheet() {
   const [error, setError] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: depts }, { data: projs }, { data: tsks }] = await Promise.all([
@@ -220,9 +223,14 @@ export default function Timesheet() {
         <div>
           <h1 className="page-title">Timesheets</h1>
         </div>
-        <button className="btn-primary btn-icon" onClick={openNewEntry}>
-          <PlusIcon size={16} /> Log time
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-secondary btn-icon" onClick={() => setImportOpen(true)}>
+            <UploadIcon size={16} /> Import
+          </button>
+          <button className="btn-primary btn-icon" onClick={openNewEntry}>
+            <PlusIcon size={16} /> Log time
+          </button>
+        </div>
       </div>
 
       <div className="tabs" style={{ marginBottom: 20 }}>
@@ -373,6 +381,17 @@ export default function Timesheet() {
           </button>
         </form>
       </Drawer>
+
+      <ImportTimeEntriesDrawer
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        company={company}
+        profile={profile}
+        employees={employees}
+        projects={projects}
+        tasks={tasks}
+        onImported={loadEntries}
+      />
     </div>
   )
 }

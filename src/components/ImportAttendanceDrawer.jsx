@@ -2,10 +2,12 @@ import { useState, useMemo } from 'react'
 import Papa from 'papaparse'
 import { XCircle } from 'lucide-react'
 import { UploadIcon } from './ui/upload'
+import { DownloadIcon } from './ui/download'
 import { ArrowRightIcon } from './ui/arrow-right'
 import { CircleCheckIcon } from './ui/circle-check'
 import { supabase } from '../lib/supabase'
 import { Drawer } from './Drawer'
+import { exportCsv } from '../lib/csv'
 
 const TARGET_FIELDS = [
   { key: '', label: "Don't import" },
@@ -175,6 +177,14 @@ export function ImportAttendanceDrawer({ open, onClose, company, employees, onIm
             check-in/check-out columns). You'll map columns and preview everything before anything gets saved.
             Existing attendance for the same employee and date is overwritten.
           </p>
+          <button
+            type="button"
+            className="link-button"
+            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, alignSelf: 'flex-start' }}
+            onClick={() => exportCsv('attendance-template', TARGET_FIELDS.filter((f) => f.key), [])}
+          >
+            <DownloadIcon size={13} /> Download CSV template
+          </button>
           <label className="import-dropzone">
             <UploadIcon size={20} />
             <span>Choose a CSV file</span>
