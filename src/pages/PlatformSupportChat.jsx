@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { SendIcon } from '../components/ui/send'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -25,6 +26,9 @@ export default function PlatformSupportChat() {
   const [messages, setMessages] = useState([])
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
+  const [aiDraft, setAiDraft] = useState(null)
+  const [regenerating, setRegenerating] = useState(false)
+  const [sendingAiDraft, setSendingAiDraft] = useState(false)
   const listRef = useRef(null)
 
   const loadThreads = useCallback(async () => {
@@ -70,6 +74,33 @@ export default function PlatformSupportChat() {
   }, [activeThreadId, loadThreads])
 
   useEffect(() => {
+    setAiDraft(null)
+    if (!activeThreadId) return
+    let cancelled = false
+    ;(async () => {
+      const { data } = await supabase
+        .from('support_message_drafts')
+        .select('body')
+        .eq('thread_id', activeThreadId)
+        .maybeSingle()
+      if (!cancelled) setAiDraft(data?.body ?? null)
+    })()
+
+    const channel = supabase
+      .channel(`support_message_drafts:${activeThreadId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_message_drafts', filter: `thread_id=eq.${activeThreadId}` }, (payload) => {
+        if (payload.eventType === 'DELETE') setAiDraft(null)
+        else setAiDraft(payload.new.body)
+      })
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      supabase.removeChannel(channel)
+    }
+  }, [activeThreadId])
+
+  useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
   }, [messages.length])
 
@@ -86,6 +117,39 @@ export default function PlatformSupportChat() {
     })
     setSending(false)
     if (error) toast.error(error.message || 'Failed to send')
+  }
+
+  async function sendAiDraft() {
+    const body = (aiDraft ?? '').trim()
+    if (!body || !activeThreadId || sendingAiDraft) return
+    setSendingAiDraft(true)
+    const { error } = await supabase.from('support_messages').insert({
+      thread_id: activeThreadId,
+      sender_profile_id: profile.id,
+      sender_is_platform_admin: true,
+      body,
+    })
+    if (!error) await supabase.from('support_message_drafts').delete().eq('thread_id', activeThreadId)
+    setSendingAiDraft(false)
+    if (error) toast.error(error.message || 'Failed to send')
+  }
+
+  async function dismissAiDraft() {
+    if (!activeThreadId) return
+    await supabase.from('support_message_drafts').delete().eq('thread_id', activeThreadId)
+    setAiDraft(null)
+  }
+
+  async function regenerateAiDraft() {
+    if (!activeThreadId || regenerating) return
+    setRegenerating(true)
+    const { data, error } = await supabase.functions.invoke('generate-support-draft', { body: { type: 'chat', thread_id: activeThreadId } })
+    setRegenerating(false)
+    if (error) {
+      toast.error('Failed to generate a suggestion')
+      return
+    }
+    setAiDraft(data?.draft ?? aiDraft)
   }
 
   function handleKeyDown(e) {
@@ -155,6 +219,27 @@ export default function PlatformSupportChat() {
                   </div>
                 ))}
               </div>
+              {aiDraft !== null && (
+                <div style={{ background: 'var(--surface-alt, #f7f7f8)', border: '1px solid var(--line)', borderRadius: 8, padding: 10, margin: '0 12px 8px' }}>
+                  <p className="muted" style={{ margin: '0 0 6px', fontSize: 12 }}>AI suggested reply — review and edit before sending</p>
+                  <textarea
+                    rows={2}
+                    style={{ width: '100%', fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box' }}
+                    value={aiDraft}
+                    onChange={(e) => setAiDraft(e.target.value)}
+                  />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                    <button type="button" className="btn-primary" style={{ padding: '5px 10px', fontSize: 12 }} disabled={sendingAiDraft || !aiDraft.trim()} onClick={sendAiDraft}>
+                      {sendingAiDraft && <Loader2 size={13} className="btn-spinner" />}
+                      Send
+                    </button>
+                    <button type="button" className="btn-secondary" style={{ padding: '5px 10px', fontSize: 12 }} disabled={regenerating} onClick={regenerateAiDraft}>
+                      {regenerating ? 'Generating…' : 'Regenerate'}
+                    </button>
+                    <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={dismissAiDraft}>Dismiss</button>
+                  </div>
+                </div>
+              )}
               <div className="support-chat-input-row">
                 <textarea value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={handleKeyDown} placeholder="Reply…" rows={1} />
                 <button type="button" className="btn-icon-round" onClick={send} disabled={sending || !draft.trim()} aria-label="Send">

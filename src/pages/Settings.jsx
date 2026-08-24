@@ -2533,7 +2533,7 @@ function SupportTab() {
     setLoading(true)
     const { data } = await supabase
       .from('support_tickets')
-      .select('id, subject, message, status, created_at, closed_at')
+      .select('id, subject, message, status, created_at, closed_at, resolution')
       .order('created_at', { ascending: false })
     setTickets(data ?? [])
     setLoading(false)
@@ -2598,6 +2598,12 @@ function SupportTab() {
                 <span className={`status-badge status-${t.status === 'open' ? 'pending' : 'approved'}`}>{t.status}</span>
               </div>
               {t.message && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t.message}</p>}
+              {t.resolution && (
+                <div style={{ background: 'var(--surface-alt, #f7f7f8)', borderRadius: 6, padding: 8, marginTop: 4 }}>
+                  <p className="muted" style={{ fontSize: 11, margin: '0 0 3px' }}>Response from PeopleBind support</p>
+                  <p style={{ fontSize: 12, margin: 0 }}>{t.resolution}</p>
+                </div>
+              )}
               <span className="muted mono" style={{ fontSize: 11 }}>{formatDate(t.created_at?.slice(0, 10))}</span>
             </div>
           ))

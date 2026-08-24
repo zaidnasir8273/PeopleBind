@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { SkeletonTable } from '../components/Skeleton'
 
@@ -12,22 +13,60 @@ export default function PlatformTickets() {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('open')
+  const [drafts, setDrafts] = useState({})
+  const [regenerating, setRegenerating] = useState(null)
+  const [sending, setSending] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     let query = supabase
       .from('support_tickets')
-      .select('id, subject, message, status, created_at, closed_at, companies(name), profiles(full_name, email)')
+      .select('id, subject, message, status, created_at, closed_at, ai_draft_resolution, resolution, companies(name), profiles(full_name, email)')
       .order('created_at', { ascending: false })
     if (filter === 'open') query = query.eq('status', 'open')
     const { data } = await query
     setTickets(data ?? [])
+    setDrafts((prev) => {
+      const next = { ...prev }
+      for (const t of data ?? []) {
+        if (next[t.id] === undefined) next[t.id] = t.ai_draft_resolution ?? ''
+      }
+      return next
+    })
     setLoading(false)
   }, [filter])
 
   useEffect(() => {
     load()
   }, [load])
+
+  async function regenerate(id) {
+    setRegenerating(id)
+    const { data, error } = await supabase.functions.invoke('generate-support-draft', { body: { type: 'ticket', ticket_id: id } })
+    setRegenerating(null)
+    if (error) {
+      toast.error('Failed to generate a suggestion')
+      return
+    }
+    setDrafts((prev) => ({ ...prev, [id]: data?.draft ?? prev[id] }))
+  }
+
+  async function sendAndClose(id) {
+    const text = (drafts[id] ?? '').trim()
+    if (!text) return
+    setSending(id)
+    const { error } = await supabase
+      .from('support_tickets')
+      .update({ resolution: text, status: 'closed', closed_at: new Date().toISOString() })
+      .eq('id', id)
+    setSending(null)
+    if (error) {
+      toast.error(error.message || 'Failed to send resolution')
+      return
+    }
+    toast.success('Resolution sent, ticket closed')
+    load()
+  }
 
   async function closeTicket(id) {
     const { error } = await supabase.from('support_tickets').update({ status: 'closed', closed_at: new Date().toISOString() }).eq('id', id)
@@ -84,10 +123,46 @@ export default function PlatformTickets() {
                   )}
                 </td>
                 <td><span className={`status-badge status-${t.status === 'open' ? 'pending' : 'approved'}`}>{t.status}</span></td>
-                <td>
-                  {t.status === 'open' && (
-                    <button className="btn-secondary" style={{ padding: '5px 10px', fontSize: 12 }} onClick={() => closeTicket(t.id)}>Close</button>
-                  )}
+                <td></td>
+              </tr>
+            ))}
+            {tickets.map((t) => t.status === 'open' && (
+              <tr key={`${t.id}-draft`} style={{ cursor: 'default' }}>
+                <td colSpan={6} style={{ background: 'var(--surface-alt, #f7f7f8)', padding: '10px 14px' }}>
+                  <p className="muted" style={{ margin: '0 0 6px', fontSize: 12 }}>
+                    {drafts[t.id] ? 'AI suggested resolution — review and edit before sending' : regenerating === t.id ? 'Generating suggested reply…' : 'No suggestion yet.'}
+                  </p>
+                  <textarea
+                    rows={3}
+                    style={{ width: '100%', fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box' }}
+                    value={drafts[t.id] ?? ''}
+                    onChange={(e) => setDrafts((prev) => ({ ...prev, [t.id]: e.target.value }))}
+                    placeholder="Write a resolution reply…"
+                  />
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      style={{ padding: '5px 10px', fontSize: 12 }}
+                      disabled={sending === t.id || !(drafts[t.id] ?? '').trim()}
+                      onClick={() => sendAndClose(t.id)}
+                    >
+                      {sending === t.id && <Loader2 size={13} className="btn-spinner" />}
+                      Send &amp; close
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ padding: '5px 10px', fontSize: 12 }}
+                      disabled={regenerating === t.id}
+                      onClick={() => regenerate(t.id)}
+                    >
+                      {regenerating === t.id ? 'Generating…' : drafts[t.id] ? 'Regenerate' : 'Generate suggestion'}
+                    </button>
+                    <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={() => closeTicket(t.id)}>
+                      Close without reply
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
