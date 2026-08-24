@@ -16,7 +16,7 @@ export type Database = {
     Tables: {
       announcements: {
         Row: {
-          author_profile_id: string
+          author_profile_id: string | null
           body: string
           company_id: string
           created_at: string
@@ -25,7 +25,7 @@ export type Database = {
           title: string
         }
         Insert: {
-          author_profile_id: string
+          author_profile_id?: string | null
           body: string
           company_id: string
           created_at?: string
@@ -34,7 +34,7 @@ export type Database = {
           title: string
         }
         Update: {
-          author_profile_id?: string
+          author_profile_id?: string | null
           body?: string
           company_id?: string
           created_at?: string
@@ -599,10 +599,13 @@ export type Database = {
           created_at: string
           eobi_minimum_wage_base: number
           fiscal_year_start: string | null
+          gratuity_days_per_year: number
+          gratuity_min_years: number
           id: string
           is_demo: boolean
           name: string
           next_employee_seq: number
+          payroll_run_day_of_month: number | null
           plan: string
           slug: string
           standard_monthly_days: number
@@ -615,10 +618,13 @@ export type Database = {
           created_at?: string
           eobi_minimum_wage_base?: number
           fiscal_year_start?: string | null
+          gratuity_days_per_year?: number
+          gratuity_min_years?: number
           id?: string
           is_demo?: boolean
           name: string
           next_employee_seq?: number
+          payroll_run_day_of_month?: number | null
           plan?: string
           slug: string
           standard_monthly_days?: number
@@ -631,10 +637,13 @@ export type Database = {
           created_at?: string
           eobi_minimum_wage_base?: number
           fiscal_year_start?: string | null
+          gratuity_days_per_year?: number
+          gratuity_min_years?: number
           id?: string
           is_demo?: boolean
           name?: string
           next_employee_seq?: number
+          payroll_run_day_of_month?: number | null
           plan?: string
           slug?: string
           standard_monthly_days?: number
@@ -1041,6 +1050,102 @@ export type Database = {
             columns: ["payroll_component_id"]
             isOneToOne: false
             referencedRelation: "payroll_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_settlements: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          exit_date: string
+          finalized_at: string | null
+          finalized_by: string | null
+          gratuity_amount: number
+          id: string
+          last_working_day: string | null
+          leave_encashment_amount: number
+          loan_recovery_amount: number
+          net_settlement_amount: number
+          notes: string | null
+          notice_pay_adjustment: number
+          other_adjustments: number
+          status: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          exit_date: string
+          finalized_at?: string | null
+          finalized_by?: string | null
+          gratuity_amount?: number
+          id?: string
+          last_working_day?: string | null
+          leave_encashment_amount?: number
+          loan_recovery_amount?: number
+          net_settlement_amount?: number
+          notes?: string | null
+          notice_pay_adjustment?: number
+          other_adjustments?: number
+          status?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          exit_date?: string
+          finalized_at?: string | null
+          finalized_by?: string | null
+          gratuity_amount?: number
+          id?: string
+          last_working_day?: string | null
+          leave_encashment_amount?: number
+          loan_recovery_amount?: number
+          net_settlement_amount?: number
+          notes?: string | null
+          notice_pay_adjustment?: number
+          other_adjustments?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_settlements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_settlements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "employee_settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_settlements_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_settlements_finalized_by_fkey"
+            columns: ["finalized_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2163,23 +2268,29 @@ export type Database = {
       }
       leave_types: {
         Row: {
+          applicable_gender: string | null
           company_id: string
           created_at: string
           id: string
+          is_encashable: boolean
           is_paid: boolean
           name: string
         }
         Insert: {
+          applicable_gender?: string | null
           company_id: string
           created_at?: string
           id?: string
+          is_encashable?: boolean
           is_paid?: boolean
           name: string
         }
         Update: {
+          applicable_gender?: string | null
           company_id?: string
           created_at?: string
           id?: string
+          is_encashable?: boolean
           is_paid?: boolean
           name?: string
         }
@@ -2789,6 +2900,68 @@ export type Database = {
           },
         ]
       }
+      payroll_employer_contributions: {
+        Row: {
+          amount: number
+          company_id: string
+          contribution_type: string
+          created_at: string
+          employee_id: string
+          id: string
+          notes: string | null
+          payroll_run_id: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          contribution_type: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          payroll_run_id: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          contribution_type?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          payroll_run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_employer_contributions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_employer_contributions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "payroll_employer_contributions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_employer_contributions_payroll_run_id_fkey"
+            columns: ["payroll_run_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_items: {
         Row: {
           amount: number
@@ -3123,6 +3296,57 @@ export type Database = {
           resource?: string
         }
         Relationships: []
+      }
+      professional_tax_slabs: {
+        Row: {
+          company_id: string
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          fixed_amount: number
+          id: string
+          max_annual_income: number | null
+          min_annual_income: number
+          rate_percent: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          effective_from: string
+          effective_to?: string | null
+          fixed_amount?: number
+          id?: string
+          max_annual_income?: number | null
+          min_annual_income: number
+          rate_percent?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          fixed_amount?: number
+          id?: string
+          max_annual_income?: number | null
+          min_annual_income?: number
+          rate_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_tax_slabs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_tax_slabs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -3637,29 +3861,58 @@ export type Database = {
           },
         ]
       }
+      support_message_drafts: {
+        Row: {
+          body: string
+          created_at: string
+          thread_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          thread_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_message_drafts_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: true
+            referencedRelation: "support_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_messages: {
         Row: {
           body: string
           created_at: string
           id: string
+          is_ai_generated: boolean
           sender_is_platform_admin: boolean
-          sender_profile_id: string
+          sender_profile_id: string | null
           thread_id: string
         }
         Insert: {
           body: string
           created_at?: string
           id?: string
+          is_ai_generated?: boolean
           sender_is_platform_admin?: boolean
-          sender_profile_id: string
+          sender_profile_id?: string | null
           thread_id: string
         }
         Update: {
           body?: string
           created_at?: string
           id?: string
+          is_ai_generated?: boolean
           sender_is_platform_admin?: boolean
-          sender_profile_id?: string
+          sender_profile_id?: string | null
           thread_id?: string
         }
         Relationships: [
@@ -3723,32 +3976,38 @@ export type Database = {
       }
       support_tickets: {
         Row: {
+          ai_draft_resolution: string | null
           closed_at: string | null
           company_id: string
           created_at: string
           created_by: string | null
           id: string
           message: string | null
+          resolution: string | null
           status: string
           subject: string
         }
         Insert: {
+          ai_draft_resolution?: string | null
           closed_at?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
           id?: string
           message?: string | null
+          resolution?: string | null
           status?: string
           subject: string
         }
         Update: {
+          ai_draft_resolution?: string | null
           closed_at?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
           id?: string
           message?: string | null
+          resolution?: string | null
           status?: string
           subject?: string
         }
@@ -4365,6 +4624,40 @@ export type Database = {
       }
       auth_is_platform_admin: { Args: never; Returns: boolean }
       auto_mark_daily_attendance: { Args: never; Returns: undefined }
+      calculate_employee_settlement: {
+        Args: {
+          p_employee_id: string
+          p_exit_date: string
+          p_last_working_day?: string
+          p_notes?: string
+          p_notice_pay_adjustment?: number
+        }
+        Returns: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          exit_date: string
+          finalized_at: string | null
+          finalized_by: string | null
+          gratuity_amount: number
+          id: string
+          last_working_day: string | null
+          leave_encashment_amount: number
+          loan_recovery_amount: number
+          net_settlement_amount: number
+          notes: string | null
+          notice_pay_adjustment: number
+          other_adjustments: number
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "employee_settlements"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       calculate_income_tax: {
         Args: {
           p_company_id: string
@@ -4373,6 +4666,16 @@ export type Database = {
         }
         Returns: number
       }
+      calculate_professional_tax: {
+        Args: {
+          p_company_id: string
+          p_monthly_taxable_income: number
+          p_period_date: string
+        }
+        Returns: number
+      }
+      check_expiring_documents: { Args: never; Returns: undefined }
+      check_payroll_reminders: { Args: never; Returns: undefined }
       convert_candidate_to_employee: {
         Args: { p_application_id: string }
         Returns: string
@@ -4449,6 +4752,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      finalize_employee_settlement: {
+        Args: { p_settlement_id: string }
+        Returns: undefined
       }
       finalize_payroll_run: {
         Args: { p_payroll_run_id: string }

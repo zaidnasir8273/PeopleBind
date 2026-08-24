@@ -9,6 +9,22 @@ type Message = Database['public']['Tables']['support_messages']['Row']
 
 const WAITING_LABELS = ['Typing', 'Processing', 'Baking your reply']
 const WAITING_TIMEOUT_MS = 45000
+// Must exactly match ESCALATION_ACK in the generate-support-draft edge
+// function -- used to detect that a thread has been handed to a human,
+// so later messages don't show a "typing" indicator that nothing will
+// ever answer automatically.
+const ESCALATION_ACK = "Thanks for the extra detail -- I'm looping in a member of our support team to take a closer look at this. They'll follow up here shortly."
+
+// Scans backward for the last admin message to determine whether this
+// thread is currently waiting on a human (the ack was the last thing
+// sent) vs. still eligible for an instant AI reply.
+function computeEscalated(msgs: Message[]): boolean {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i]
+    if (m.sender_is_platform_admin) return m.body === ESCALATION_ACK
+  }
+  return false
+}
 
 function relativeTime(ts: string) {
   const diffMs = Date.now() - new Date(ts).getTime()
@@ -31,6 +47,7 @@ export function SupportChat() {
   const [unread, setUnread] = useState(0)
   const [waiting, setWaiting] = useState(false)
   const [waitingLabelIndex, setWaitingLabelIndex] = useState(0)
+  const [escalated, setEscalated] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const waitingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -69,7 +86,10 @@ export function SupportChat() {
           .select('*')
           .eq('thread_id', existing.id)
           .order('created_at', { ascending: true })
-        if (!cancelled) setMessages(data ?? [])
+        if (!cancelled) {
+          setMessages(data ?? [])
+          setEscalated(computeEscalated(data ?? []))
+        }
       }
     })()
     return () => {
@@ -87,6 +107,7 @@ export function SupportChat() {
         if (msg.sender_is_platform_admin) {
           setWaiting(false)
           if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current)
+          setEscalated((prev) => (msg.body === ESCALATION_ACK ? true : !msg.is_ai_generated ? false : prev))
           if (!open) setUnread((n) => n + 1)
         }
       })
@@ -131,9 +152,15 @@ export function SupportChat() {
         sender_is_platform_admin: false,
         body,
       })
-      setWaiting(true)
-      if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current)
-      waitingTimeoutRef.current = setTimeout(() => setWaiting(false), WAITING_TIMEOUT_MS)
+      // Once a thread's been handed to a human (the escalation ack was
+      // the last thing sent), nothing replies automatically anymore --
+      // showing a "typing" indicator on every message from here on
+      // would just imply a bot reply that's never coming.
+      if (!escalated) {
+        setWaiting(true)
+        if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current)
+        waitingTimeoutRef.current = setTimeout(() => setWaiting(false), WAITING_TIMEOUT_MS)
+      }
     }
     setSending(false)
   }
