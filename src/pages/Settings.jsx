@@ -12,10 +12,12 @@ import { LayersIcon } from '../components/ui/layers'
 import { WalletIcon } from '../components/ui/wallet'
 import { ClipboardCheckIcon } from '../components/ui/clipboard-check'
 import { ShieldCheckIcon } from '../components/ui/shield-check'
+import { TrendingUpIcon } from '../components/ui/trending-up'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonBlock, SkeletonTable } from '../components/Skeleton'
+import { STANDARD_KPI_METRICS } from '../lib/kpiMetrics'
 
 // Modules group the existing tabs into a real hierarchy instead of one long
 // row that wraps -- the tab keys below are exactly the ones the render
@@ -72,6 +74,15 @@ const SETTINGS_MODULES = [
     submodules: [
       { key: 'audit', label: 'Audit log' },
       { key: 'support', label: 'Support' },
+    ],
+  },
+  {
+    key: 'performance',
+    label: 'Performance',
+    icon: TrendingUpIcon,
+    color: 'gold',
+    submodules: [
+      { key: 'kpi_catalog', label: 'KPI catalog' },
     ],
   },
 ]
@@ -199,6 +210,7 @@ export default function Settings() {
           {tab === 'onboarding' && <OnboardingTemplatesTab />}
           {tab === 'timesheets' && <TimesheetsSetupTab />}
           {tab === 'support' && <SupportTab />}
+          {tab === 'kpi_catalog' && <KpiCatalogTab />}
         </div>
       </div>
     </div>
@@ -1231,6 +1243,229 @@ function PayrollComponentsTab() {
   )
 }
 
+/* =========================== KPI CATALOG =========================== */
+
+const EMPTY_CUSTOM_KPI = { name: '', description: '', weight: '1', status: 'active' }
+
+function KpiCatalogTab() {
+  const { profile, company } = useAuth()
+  const [hasAccess, setHasAccess] = useState(null)
+  const [kpis, setKpis] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editingType, setEditingType] = useState('custom')
+  const [form, setForm] = useState(EMPTY_CUSTOM_KPI)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (profile?.is_platform_admin) {
+      setHasAccess(true)
+      return
+    }
+    let cancelled = false
+    supabase.rpc('auth_has_permission', { p_resource: 'performance', p_action: 'manage' }).then(({ data }) => {
+      if (!cancelled) setHasAccess(!!data)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [profile?.is_platform_admin])
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('kpi_definitions')
+      .select('id, name, description, kpi_type, metric_key, weight, status')
+      .order('kpi_type')
+      .order('name')
+    setKpis(data ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    if (hasAccess) load()
+  }, [load, hasAccess])
+
+  function openNew() {
+    setEditingId(null)
+    setEditingType('custom')
+    setForm(EMPTY_CUSTOM_KPI)
+    setError(null)
+    setDrawerOpen(true)
+  }
+
+  function openEdit(kpi) {
+    setEditingId(kpi.id)
+    setEditingType(kpi.kpi_type)
+    setForm({
+      name: kpi.name,
+      description: kpi.description || '',
+      weight: String(kpi.weight),
+      status: kpi.status,
+    })
+    setError(null)
+    setDrawerOpen(true)
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
+    setSaving(true)
+
+    const payload = {
+      description: form.description || null,
+      weight: Number(form.weight),
+      status: form.status,
+    }
+    if (editingType === 'custom') payload.name = form.name
+
+    const { error: saveError } = editingId
+      ? await supabase.from('kpi_definitions').update(payload).eq('id', editingId)
+      : await supabase.from('kpi_definitions').insert({
+          ...payload,
+          company_id: company.id,
+          kpi_type: 'custom',
+          scoring_type: 'manual',
+          created_by: profile.id,
+        })
+
+    setSaving(false)
+
+    if (saveError) {
+      setError(saveError.message)
+      toast.error(saveError.message || 'Something went wrong')
+      return
+    }
+
+    toast.success(editingId ? 'KPI updated' : 'Custom KPI created')
+    setDrawerOpen(false)
+    load()
+  }
+
+  async function remove(id) {
+    const { error: removeError } = await supabase.from('kpi_definitions').delete().eq('id', id)
+    if (removeError) {
+      if (removeError.code === '23503') {
+        toast.error("Can't remove — this KPI is attached to a review cycle. Archive it instead.")
+      } else {
+        toast.error(removeError.message || 'Failed to remove')
+      }
+      return
+    }
+    toast.success('KPI removed')
+    load()
+  }
+
+  if (hasAccess === null) return <SkeletonBlock rows={6} />
+
+  if (!hasAccess) {
+    return (
+      <div className="empty-state" style={{ marginTop: 20 }}>
+        <p>You don't have access to manage the KPI catalog.</p>
+        <p className="muted">Ask a company admin to grant you the "Manage goals, review cycles, and performance reviews" permission.</p>
+      </div>
+    )
+  }
+
+  if (loading) return <SkeletonTable rows={8} columns={5} />
+
+  return (
+    <>
+      <p className="muted" style={{ marginTop: 0 }}>
+        Standard KPIs are computed automatically from attendance, leave, timesheet, expense, onboarding, and goal
+        data already in PeopleBind. Custom KPIs are scored manually by a reviewer during a review cycle. Pick which
+        of these apply to a given cycle from the Reviews tab.
+      </p>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <button className="btn-primary btn-icon" onClick={openNew}>
+          <PlusIcon size={16} /> New custom KPI
+        </button>
+      </div>
+
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Metric</th>
+            <th>Weight</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {kpis.map((k) => (
+            <tr key={k.id} onClick={() => openEdit(k)}>
+              <td>
+                {k.name}
+                {k.description && <span className="muted" style={{ display: 'block', fontSize: 12 }}>{k.description}</span>}
+              </td>
+              <td>
+                <span className={`status-badge status-${k.kpi_type === 'standard' ? 'approved' : 'pending'}`}>{k.kpi_type}</span>
+              </td>
+              <td>{k.kpi_type === 'standard' ? STANDARD_KPI_METRICS[k.metric_key]?.label ?? k.metric_key : '— manual —'}</td>
+              <td className="mono">{k.weight}</td>
+              <td><span className={`status-badge status-${k.status === 'active' ? 'approved' : 'rejected'}`}>{k.status}</span></td>
+              <td onClick={(e) => e.stopPropagation()}>
+                {k.kpi_type === 'custom' && (
+                  <button className="btn-icon-round reject" onClick={() => remove(k.id)} aria-label="Remove">
+                    <DeleteIcon size={14} />
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={editingId ? 'Edit KPI' : 'New custom KPI'}>
+        <form onSubmit={handleSubmit} className="drawer-form">
+          <label className="field">
+            <span>Name</span>
+            <input required disabled={editingType === 'standard'} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </label>
+
+          <label className="field">
+            <span>Description</span>
+            <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional" />
+          </label>
+
+          <div className="field-row">
+            <label className="field">
+              <span>Weight</span>
+              <input type="number" min="0.01" step="0.01" required value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Status</span>
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+              </select>
+            </label>
+          </div>
+
+          {editingType === 'standard' && (
+            <p className="muted" style={{ margin: 0 }}>
+              Standard KPIs are computed automatically — the name and formula can't be changed, but you can adjust
+              its weight or archive it.
+            </p>
+          )}
+
+          {error && <p className="field-error">{error}</p>}
+
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Saving…' : editingId ? 'Save changes' : 'Create custom KPI'}
+          </button>
+        </form>
+      </Drawer>
+    </>
+  )
+}
+
 /* =========================== TAX SLABS =========================== */
 
 function fmtMoney(n) {
@@ -2034,6 +2269,8 @@ const AUDIT_TABLES = [
   'employees', 'departments', 'designations', 'shifts', 'holidays', 'attendance', 'attendance_corrections',
   'overtime_records', 'leave_types', 'leave_policies', 'leave_balances', 'leave_requests', 'payroll_components',
   'employee_salary_components', 'tax_slabs', 'statutory_rates', 'loans', 'loan_installments', 'documents', 'assets',
+  'goals', 'review_cycles', 'performance_reviews', 'feedback_notes',
+  'kpi_definitions', 'review_cycle_kpis', 'performance_review_kpi_scores',
 ]
 
 function formatDateTime(ts) {

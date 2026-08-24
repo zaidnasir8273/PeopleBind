@@ -123,6 +123,31 @@ export const DASHBOARD_METRICS = {
       return { value: (data ?? []).reduce((s, r) => s + Number(r.due_amount ?? 0), 0), series: [] }
     },
   },
+  avg_overall_performance_rating: {
+    label: 'Avg. performance rating', unit: '/5', trend: true,
+    fetch: async (from, to) => {
+      const { data } = await supabase.from('performance_reviews').select('overall_rating, submitted_at').in('status', ['submitted', 'acknowledged']).not('overall_rating', 'is', null).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`)
+      const rows = (data ?? []).map((r) => ({ date: r.submitted_at.slice(0, 10), amount: Number(r.overall_rating) }))
+      const sums = new Map()
+      const counts = new Map()
+      for (const r of rows) {
+        sums.set(r.date, (sums.get(r.date) ?? 0) + r.amount)
+        counts.set(r.date, (counts.get(r.date) ?? 0) + 1)
+      }
+      const series = [...sums.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, sum]) => ({ date, value: Math.round((sum / counts.get(date)) * 100) / 100 }))
+      const overallAvg = rows.length > 0 ? Math.round((rows.reduce((s, r) => s + r.amount, 0) / rows.length) * 100) / 100 : 0
+      return { value: overallAvg, series }
+    },
+  },
+  performance_reviews_completed: {
+    label: 'Reviews completed', unit: '', trend: true,
+    fetch: async (from, to) => {
+      const { data } = await supabase.from('performance_reviews').select('submitted_at').in('status', ['submitted', 'acknowledged']).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`)
+      const rows = (data ?? []).map((r) => ({ date: r.submitted_at.slice(0, 10) }))
+      const series = sumByDate(rows, 'date', () => 1)
+      return { value: series.reduce((s, r) => s + r.value, 0), series }
+    },
+  },
 }
 
 export const DASHBOARD_METRIC_KEYS = Object.keys(DASHBOARD_METRICS)
@@ -160,6 +185,20 @@ export const DASHBOARD_LEADERBOARDS = {
     fetch: async () => {
       const { data } = await supabase.from('v_headcount_by_department').select('department_name, employee_count')
       return (data ?? []).map((r) => ({ label: r.department_name ?? 'Unassigned', value: r.employee_count })).sort((a, b) => b.value - a.value)
+    },
+  },
+  overall_rating_by_employee: {
+    label: 'Performance rating by employee',
+    fetch: async (from, to) => {
+      const { data } = await supabase.from('performance_reviews').select('overall_rating, submitted_at, employees(full_name)').in('status', ['submitted', 'acknowledged']).not('overall_rating', 'is', null).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`)
+      const byEmployee = new Map()
+      const counts = new Map()
+      for (const r of data ?? []) {
+        const name = r.employees?.full_name ?? 'Unknown'
+        byEmployee.set(name, (byEmployee.get(name) ?? 0) + Number(r.overall_rating ?? 0))
+        counts.set(name, (counts.get(name) ?? 0) + 1)
+      }
+      return [...byEmployee.entries()].map(([label, sum]) => ({ label, value: Math.round((sum / counts.get(label)) * 100) / 100 })).sort((a, b) => b.value - a.value).slice(0, 10)
     },
   },
 }

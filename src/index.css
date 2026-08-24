@@ -3604,6 +3604,7 @@ a.attention-item:hover {
 .settings-module-icon-forest { background: rgba(44, 95, 69, 0.14); color: var(--green-forest); }
 .settings-module-icon-bottle { background: rgba(28, 58, 46, 0.12); color: var(--green-bottle); }
 .settings-module-icon-olive { background: rgba(92, 107, 63, 0.16); color: var(--green-olive); }
+.settings-module-icon-gold { background: rgba(180, 83, 9, 0.14); color: var(--gold); }
 
 .settings-module-label {
   flex: 1;

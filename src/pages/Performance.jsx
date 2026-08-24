@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonTable, SkeletonBlock } from '../components/Skeleton'
+import { STANDARD_KPI_METRICS } from '../lib/kpiMetrics'
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -242,19 +243,33 @@ function ReviewsTab({ employees, profile, company }) {
   const [cycleSaving, setCycleSaving] = useState(false)
   const [cycleError, setCycleError] = useState(null)
 
+  const [kpiCatalog, setKpiCatalog] = useState([])
+  const [kpiDrawerOpen, setKpiDrawerOpen] = useState(false)
+  const [managingCycle, setManagingCycle] = useState(null)
+  const [selectedKpiIds, setSelectedKpiIds] = useState(new Set())
+  const [weightOverrides, setWeightOverrides] = useState({})
+  const [kpiSaving, setKpiSaving] = useState(false)
+
   const [reviewDrawerOpen, setReviewDrawerOpen] = useState(false)
   const [editingReview, setEditingReview] = useState(null)
   const [reviewForm, setReviewForm] = useState(EMPTY_REVIEW)
   const [reviewSaving, setReviewSaving] = useState(false)
   const [reviewError, setReviewError] = useState(null)
 
+  const [cycleKpis, setCycleKpis] = useState([])
+  const [kpiScores, setKpiScores] = useState({})
+  const [computing, setComputing] = useState({})
+  const [savingScores, setSavingScores] = useState(false)
+
   const loadLookups = useCallback(async () => {
-    const [{ data: cycleRows }, { data: profileRows }] = await Promise.all([
+    const [{ data: cycleRows }, { data: profileRows }, { data: kpiRows }] = await Promise.all([
       supabase.from('review_cycles').select('id, name, cycle_start, cycle_end, status').order('cycle_start', { ascending: false }),
       supabase.from('profiles').select('id, full_name, email'),
+      supabase.from('kpi_definitions').select('id, name, kpi_type, metric_key, weight').eq('status', 'active').order('kpi_type').order('name'),
     ])
     setCycles(cycleRows ?? [])
     setProfiles(profileRows ?? [])
+    setKpiCatalog(kpiRows ?? [])
   }, [])
 
   const loadReviews = useCallback(async () => {
@@ -304,6 +319,122 @@ function ReviewsTab({ employees, profile, company }) {
     loadLookups()
   }
 
+  async function openManageKpis(cycle) {
+    setManagingCycle(cycle)
+    const { data } = await supabase.from('review_cycle_kpis').select('kpi_definition_id, weight_override').eq('review_cycle_id', cycle.id)
+    setSelectedKpiIds(new Set((data ?? []).map((r) => r.kpi_definition_id)))
+    const overrides = {}
+    for (const r of data ?? []) if (r.weight_override != null) overrides[r.kpi_definition_id] = String(r.weight_override)
+    setWeightOverrides(overrides)
+    setKpiDrawerOpen(true)
+  }
+
+  function toggleKpi(id) {
+    setSelectedKpiIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  async function handleKpiSave() {
+    setKpiSaving(true)
+    await supabase.from('review_cycle_kpis').delete().eq('review_cycle_id', managingCycle.id)
+    const rows = [...selectedKpiIds].map((kpi_definition_id) => ({
+      company_id: company.id,
+      review_cycle_id: managingCycle.id,
+      kpi_definition_id,
+      weight_override: weightOverrides[kpi_definition_id] ? Number(weightOverrides[kpi_definition_id]) : null,
+    }))
+    const { error: saveError } = rows.length > 0 ? await supabase.from('review_cycle_kpis').insert(rows) : { error: null }
+    setKpiSaving(false)
+    if (saveError) {
+      toast.error(saveError.message || 'Failed to save KPI selection')
+      return
+    }
+    toast.success('KPI selection saved')
+    setKpiDrawerOpen(false)
+  }
+
+  const loadScorecard = useCallback(async (cycleId, reviewId) => {
+    if (!cycleId) {
+      setCycleKpis([])
+      setKpiScores({})
+      return
+    }
+    const { data: ckRows } = await supabase
+      .from('review_cycle_kpis')
+      .select('id, weight_override, kpi_definitions(id, name, kpi_type, metric_key, weight)')
+      .eq('review_cycle_id', cycleId)
+      .order('sort_order')
+    setCycleKpis(ckRows ?? [])
+
+    if (reviewId) {
+      const { data: scoreRows } = await supabase
+        .from('performance_review_kpi_scores')
+        .select('kpi_definition_id, score, computed_value, notes')
+        .eq('performance_review_id', reviewId)
+      const map = {}
+      for (const s of scoreRows ?? []) map[s.kpi_definition_id] = { score: s.score, computed_value: s.computed_value, notes: s.notes || '' }
+      setKpiScores(map)
+    } else {
+      setKpiScores({})
+    }
+  }, [])
+
+  useEffect(() => {
+    if (reviewDrawerOpen) loadScorecard(reviewForm.review_cycle_id, editingReview?.id)
+  }, [reviewDrawerOpen, reviewForm.review_cycle_id, editingReview?.id, loadScorecard])
+
+  async function computeStandardKpi(kpiDef) {
+    const cycle = cycles.find((c) => c.id === reviewForm.review_cycle_id)
+    if (!cycle || !reviewForm.employee_id) return
+    setComputing((p) => ({ ...p, [kpiDef.id]: true }))
+    const metric = STANDARD_KPI_METRICS[kpiDef.metric_key]
+    const rawValue = metric ? await metric.fetch(reviewForm.employee_id, cycle.cycle_start, cycle.cycle_end) : null
+    const score = metric ? metric.normalize(rawValue) : null
+    setComputing((p) => ({ ...p, [kpiDef.id]: false }))
+    setKpiScores((prev) => ({ ...prev, [kpiDef.id]: { score: score ?? '', computed_value: rawValue, notes: prev[kpiDef.id]?.notes || '' } }))
+  }
+
+  function setScoreValue(kpiId, score) {
+    setKpiScores((prev) => ({ ...prev, [kpiId]: { ...prev[kpiId], score } }))
+  }
+
+  function setScoreNotes(kpiId, notes) {
+    setKpiScores((prev) => ({ ...prev, [kpiId]: { ...prev[kpiId], notes } }))
+  }
+
+  async function saveScorecard() {
+    if (!editingReview) return
+    setSavingScores(true)
+    const rows = Object.entries(kpiScores)
+      .filter(([, v]) => v.score !== '' && v.score != null)
+      .map(([kpi_definition_id, v]) => ({
+        company_id: company.id,
+        performance_review_id: editingReview.id,
+        kpi_definition_id,
+        score: Number(v.score),
+        computed_value: v.computed_value ?? null,
+        notes: v.notes || null,
+      }))
+    if (rows.length === 0) {
+      setSavingScores(false)
+      return
+    }
+    const { error: saveError } = await supabase.from('performance_review_kpi_scores').upsert(rows, { onConflict: 'performance_review_id,kpi_definition_id' })
+    setSavingScores(false)
+    if (saveError) {
+      toast.error(saveError.message || 'Failed to save KPI scores')
+      return
+    }
+    toast.success('KPI scores saved')
+    loadReviews()
+    const { data: refreshed } = await supabase.from('performance_reviews').select('overall_rating').eq('id', editingReview.id).single()
+    if (refreshed) setReviewForm((prev) => ({ ...prev, overall_rating: refreshed.overall_rating ?? '' }))
+  }
+
   function openNewReview() {
     setEditingReview(null)
     setReviewForm({ ...EMPTY_REVIEW, reviewer_id: profile.id, review_cycle_id: activeCycleId !== 'all' ? activeCycleId : '' })
@@ -337,10 +468,20 @@ function ReviewsTab({ employees, profile, company }) {
       comments: reviewForm.comments || null,
     }
 
-    const { error: saveError } = editingReview
-      ? await supabase.from('performance_reviews').update(payload).eq('id', editingReview.id)
-      : await supabase.from('performance_reviews').insert({ ...payload, company_id: company.id })
+    if (editingReview) {
+      const { error: saveError } = await supabase.from('performance_reviews').update(payload).eq('id', editingReview.id)
+      setReviewSaving(false)
+      if (saveError) {
+        setReviewError(saveError.message)
+        toast.error(saveError.message || 'Something went wrong')
+        return
+      }
+      toast.success('Review updated')
+      loadReviews()
+      return
+    }
 
+    const { data: inserted, error: saveError } = await supabase.from('performance_reviews').insert({ ...payload, company_id: company.id }).select().single()
     setReviewSaving(false)
 
     if (saveError) {
@@ -349,9 +490,10 @@ function ReviewsTab({ employees, profile, company }) {
       return
     }
 
-    toast.success(editingReview ? 'Review updated' : 'Review draft created')
-    setReviewDrawerOpen(false)
+    toast.success('Review draft created')
     loadReviews()
+    // stay open, now in edit mode, so a cycle with attached KPIs can be scored immediately
+    setEditingReview(inserted)
   }
 
   async function setReviewStatus(id, status) {
@@ -362,6 +504,8 @@ function ReviewsTab({ employees, profile, company }) {
     toast.success(status === 'submitted' ? 'Review submitted' : 'Review acknowledged')
     loadReviews()
   }
+
+  const hasKpiScores = Object.keys(kpiScores).length > 0
 
   return (
     <>
@@ -381,6 +525,25 @@ function ReviewsTab({ employees, profile, company }) {
           <PlusIcon size={16} /> New review
         </button>
       </div>
+
+      {cycles.length > 0 && (
+        <div className="report-section" style={{ marginBottom: 20 }}>
+          <p className="section-heading">Review cycles</p>
+          <table className="data-table">
+            <thead><tr><th>Name</th><th>Dates</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {cycles.map((c) => (
+                <tr key={c.id} style={{ cursor: 'default' }}>
+                  <td>{c.name}</td>
+                  <td className="mono">{formatDate(c.cycle_start)} – {formatDate(c.cycle_end)}</td>
+                  <td><span className="status-badge">{c.status}</span></td>
+                  <td><button className="link-button" onClick={() => openManageKpis(c)}>Manage KPIs</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {loading ? (
         <SkeletonTable rows={5} columns={6} />
@@ -452,7 +615,60 @@ function ReviewsTab({ employees, profile, company }) {
         </form>
       </Drawer>
 
-      <Drawer open={reviewDrawerOpen} onClose={() => setReviewDrawerOpen(false)} title={editingReview ? 'Edit review' : 'New review'}>
+      <Drawer open={kpiDrawerOpen} onClose={() => setKpiDrawerOpen(false)} title={`Manage KPIs · ${managingCycle?.name ?? ''}`}>
+        <div className="drawer-form">
+          <p className="muted" style={{ margin: 0 }}>
+            Pick which KPIs apply to this cycle. Reviewers score against these when reviewing an employee in this cycle.
+          </p>
+
+          {kpiCatalog.length === 0 ? (
+            <p className="muted">No KPIs in the catalog yet — add some in Settings → Performance.</p>
+          ) : (
+            <>
+              <p className="section-heading" style={{ marginBottom: 4 }}>Standard</p>
+              {kpiCatalog.filter((k) => k.kpi_type === 'standard').map((k) => (
+                <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <input type="checkbox" checked={selectedKpiIds.has(k.id)} onChange={() => toggleKpi(k.id)} />
+                  <span style={{ flex: 1, fontSize: 13.5 }}>{k.name}</span>
+                  {selectedKpiIds.has(k.id) && (
+                    <input
+                      type="number" min="0.01" step="0.01" placeholder={String(k.weight)} style={{ width: 70 }}
+                      value={weightOverrides[k.id] ?? ''}
+                      onChange={(e) => setWeightOverrides({ ...weightOverrides, [k.id]: e.target.value })}
+                    />
+                  )}
+                </div>
+              ))}
+
+              <p className="section-heading" style={{ marginBottom: 4, marginTop: 12 }}>Custom</p>
+              {kpiCatalog.filter((k) => k.kpi_type === 'custom').length === 0 ? (
+                <p className="muted" style={{ fontSize: 12 }}>No custom KPIs yet.</p>
+              ) : (
+                kpiCatalog.filter((k) => k.kpi_type === 'custom').map((k) => (
+                  <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <input type="checkbox" checked={selectedKpiIds.has(k.id)} onChange={() => toggleKpi(k.id)} />
+                    <span style={{ flex: 1, fontSize: 13.5 }}>{k.name}</span>
+                    {selectedKpiIds.has(k.id) && (
+                      <input
+                        type="number" min="0.01" step="0.01" placeholder={String(k.weight)} style={{ width: 70 }}
+                        value={weightOverrides[k.id] ?? ''}
+                        onChange={(e) => setWeightOverrides({ ...weightOverrides, [k.id]: e.target.value })}
+                      />
+                    )}
+                  </div>
+                ))
+              )}
+            </>
+          )}
+
+          <button type="button" className="btn-primary" disabled={kpiSaving} onClick={handleKpiSave} style={{ alignSelf: 'flex-start' }}>
+            {kpiSaving && <Loader2 size={14} className="btn-spinner" />}
+            {kpiSaving ? 'Saving…' : 'Save KPI selection'}
+          </button>
+        </div>
+      </Drawer>
+
+      <Drawer open={reviewDrawerOpen} onClose={() => setReviewDrawerOpen(false)} title={editingReview ? 'Edit review' : 'New review'} wide>
         <form onSubmit={handleReviewSubmit} className="drawer-form">
           <label className="field">
             <span>Employee</span>
@@ -484,9 +700,65 @@ function ReviewsTab({ employees, profile, company }) {
             </label>
           </div>
 
+          {editingReview && cycleKpis.length > 0 && (
+            <div className="report-section" style={{ marginBottom: 0 }}>
+              <p className="section-heading">KPI scorecard</p>
+              <table className="data-table">
+                <thead><tr><th>KPI</th><th>Score (1–5)</th><th>Notes</th></tr></thead>
+                <tbody>
+                  {cycleKpis.map((ck) => {
+                    const kpi = ck.kpi_definitions
+                    const current = kpiScores[kpi.id] || {}
+                    return (
+                      <tr key={kpi.id} style={{ cursor: 'default' }}>
+                        <td>
+                          {kpi.name}
+                          {kpi.kpi_type === 'standard' && (
+                            <span className="muted" style={{ display: 'block', fontSize: 11 }}>
+                              {current.computed_value != null
+                                ? `Computed: ${Math.round(current.computed_value * 100)}%`
+                                : (
+                                  <button type="button" className="link-button" style={{ fontSize: 11 }} disabled={computing[kpi.id]} onClick={() => computeStandardKpi(kpi)}>
+                                    {computing[kpi.id] ? 'Computing…' : 'Compute from data'}
+                                  </button>
+                                )}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <input
+                            type="number" min="1" max="5" step="0.1" style={{ width: 70 }}
+                            value={current.score ?? ''}
+                            onChange={(e) => setScoreValue(kpi.id, e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            style={{ fontSize: 12.5 }}
+                            value={current.notes ?? ''}
+                            placeholder="Optional"
+                            onChange={(e) => setScoreNotes(kpi.id, e.target.value)}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              <button type="button" className="btn-secondary" disabled={savingScores} onClick={saveScorecard} style={{ marginTop: 10 }}>
+                {savingScores && <Loader2 size={14} className="btn-spinner" />}
+                {savingScores ? 'Saving…' : 'Save KPI scores'}
+              </button>
+            </div>
+          )}
+
           <label className="field">
-            <span>Overall rating (1–5)</span>
-            <input type="number" min="1" max="5" value={reviewForm.overall_rating} onChange={(e) => setReviewForm({ ...reviewForm, overall_rating: e.target.value })} />
+            <span>Overall rating (1–5){hasKpiScores ? ' (computed from KPI scores)' : ''}</span>
+            <input
+              type="number" min="1" max="5" step="0.01" disabled={hasKpiScores}
+              value={reviewForm.overall_rating}
+              onChange={(e) => setReviewForm({ ...reviewForm, overall_rating: e.target.value })}
+            />
           </label>
 
           <label className="field">

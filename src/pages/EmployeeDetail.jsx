@@ -27,12 +27,14 @@ import { LeafIcon } from '../components/ui/leaf'
 import { MonitorCheckIcon } from '../components/ui/monitor-check'
 import { HandHeartIcon } from '../components/ui/hand-heart'
 import { FileCheckIcon } from '../components/ui/file-check'
+import { TrendingUpIcon } from '../components/ui/trending-up'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { Avatar } from '../components/Avatar'
 import { EmployeeFormDrawer } from '../components/EmployeeFormDrawer'
 import { SkeletonBlock, SkeletonTable } from '../components/Skeleton'
+import { STANDARD_KPI_METRICS } from '../lib/kpiMetrics'
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -52,6 +54,7 @@ const TABS = [
   { key: 'employment', label: 'Employment Info', icon: FolderCogIcon },
   { key: 'salary', label: 'Salary Info', icon: CircleDollarSignIcon },
   { key: 'leaves', label: 'Leaves', icon: LeafIcon },
+  { key: 'performance', label: 'Performance', icon: TrendingUpIcon },
   { key: 'assets', label: 'Assets', icon: MonitorCheckIcon },
   { key: 'benefits', label: 'Benefits', icon: HandHeartIcon },
   { key: 'documents', label: 'Onboarding Docs', icon: FileCheckIcon },
@@ -232,6 +235,7 @@ export default function EmployeeDetail() {
       )}
       {tab === 'salary' && <SalaryTab employee={employee} onEdit={() => setEditOpen(true)} />}
       {tab === 'leaves' && <LeavesTab employeeId={employee.id} />}
+      {tab === 'performance' && <PerformanceTab employeeId={employee.id} company={company} />}
       {tab === 'assets' && <AssetsTab employeeId={employee.id} company={company} />}
       {tab === 'benefits' && <BenefitsTab employeeId={employee.id} company={company} />}
       {tab === 'documents' && <DocumentsTab employeeId={employee.id} company={company} />}
@@ -844,6 +848,132 @@ function LeavesTab({ employeeId }) {
                   <td className="mono">{formatDate(r.start_date)}{r.end_date !== r.start_date ? ` – ${formatDate(r.end_date)}` : ''}</td>
                   <td className="mono">{r.days_requested ?? '—'}</td>
                   <td><span className={`status-badge status-${r.status}`}>{r.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
+  )
+}
+
+function PerformanceTab({ employeeId, company }) {
+  const [kpiCatalog, setKpiCatalog] = useState([])
+  const [kpiValues, setKpiValues] = useState({})
+  const [kpiLoading, setKpiLoading] = useState(true)
+  const [reviews, setReviews] = useState([])
+  const [goals, setGoals] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      setLoading(true)
+      const [{ data: r }, { data: g }] = await Promise.all([
+        supabase.from('performance_reviews').select('id, overall_rating, status, submitted_at, review_cycles(name), profiles(full_name)').eq('employee_id', employeeId).order('created_at', { ascending: false }),
+        supabase.from('goals').select('id, title, status, target_date').eq('employee_id', employeeId).order('target_date', { ascending: false, nullsFirst: false }),
+      ])
+      if (active) {
+        setReviews(r ?? [])
+        setGoals(g ?? [])
+        setLoading(false)
+      }
+    }
+    load()
+    return () => { active = false }
+  }, [employeeId])
+
+  useEffect(() => {
+    let active = true
+    async function loadKpiSnapshot() {
+      setKpiLoading(true)
+      const { data: catalog } = await supabase.from('kpi_definitions').select('id, name, metric_key').eq('company_id', company.id).eq('kpi_type', 'standard').eq('status', 'active').order('name')
+      if (!active) return
+      setKpiCatalog(catalog ?? [])
+
+      const to = new Date()
+      const from = new Date(to.getTime() - 90 * 24 * 60 * 60 * 1000)
+      const toStr = to.toISOString().slice(0, 10)
+      const fromStr = from.toISOString().slice(0, 10)
+
+      const values = {}
+      for (const kpi of catalog ?? []) {
+        const metric = STANDARD_KPI_METRICS[kpi.metric_key]
+        values[kpi.id] = metric ? await metric.fetch(employeeId, fromStr, toStr) : null
+      }
+      if (active) {
+        setKpiValues(values)
+        setKpiLoading(false)
+      }
+    }
+    if (company?.id) loadKpiSnapshot()
+    return () => { active = false }
+  }, [employeeId, company?.id])
+
+  if (loading) return <SkeletonBlock rows={4} />
+
+  return (
+    <>
+      <div className="report-section">
+        <p className="section-heading">Standard KPI snapshot</p>
+        <p className="muted" style={{ marginTop: 0, fontSize: 12 }}>Computed live from the last 90 days — independent of any review.</p>
+        {kpiLoading ? (
+          <SkeletonBlock rows={2} />
+        ) : kpiCatalog.length === 0 ? (
+          <p className="muted">No standard KPIs configured.</p>
+        ) : (
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {kpiCatalog.map((kpi) => {
+              const value = kpiValues[kpi.id]
+              return (
+                <div key={kpi.id} className="mini-card" style={{ minWidth: 140 }}>
+                  <div className="muted" style={{ fontSize: 12 }}>{kpi.name}</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
+                    {value == null ? '—' : `${Math.round(value * 100)}%`}
+                  </div>
+                  <div className="muted" style={{ fontSize: 11 }}>{value == null ? 'Not enough data' : 'last 90 days'}</div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="report-section">
+        <p className="section-heading">Review history</p>
+        {reviews.length === 0 ? (
+          <p className="muted">No reviews yet.</p>
+        ) : (
+          <table className="data-table">
+            <thead><tr><th>Cycle</th><th>Reviewer</th><th>Rating</th><th>Status</th></tr></thead>
+            <tbody>
+              {reviews.map((r) => (
+                <tr key={r.id} style={{ cursor: 'default' }}>
+                  <td>{r.review_cycles?.name ?? '—'}</td>
+                  <td>{r.profiles?.full_name ?? '—'}</td>
+                  <td className="mono">{r.overall_rating ? `${r.overall_rating}/5` : '—'}</td>
+                  <td><span className={`status-badge status-${r.status === 'acknowledged' ? 'approved' : r.status === 'submitted' ? 'pending' : ''}`}>{r.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="report-section">
+        <p className="section-heading">Goals</p>
+        {goals.length === 0 ? (
+          <p className="muted">No goals yet.</p>
+        ) : (
+          <table className="data-table">
+            <thead><tr><th>Goal</th><th>Target date</th><th>Status</th></tr></thead>
+            <tbody>
+              {goals.map((g) => (
+                <tr key={g.id} style={{ cursor: 'default' }}>
+                  <td>{g.title}</td>
+                  <td className="mono">{formatDate(g.target_date)}</td>
+                  <td><span className={`status-badge status-${g.status === 'completed' ? 'approved' : g.status === 'cancelled' ? 'rejected' : 'pending'}`}>{g.status.replace('_', ' ')}</span></td>
                 </tr>
               ))}
             </tbody>
