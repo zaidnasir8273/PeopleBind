@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { GaugeIcon } from '../components/ui/gauge'
 import { BoxesIcon } from '../components/ui/boxes'
@@ -22,6 +23,24 @@ const NAV_ITEMS = [
 export default function PlatformAdminShell() {
   const { profile, company, signOut } = useAuth()
   const [collapsed, setCollapsed] = useSidebarCollapse()
+  const iconRefs = useRef(new Map()).current
+  const backIconRef = useRef(null)
+  const signOutIconRef = useRef(null)
+
+  function setIconRef(key) {
+    return (handle) => {
+      if (handle) iconRefs.set(key, handle)
+      else iconRefs.delete(key)
+    }
+  }
+
+  function playIcon(key) {
+    iconRefs.get(key)?.startAnimation()
+  }
+
+  function stopIcon(key) {
+    iconRefs.get(key)?.stopAnimation()
+  }
 
   return (
     <div className="app-shell">
@@ -53,8 +72,10 @@ export default function PlatformAdminShell() {
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               data-tooltip={collapsed ? label : undefined}
               aria-label={label}
+              onMouseEnter={() => playIcon(to)}
+              onMouseLeave={() => stopIcon(to)}
             >
-              <Icon size={19} />
+              <Icon ref={setIconRef(to)} size={19} />
               {!collapsed && label}
             </NavLink>
           ))}
@@ -68,8 +89,10 @@ export default function PlatformAdminShell() {
               style={{ marginBottom: 6 }}
               data-tooltip={collapsed ? `Back to ${company.name}` : undefined}
               aria-label={`Back to ${company.name}`}
+              onMouseEnter={() => backIconRef.current?.startAnimation()}
+              onMouseLeave={() => backIconRef.current?.stopAnimation()}
             >
-              <ArrowLeftIcon size={15} />
+              <ArrowLeftIcon ref={backIconRef} size={15} />
               {!collapsed && <span className="sidebar-link-label">{`Back to ${company.name}`}</span>}
             </NavLink>
           )}
@@ -79,8 +102,10 @@ export default function PlatformAdminShell() {
             onClick={signOut}
             data-tooltip={collapsed ? 'Sign out' : undefined}
             aria-label="Sign out"
+            onMouseEnter={() => signOutIconRef.current?.startAnimation()}
+            onMouseLeave={() => signOutIconRef.current?.stopAnimation()}
           >
-            <LogoutIcon size={15} />
+            <LogoutIcon ref={signOutIconRef} size={15} />
             {!collapsed && 'Sign out'}
           </button>
         </div>

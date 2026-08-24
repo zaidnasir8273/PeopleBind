@@ -35,6 +35,20 @@ type NavItem =
   | { key: string; to: string; label: string; icon: any; end?: boolean }
   | { key: string; label: string; icon: any; submodules: SubItem[] }
 
+// Every lucide-animated icon plays its hover animation on its own tiny
+// bounding box by default -- fine for a standalone icon, but a nav link's
+// hover target is the whole row (icon + label). Each icon also exposes an
+// imperative start/stop pair via forwardRef for exactly this case: hand it
+// a ref, and its self-triggered hover listener steps aside in favor of
+// whoever calls the ref explicitly (see each icon's own source). This map
+// holds one such ref per rendered icon, keyed by whatever's already used
+// as that item's React `key`, so the wrapping NavLink/button can trigger
+// the animation from anywhere in its own hover area.
+interface AnimatedIconHandle {
+  startAnimation: () => void
+  stopAnimation: () => void
+}
+
 // Groups exist so the rail stays short (7 entries) without losing anything --
 // every route below is unchanged, only how you reach it changes. Each group
 // is a themed cluster (see the plan): People = employee lifecycle, Time =
@@ -118,6 +132,24 @@ export function Sidebar() {
   const navigate = useNavigate()
   const [openGroup, setOpenGroup] = useState<{ key: string; top: number; left: number; arrowTop: number; arrowLeft: number } | null>(null)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const iconRefs = useRef(new Map<string, AnimatedIconHandle>()).current
+  const platformAdminIconRef = useRef<AnimatedIconHandle>(null)
+  const signOutIconRef = useRef<AnimatedIconHandle>(null)
+
+  function setIconRef(key: string) {
+    return (handle: AnimatedIconHandle | null) => {
+      if (handle) iconRefs.set(key, handle)
+      else iconRefs.delete(key)
+    }
+  }
+
+  function playIcon(key: string) {
+    iconRefs.get(key)?.startAnimation()
+  }
+
+  function stopIcon(key: string) {
+    iconRefs.get(key)?.stopAnimation()
+  }
 
   function cancelClose() {
     clearTimeout(closeTimer.current)
@@ -189,15 +221,15 @@ export function Sidebar() {
                 type="button"
                 className={`sidebar-link sidebar-link-button${isActiveGroup ? ' active' : ''}`}
                 onClick={() => navigate(item.submodules[0].to)}
-                onMouseEnter={(e) => openFlyout(item.key, e.currentTarget)}
-                onMouseLeave={scheduleClose}
+                onMouseEnter={(e) => { openFlyout(item.key, e.currentTarget); playIcon(item.key) }}
+                onMouseLeave={() => { scheduleClose(); stopIcon(item.key) }}
                 data-tooltip={collapsed ? item.label : undefined}
                 aria-label={item.label}
                 aria-haspopup="true"
                 aria-expanded={isOpen}
               >
                 {isActiveGroup && <motion.span layoutId="sidebar-active-pill" className="sidebar-active-pill" transition={{ duration: 0.22 }} />}
-                <Icon size={19} />
+                <Icon ref={setIconRef(item.key)} size={19} />
                 {!collapsed && item.label}
               </button>
             )
@@ -211,11 +243,13 @@ export function Sidebar() {
               className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
               data-tooltip={collapsed ? item.label : undefined}
               aria-label={item.label}
+              onMouseEnter={() => playIcon(item.key)}
+              onMouseLeave={() => stopIcon(item.key)}
             >
               {({ isActive }) => (
                 <>
                   {isActive && <motion.span layoutId="sidebar-active-pill" className="sidebar-active-pill" transition={{ duration: 0.22 }} />}
-                  <Icon size={19} />
+                  <Icon ref={setIconRef(item.key)} size={19} />
                   {!collapsed && item.label}
                 </>
               )}
@@ -232,8 +266,10 @@ export function Sidebar() {
             style={{ marginBottom: 6 }}
             data-tooltip={collapsed ? 'Platform Admin' : undefined}
             aria-label="Platform Admin"
+            onMouseEnter={() => platformAdminIconRef.current?.startAnimation()}
+            onMouseLeave={() => platformAdminIconRef.current?.stopAnimation()}
           >
-            <ShieldCheckIcon size={15} />
+            <ShieldCheckIcon ref={platformAdminIconRef} size={15} />
             {!collapsed && 'Platform Admin'}
           </NavLink>
         )}
@@ -243,8 +279,10 @@ export function Sidebar() {
           onClick={signOut}
           data-tooltip={collapsed ? 'Sign out' : undefined}
           aria-label="Sign out"
+          onMouseEnter={() => signOutIconRef.current?.startAnimation()}
+          onMouseLeave={() => signOutIconRef.current?.stopAnimation()}
         >
-          <LogoutIcon size={15} />
+          <LogoutIcon ref={signOutIconRef} size={15} />
           {!collapsed && 'Sign out'}
         </button>
       </div>
@@ -291,8 +329,10 @@ export function Sidebar() {
                     to={sub.to}
                     className={({ isActive }) => `sidebar-flyout-item${isActive ? ' active' : ''}`}
                     onClick={() => setOpenGroup(null)}
+                    onMouseEnter={() => playIcon(sub.to)}
+                    onMouseLeave={() => stopIcon(sub.to)}
                   >
-                    <SubIcon size={16} />
+                    <SubIcon ref={setIconRef(sub.to)} size={16} />
                     {sub.label}
                   </NavLink>
                 )
