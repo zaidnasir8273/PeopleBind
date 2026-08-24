@@ -31,8 +31,8 @@ import CalendarPage from './pages/Calendar'
 import Dashboards from './pages/Dashboards'
 import { PlatformAdminGate } from './components/PlatformAdminGate'
 import PlatformAdminShell from './pages/PlatformAdminShell'
+import PlatformDashboard from './pages/PlatformDashboard'
 import PlatformCompanies from './pages/PlatformCompanies'
-import PlatformHealth from './pages/PlatformHealth'
 import PlatformSupportChat from './pages/PlatformSupportChat'
 import PlatformTickets from './pages/PlatformTickets'
 import PlatformPayroll from './pages/PlatformPayroll'
@@ -122,8 +122,8 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<PlatformCompanies />} />
-            <Route path="health" element={<PlatformHealth />} />
+            <Route index element={<PlatformDashboard />} />
+            <Route path="companies" element={<PlatformCompanies />} />
             <Route path="chat" element={<PlatformSupportChat />} />
             <Route path="tickets" element={<PlatformTickets />} />
             <Route path="payroll" element={<PlatformPayroll />} />

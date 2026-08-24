@@ -1,18 +1,17 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Building2, LifeBuoy } from 'lucide-react'
+import { Building2, LifeBuoy, LayoutDashboard } from 'lucide-react'
 import { MessageCircleIcon } from '../components/ui/message-circle'
 import { WalletIcon } from '../components/ui/wallet'
 import { LogoutIcon } from '../components/ui/logout'
 import { ArrowLeftIcon } from '../components/ui/arrow-left'
 import { PanelLeftCloseIcon } from '../components/ui/panel-left-close'
 import { PanelLeftOpenIcon } from '../components/ui/panel-left-open'
-import { HeartPulseIcon } from '../components/ui/heart-pulse'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
 const NAV_ITEMS = [
-  { to: '/platform-admin', label: 'Companies', icon: Building2, end: true },
-  { to: '/platform-admin/health', label: 'Health', icon: HeartPulseIcon },
+  { to: '/platform-admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/platform-admin/companies', label: 'Companies', icon: Building2 },
   { to: '/platform-admin/chat', label: 'Live chat', icon: MessageCircleIcon },
   { to: '/platform-admin/tickets', label: 'Support tickets', icon: LifeBuoy },
   { to: '/platform-admin/payroll', label: 'Payroll monitor', icon: WalletIcon },
