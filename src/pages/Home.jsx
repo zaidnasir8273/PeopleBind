@@ -120,7 +120,7 @@ const tooltipStyle = { fontSize: 13, fontFamily: 'Inter, sans-serif', borderRadi
 export default function Home() {
   const { profile, company } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ employeeCount: 0, pendingLeave: 0, pendingExpenses: 0, openRoles: 0 })
+  const [stats, setStats] = useState({ employeeCount: 0, pendingLeave: 0, pendingExpenses: 0, pendingCorrections: 0, openRoles: 0 })
   const [actionItems, setActionItems] = useState([])
   const [upcoming, setUpcoming] = useState([])
   const [runningNow, setRunningNow] = useState([])
@@ -380,6 +380,7 @@ export default function Home() {
       employeeCount: employeeCount ?? 0,
       pendingLeave: leaveRows?.length ?? 0,
       pendingExpenses: expenseRows?.length ?? 0,
+      pendingCorrections: correctionRows?.length ?? 0,
       openRoles: openRoles ?? 0,
     })
 
@@ -425,6 +426,7 @@ export default function Home() {
           <div className="stat-card"><span className="stat-label">Team size</span><span className="stat-value">—</span></div>
           <div className="stat-card"><span className="stat-label">Pending leave</span><span className="stat-value">—</span></div>
           <div className="stat-card"><span className="stat-label">Pending expenses</span><span className="stat-value">—</span></div>
+          <div className="stat-card"><span className="stat-label">Pending corrections</span><span className="stat-value">—</span></div>
           <div className="stat-card"><span className="stat-label">Open roles</span><span className="stat-value">—</span></div>
           <div className="stat-card"><span className="stat-label">Attendance rate</span><span className="stat-value">—</span></div>
         </div>
@@ -441,6 +443,10 @@ export default function Home() {
           <StaggerItem as="div" className="stat-card">
             <span className="stat-label">Pending expenses</span>
             <AnimatedNumber value={stats.pendingExpenses} className="stat-value" />
+          </StaggerItem>
+          <StaggerItem as="div" className="stat-card">
+            <span className="stat-label">Pending corrections</span>
+            <AnimatedNumber value={stats.pendingCorrections} className="stat-value" />
           </StaggerItem>
           <StaggerItem as="div" className="stat-card">
             <span className="stat-label">Open roles</span>
