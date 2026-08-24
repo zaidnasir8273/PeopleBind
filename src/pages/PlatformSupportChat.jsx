@@ -143,7 +143,7 @@ export default function PlatformSupportChat() {
   async function regenerateAiDraft() {
     if (!activeThreadId || regenerating) return
     setRegenerating(true)
-    const { data, error } = await supabase.functions.invoke('generate-support-draft', { body: { type: 'chat', thread_id: activeThreadId } })
+    const { data, error } = await supabase.functions.invoke('generate-support-draft', { body: { type: 'chat', thread_id: activeThreadId, mode: 'draft' } })
     setRegenerating(false)
     if (error) {
       toast.error('Failed to generate a suggestion')
@@ -214,6 +214,7 @@ export default function PlatformSupportChat() {
               <div className="support-chat-list" ref={listRef} style={{ flex: 1 }}>
                 {messages.map((m) => (
                   <div key={m.id} className={`support-chat-msg${m.sender_is_platform_admin ? ' from-self' : ' from-admin'}`}>
+                    {m.is_ai_generated && <span className="muted" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.4 }}>AI auto-reply</span>}
                     <p className="support-chat-msg-body">{m.body}</p>
                     <span className="support-chat-msg-time">{relativeTime(m.created_at)}</span>
                   </div>
