@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Cake } from 'lucide-react'
+import { Cake, AlertCircle, Activity } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { CalendarDaysIcon } from '../components/ui/calendar-days'
 import { ReceiptIcon } from '../components/ui/receipt'
@@ -8,8 +9,10 @@ import { ClockIcon } from '../components/ui/clock'
 import { WalletIcon } from '../components/ui/wallet'
 import { UserCheckIcon } from '../components/ui/user-check'
 import { ChevronRightIcon } from '../components/ui/chevron-right'
+import { ChevronDownIcon } from '../components/ui/chevron-down'
 import { PartyPopperIcon } from '../components/ui/party-popper'
 import { RadioIcon } from '../components/ui/radio'
+import { RadioTowerIcon } from '../components/ui/radio-tower'
 import { PlaneTakeoffIcon } from '../components/ui/plane-takeoff'
 import { UserPlusIcon } from '../components/ui/user-plus'
 import { TimerIcon } from '../components/ui/timer'
@@ -17,9 +20,8 @@ import { UsersIcon } from '../components/ui/users'
 import { BriefcaseBusinessIcon } from '../components/ui/briefcase-business'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { SkeletonStatRow } from '../components/Skeleton'
 import { Avatar } from '../components/Avatar'
-import { StaggerContainer, StaggerItem } from '../components/motion'
+import { StaggerContainer, StaggerItem, DURATION, EASE } from '../components/motion'
 import { AnimatedNumber } from '../components/motion/AnimatedNumber'
 
 function greeting() {
@@ -68,6 +70,41 @@ function elapsedSince(ts) {
   const h = Math.floor(mins / 60)
   const m = mins % 60
   return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+
+// Collapsible card for the home-grid side rail. Starts open/closed per
+// `defaultOpen` so the sections you actually need (attention, announcements)
+// are visible immediately while the longer-tail ones (activity, team) stay
+// out of the way until asked for -- the whole point being a page that still
+// reads cleanly with a hundred employees in it.
+function HomeWidget({ title, icon: Icon, count, accent, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="home-widget">
+      <button type="button" className="home-widget-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span className="home-widget-title">
+          <Icon size={16} style={accent ? { color: 'var(--gold)' } : undefined} />
+          {title}
+          {count > 0 && <span className={`home-widget-count${accent ? ' warn' : ''}`}>{count}</span>}
+        </span>
+        <ChevronDownIcon size={15} className="home-widget-chevron" style={{ transform: open ? 'rotate(180deg)' : 'none' }} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            className="home-widget-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: DURATION.base, ease: EASE }}
+            style={{ overflow: 'hidden' }}
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
 }
 
 // Same palette/style as the charts on Reports.jsx, reused verbatim so Home's
@@ -380,6 +417,9 @@ export default function Home() {
         </Link>
       </div>
 
+      <div className="home-grid">
+      <div className="home-grid-main">
+
       {loading ? (
         <div className="stat-row">
           <div className="stat-card"><span className="stat-label">Team size</span><span className="stat-value">—</span></div>
@@ -513,60 +553,96 @@ export default function Home() {
         </section>
       )}
 
-      <section className="attention-section">
-        <h2 className="section-heading">Needs your attention</h2>
+      </div>
 
-        {loading ? (
-          <SkeletonStatRow count={4} />
-        ) : actionItems.length === 0 ? (
-          <div className="empty-state">
-            <p>Nothing pending right now.</p>
-            <p className="muted">
-              Leave requests, expense claims, payroll status, and probation dates will show up here as they need action.
-            </p>
-          </div>
-        ) : (
-          <ul className="attention-list" style={{ listStyle: 'none' }}>
-            {actionItems.map((item) => {
-              const Icon = item.icon
-              return (
-                <li key={item.key}>
-                  <Link to={item.to} className="attention-item">
-                    <span className="attention-item-body">
-                      <span className="attention-item-icon"><Icon size={15} /></span>
-                      <span>
-                        {item.text}
-                        {item.detail && <span className="muted" style={{ display: 'block', fontSize: 12 }}>{item.detail}</span>}
+      <div className="home-grid-side">
+        {!loading && (
+          <>
+            <HomeWidget title="Needs your attention" icon={AlertCircle} count={actionItems.length} accent defaultOpen>
+              {actionItems.length === 0 ? (
+                <p className="muted" style={{ padding: '12px 16px', margin: 0, fontSize: 13 }}>Nothing pending right now.</p>
+              ) : (
+                <ul className="attention-list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                  {actionItems.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <li key={item.key}>
+                        <Link to={item.to} className="attention-item">
+                          <span className="attention-item-body">
+                            <span className="attention-item-icon"><Icon size={15} /></span>
+                            <span>
+                              {item.text}
+                              {item.detail && <span className="muted" style={{ display: 'block', fontSize: 12 }}>{item.detail}</span>}
+                            </span>
+                          </span>
+                          <ChevronRightIcon size={16} className="attention-item-chevron" />
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </HomeWidget>
+
+            <HomeWidget title="Announcements" icon={RadioTowerIcon} count={announcements.length} defaultOpen>
+              {announcements.length === 0 ? (
+                <p className="muted" style={{ padding: '12px 16px', margin: 0, fontSize: 13 }}>No announcements yet.</p>
+              ) : (
+                <div className="home-widget-list">
+                  {announcements.map((a) => (
+                    <Link key={a.id} to="/app/announcements" className="upcoming-row" style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {a.pinned && <span className="tab-count" style={{ marginRight: 8 }}>Pinned</span>}
+                        {a.title}
                       </span>
-                    </span>
-                    <ChevronRightIcon size={16} className="attention-item-chevron" />
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
+                      <span className="muted mono">{relativeTime(a.created_at)}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </HomeWidget>
 
-      {!loading && announcements.length > 0 && (
-        <section style={{ marginTop: 32 }}>
-          <div className="page-header-row" style={{ marginBottom: 0, alignItems: 'center' }}>
-            <h2 className="section-heading" style={{ marginBottom: 0 }}>Announcements</h2>
-            <Link to="/app/announcements" className="link-button" style={{ fontSize: 12 }}>View all</Link>
-          </div>
-          <div className="report-section" style={{ marginBottom: 0 }}>
-            {announcements.map((a) => (
-              <Link key={a.id} to="/app/announcements" className="upcoming-row" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {a.pinned && <span className="tab-count" style={{ marginRight: 8 }}>Pinned</span>}
-                  {a.title}
-                </span>
-                <span className="muted mono">{relativeTime(a.created_at)}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+            <HomeWidget title="Recent activity" icon={Activity} count={activity.length}>
+              {activity.length === 0 ? (
+                <p className="muted" style={{ padding: '12px 16px', margin: 0, fontSize: 13 }}>Nothing has happened yet.</p>
+              ) : (
+                <StaggerContainer as="div" className="home-widget-list" staggerDelay={0.03}>
+                  {activity.map((a) => {
+                    const Icon = a.icon
+                    return (
+                      <StaggerItem as={Link} key={a.key} to={a.to} className="activity-row">
+                        {a.person?.name ? (
+                          <Avatar name={a.person.name} photoUrl={a.person.photoUrl} size={26} />
+                        ) : (
+                          <span className="activity-row-icon"><Icon size={13} /></span>
+                        )}
+                        <span>{a.text}</span>
+                        <span className="activity-row-time">{relativeTime(a.time)}</span>
+                      </StaggerItem>
+                    )
+                  })}
+                </StaggerContainer>
+              )}
+            </HomeWidget>
+
+            <HomeWidget title="Team" icon={UsersIcon} count={teamFaces.length}>
+              {teamFaces.length === 0 ? (
+                <p className="muted" style={{ padding: '12px 16px', margin: 0, fontSize: 13 }}>No one on the team yet.</p>
+              ) : (
+                <StaggerContainer as="div" className="team-strip home-widget-list" staggerDelay={0.02}>
+                  {teamFaces.map((e) => (
+                    <StaggerItem as={Link} key={e.id} to={`/app/people/${e.id}`} className="team-strip-item" data-tooltip={e.full_name}>
+                      <Avatar name={e.full_name} photoUrl={e.photo_url} size={40} />
+                      <span className="team-strip-name">{firstName(e.full_name)}</span>
+                    </StaggerItem>
+                  ))}
+                </StaggerContainer>
+              )}
+            </HomeWidget>
+          </>
+        )}
+      </div>
+      </div>
 
       {!loading && kudosFeed.length > 0 && (
         <section style={{ marginTop: 32 }}>
@@ -638,55 +714,6 @@ export default function Home() {
         </section>
       )}
 
-      {!loading && (
-        <section style={{ marginTop: 32 }}>
-          <h2 className="section-heading">Recent activity</h2>
-          {activity.length === 0 ? (
-            <div className="empty-state">
-              <p>Nothing has happened yet.</p>
-              <p className="muted">Approvals, joins, and payroll finalizations will show up here as they happen.</p>
-            </div>
-          ) : (
-            <StaggerContainer as="div" className="report-section" style={{ marginBottom: 0 }} staggerDelay={0.03}>
-              {activity.map((a) => {
-                const Icon = a.icon
-                return (
-                  <StaggerItem as={Link} key={a.key} to={a.to} className="activity-row">
-                    {a.person?.name ? (
-                      <Avatar name={a.person.name} photoUrl={a.person.photoUrl} size={26} />
-                    ) : (
-                      <span className="activity-row-icon"><Icon size={13} /></span>
-                    )}
-                    <span>{a.text}</span>
-                    <span className="activity-row-time">{relativeTime(a.time)}</span>
-                  </StaggerItem>
-                )
-              })}
-            </StaggerContainer>
-          )}
-        </section>
-      )}
-
-      {!loading && (
-        <section style={{ marginTop: 32 }}>
-          <h2 className="section-heading"><UsersIcon size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Team</h2>
-          {teamFaces.length === 0 ? (
-            <div className="empty-state">
-              <p>No one on the team yet.</p>
-              <p className="muted">Add your first employee to see faces here.</p>
-            </div>
-          ) : (
-            <StaggerContainer as="div" className="team-strip" staggerDelay={0.02}>
-              {teamFaces.map((e) => (
-                <StaggerItem as={Link} key={e.id} to={`/app/people/${e.id}`} className="team-strip-item" data-tooltip={e.full_name}>
-                  <Avatar name={e.full_name} photoUrl={e.photo_url} size={40} />
-                  <span className="team-strip-name">{firstName(e.full_name)}</span>
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
-          )}
-        </section>
-      )}
     </div>
   )
 }
