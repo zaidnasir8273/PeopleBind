@@ -30,6 +30,7 @@ import Announcements from './pages/Announcements'
 import Kudos from './pages/Kudos'
 import CalendarPage from './pages/Calendar'
 import Dashboards from './pages/Dashboards'
+import Help from './pages/Help'
 import { PlatformAdminGate } from './components/PlatformAdminGate'
 import PlatformAdminShell from './pages/PlatformAdminShell'
 import PlatformDashboard from './pages/PlatformDashboard'
@@ -37,6 +38,7 @@ import PlatformCompanies from './pages/PlatformCompanies'
 import PlatformSupportChat from './pages/PlatformSupportChat'
 import PlatformTickets from './pages/PlatformTickets'
 import PlatformPayroll from './pages/PlatformPayroll'
+import PlatformHelp from './pages/PlatformHelp'
 import { EmployeeProtectedRoute } from './components/EmployeeProtectedRoute'
 import EmployeeLogin from './pages/EmployeeLogin'
 import EmployeeSignup from './pages/EmployeeSignup'
@@ -113,6 +115,7 @@ export default function App() {
             <Route path="announcements" element={<Announcements />} />
             <Route path="kudos" element={<Kudos />} />
             <Route path="calendar" element={<CalendarPage />} />
+            <Route path="help" element={<Help />} />
           </Route>
           <Route
             path="/platform-admin"
@@ -129,6 +132,7 @@ export default function App() {
             <Route path="chat" element={<PlatformSupportChat />} />
             <Route path="tickets" element={<PlatformTickets />} />
             <Route path="payroll" element={<PlatformPayroll />} />
+            <Route path="help" element={<PlatformHelp />} />
           </Route>
 
           <Route path="/employee/login" element={<EmployeeLogin />} />

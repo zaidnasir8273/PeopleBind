@@ -5,6 +5,7 @@ import { BoxesIcon } from '../components/ui/boxes'
 import { TicketIcon } from '../components/ui/ticket'
 import { MessageCircleIcon } from '../components/ui/message-circle'
 import { WalletIcon } from '../components/ui/wallet'
+import { BookTextIcon } from '../components/ui/book-text'
 import { LogoutIcon } from '../components/ui/logout'
 import { ArrowLeftIcon } from '../components/ui/arrow-left'
 import { PanelLeftCloseIcon } from '../components/ui/panel-left-close'
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { to: '/platform-admin/chat', label: 'Live chat', icon: MessageCircleIcon },
   { to: '/platform-admin/tickets', label: 'Support tickets', icon: TicketIcon },
   { to: '/platform-admin/payroll', label: 'Payroll monitor', icon: WalletIcon },
+  { to: '/platform-admin/help', label: 'Documentation', icon: BookTextIcon },
 ]
 
 export default function PlatformAdminShell() {

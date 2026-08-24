@@ -24,6 +24,7 @@ import { HeartHandshakeIcon } from './ui/heart-handshake'
 import { SettingsIcon } from './ui/settings'
 import { LogoutIcon } from './ui/logout'
 import { ShieldCheckIcon } from './ui/shield-check'
+import { CircleHelpIcon } from './ui/circle-help'
 import { PanelLeftCloseIcon } from './ui/panel-left-close'
 import { PanelLeftOpenIcon } from './ui/panel-left-open'
 import { ChevronRightIcon } from './ui/chevron-right'
@@ -134,6 +135,7 @@ export function Sidebar() {
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const iconRefs = useRef(new Map<string, AnimatedIconHandle>()).current
   const platformAdminIconRef = useRef<AnimatedIconHandle>(null)
+  const helpIconRef = useRef<AnimatedIconHandle>(null)
   const signOutIconRef = useRef<AnimatedIconHandle>(null)
 
   function setIconRef(key: string) {
@@ -259,6 +261,18 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar-user">
+        <NavLink
+          to="/app/help"
+          className="sidebar-link"
+          style={{ marginBottom: 6 }}
+          data-tooltip={collapsed ? 'Help & Support' : undefined}
+          aria-label="Help & Support"
+          onMouseEnter={() => helpIconRef.current?.startAnimation()}
+          onMouseLeave={() => helpIconRef.current?.stopAnimation()}
+        >
+          <CircleHelpIcon ref={helpIconRef} size={15} />
+          {!collapsed && 'Help & Support'}
+        </NavLink>
         {profile?.is_platform_admin && (
           <NavLink
             to="/platform-admin"
