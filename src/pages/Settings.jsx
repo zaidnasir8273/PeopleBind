@@ -13,11 +13,13 @@ import { WalletIcon } from '../components/ui/wallet'
 import { ClipboardCheckIcon } from '../components/ui/clipboard-check'
 import { ShieldCheckIcon } from '../components/ui/shield-check'
 import { TrendingUpIcon } from '../components/ui/trending-up'
+import { BookTextIcon } from '../components/ui/book-text'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonBlock, SkeletonTable } from '../components/Skeleton'
 import { STANDARD_KPI_METRICS } from '../lib/kpiMetrics'
+import { HelpEditor } from '../components/HelpEditor'
 
 // Modules group the existing tabs into a real hierarchy instead of one long
 // row that wraps -- the tab keys below are exactly the ones the render
@@ -83,6 +85,15 @@ const SETTINGS_MODULES = [
     color: 'gold',
     submodules: [
       { key: 'kpi_catalog', label: 'KPI catalog' },
+    ],
+  },
+  {
+    key: 'docs',
+    label: 'Documentation',
+    icon: BookTextIcon,
+    color: 'teal',
+    submodules: [
+      { key: 'company_docs', label: 'Company documentation' },
     ],
   },
 ]
@@ -211,6 +222,7 @@ export default function Settings() {
           {tab === 'timesheets' && <TimesheetsSetupTab />}
           {tab === 'support' && <SupportTab />}
           {tab === 'kpi_catalog' && <KpiCatalogTab />}
+          {tab === 'company_docs' && <CompanyDocsTab />}
         </div>
       </div>
     </div>
@@ -1462,6 +1474,49 @@ function KpiCatalogTab() {
           </button>
         </form>
       </Drawer>
+    </>
+  )
+}
+
+/* =========================== COMPANY DOCUMENTATION =========================== */
+
+function CompanyDocsTab() {
+  const { profile, company } = useAuth()
+  const [hasAccess, setHasAccess] = useState(null)
+
+  useEffect(() => {
+    if (profile?.is_platform_admin) {
+      setHasAccess(true)
+      return
+    }
+    let cancelled = false
+    supabase.rpc('auth_has_permission', { p_resource: 'settings', p_action: 'manage' }).then(({ data }) => {
+      if (!cancelled) setHasAccess(!!data)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [profile?.is_platform_admin])
+
+  if (hasAccess === null) return <SkeletonBlock rows={6} />
+
+  if (!hasAccess) {
+    return (
+      <div className="empty-state" style={{ marginTop: 20 }}>
+        <p>You don't have access to manage company documentation.</p>
+        <p className="muted">Ask a company admin to grant you the "Manage company settings" permission.</p>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <p className="muted" style={{ marginTop: 0 }}>
+        This is your company's own documentation — visible only to your own users, alongside PeopleBind's official
+        documentation on the Help page. Use it for your internal HR policies, forms, and onboarding checklists. Only
+        published articles are shown to your users.
+      </p>
+      <HelpEditor companyId={company.id} />
     </>
   )
 }
