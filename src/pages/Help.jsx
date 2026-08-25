@@ -18,9 +18,9 @@ function HelpSection({ title, categories, selectedArticleId, onSelectArticle }) 
       <p className="section-heading">{title}</p>
       {categories.map((c) => (
         <div key={c.id} style={{ marginBottom: 18 }}>
-          <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontSize: 13.5, margin: '4px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontSize: 13.5, margin: '4px 0' }}>
             <BookTextIcon size={14} /> {c.name}
-          </p>
+          </div>
           {c.articles.map((a) => (
             <button
               key={a.id}
