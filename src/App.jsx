@@ -135,6 +135,7 @@ export default function App() {
             <Route path="companies" element={<PlatformCompanies />} />
             <Route path="chat" element={<PlatformSupportChat />} />
             <Route path="tickets" element={<PlatformTickets />} />
+            <Route path="quotes" element={<PlatformSalesInquiries />} />
             <Route path="payroll" element={<PlatformPayroll />} />
             <Route path="help" element={<PlatformHelp />} />
           </Route>
