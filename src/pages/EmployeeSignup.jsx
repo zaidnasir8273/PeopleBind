@@ -65,7 +65,7 @@ export default function EmployeeSignup() {
           <h1 className="auth-title">Check your email</h1>
           <p className="auth-subtitle">
             We sent a confirmation link to <strong>{form.email}</strong>. Click it, then come back and{' '}
-            <Link to="/employee/login">sign in</Link> — we'll link your account to your employee record then.
+            <Link to="/login">sign in</Link> — we'll link your account to your employee record then.
           </p>
         </div>
       </div>
@@ -118,7 +118,7 @@ export default function EmployeeSignup() {
         </form>
 
         <p className="auth-switch">
-          Already set up? <Link to="/employee/login">Sign in</Link>
+          Already set up? <Link to="/login">Sign in</Link>
         </p>
       </div>
     </div>

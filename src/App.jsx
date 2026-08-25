@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { MotionConfig } from 'motion/react'
 import { AuthProvider } from './context/AuthContext'
@@ -40,7 +40,6 @@ import PlatformTickets from './pages/PlatformTickets'
 import PlatformPayroll from './pages/PlatformPayroll'
 import PlatformHelp from './pages/PlatformHelp'
 import { EmployeeProtectedRoute } from './components/EmployeeProtectedRoute'
-import EmployeeLogin from './pages/EmployeeLogin'
 import EmployeeSignup from './pages/EmployeeSignup'
 import EmployeeLinkAccount from './pages/EmployeeLinkAccount'
 import EmployeeShell from './pages/EmployeeShell'
@@ -135,7 +134,7 @@ export default function App() {
             <Route path="help" element={<PlatformHelp />} />
           </Route>
 
-          <Route path="/employee/login" element={<EmployeeLogin />} />
+          <Route path="/employee/login" element={<Navigate to="/login" replace />} />
           <Route path="/employee/signup" element={<EmployeeSignup />} />
           <Route
             path="/employee/link"

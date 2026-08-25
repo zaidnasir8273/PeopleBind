@@ -11,7 +11,7 @@ export function EmployeeProtectedRoute({ children }) {
   }
 
   if (!session) {
-    return <Navigate to="/employee/login" replace />
+    return <Navigate to="/login" replace />
   }
 
   if (!employeeRecord && location.pathname !== '/employee/link') {

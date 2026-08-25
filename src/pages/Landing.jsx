@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
-import { Reveal, RevealGroup, RevealItem } from '../components/motion'
+import { FadeIn, Reveal, RevealGroup, RevealItem } from '../components/motion'
 import { MagneticButton } from '../components/motion/MagneticButton'
 import { TiltCard } from '../components/motion/TiltCard'
 import { FloatingEmployeeCard } from '../components/motion/FloatingEmployeeCard'
@@ -117,12 +117,11 @@ export default function Landing() {
   return (
     <div className="page">
       <header className="header">
-        <div className="wordmark">
+        <FadeIn as={Link} to="/" className="wordmark" y={6}>
           <span className="wordmark-mark" aria-hidden="true" />
           <span className="wm-people">People</span><span className="wm-bind">Bind</span>
-        </div>
+        </FadeIn>
         <nav className="header-nav">
-          <Link to="/employee/login" className="header-link">Employee sign in</Link>
           <Link to="/login" className="header-link">Sign in</Link>
           <MagneticButton as={Link} to="/signup" className="header-cta">Sign up</MagneticButton>
         </nav>

@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AuthQuotePanel } from '../components/AuthQuotePanel'
+import { FadeIn } from '../components/motion'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -35,10 +36,10 @@ export default function Login() {
     <div className="auth-split">
       <div className="auth-panel-left">
         <div className="auth-form-wrap">
-          <Link to="/" className="auth-wordmark">
+          <FadeIn as={Link} to="/" className="auth-wordmark" y={6}>
             <span className="wordmark-mark" aria-hidden="true" />
             <span className="wm-people">People</span><span className="wm-bind">Bind</span>
-          </Link>
+          </FadeIn>
 
           <h1 className="auth-title">Sign in</h1>
           <p className="auth-subtitle">Welcome back.</p>
