@@ -7,14 +7,14 @@ import { TiltCard } from '../components/motion/TiltCard'
 import { FloatingEmployeeCard } from '../components/motion/FloatingEmployeeCard'
 import { AnimatedNumber } from '../components/motion/AnimatedNumber'
 import { Icon3D } from '../components/motion/Icon3D'
+import { PeopleNetwork } from '../components/motion/widgets/PeopleNetwork'
+import { LeaveApprovalFlow } from '../components/motion/widgets/LeaveApprovalFlow'
+import { OrganizationChart } from '../components/motion/widgets/OrganizationChart'
 import clockIcon from '../assets/icons/clock-clay.webp'
 import walletIcon from '../assets/icons/wallet-clay.webp'
 import bagIcon from '../assets/icons/bag-clay.webp'
 import folderIcon from '../assets/icons/folder-clay.webp'
 import chartIcon from '../assets/icons/chart-clay.webp'
-import boyIcon from '../assets/icons/boy-clay.webp'
-import chessIcon from '../assets/icons/chess-clay.webp'
-import calendarIcon from '../assets/icons/calendar-clay.webp'
 import { TimerIcon } from '../components/ui/timer'
 import { ReceiptIcon } from '../components/ui/receipt'
 import { LaptopMinimalCheckIcon } from '../components/ui/laptop-minimal-check'
@@ -36,8 +36,7 @@ const FEATURED_MODULES = [
     key: 'people',
     label: 'People',
     copy: 'Every hire flows straight from application to a real employee record — nothing re-typed.',
-    icon: boyIcon,
-    iconAlt: 'Employee icon',
+    Widget: PeopleNetwork,
   },
   {
     key: 'attendance',
@@ -50,8 +49,7 @@ const FEATURED_MODULES = [
     key: 'leave',
     label: 'Leave',
     copy: 'Balances update the moment a request is approved. No manual reconciliation, ever.',
-    icon: calendarIcon,
-    iconAlt: 'Calendar icon',
+    Widget: LeaveApprovalFlow,
   },
   {
     key: 'payroll',
@@ -64,8 +62,7 @@ const FEATURED_MODULES = [
     key: 'structure',
     label: 'Team structure',
     copy: 'Reporting lines drawn once, reflected in the org chart, approvals, and dashboards alike.',
-    icon: chessIcon,
-    iconAlt: 'Chess pieces icon',
+    Widget: OrganizationChart,
   },
   {
     key: 'recruitment',
@@ -207,10 +204,14 @@ export default function Landing() {
         </Reveal>
 
         <RevealGroup as="div" className="modules-grid" staggerDelay={0.09}>
-          {FEATURED_MODULES.map(({ key, label, copy, icon, iconAlt }) => (
+          {FEATURED_MODULES.map(({ key, label, copy, Widget, icon, iconAlt }) => (
             <RevealItem as="div" key={key} className="module-card">
               <div className="module-card-widget">
-                <Icon3D src={icon} alt={iconAlt} className="module-widget module-icon-3d" />
+                {icon ? (
+                  <Icon3D src={icon} alt={iconAlt} className="module-widget module-icon-3d" />
+                ) : (
+                  <Widget className="module-widget" />
+                )}
               </div>
               <h3 className="module-card-title">{label}</h3>
               <p className="module-card-copy">{copy}</p>
