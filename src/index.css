@@ -1328,6 +1328,14 @@ button:active:not(:disabled) {
   transform: translateY(-50%);
 }
 
+/* Support chat's header sits right at the top edge of its popover panel,
+   so an "above" tooltip has nowhere to go and gets clipped -- flip it
+   below the trigger instead, same fix as the sidebar rail above. */
+.notif-panel-header [data-tooltip]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sidebar {
     transition: none !important;
