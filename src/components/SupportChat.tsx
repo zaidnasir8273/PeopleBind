@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { MessageCircleIcon } from './ui/message-circle'
 import { SendIcon } from './ui/send'
+import { PlusIcon } from './ui/plus'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { Database } from '../lib/database.types'
@@ -52,12 +53,17 @@ export function SupportChat() {
   const listRef = useRef<HTMLDivElement>(null)
   const waitingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // A company can have many threads (customers can start a new chat any
+  // time); this always resumes the most recently active one rather than
+  // assuming there's exactly one.
   const ensureThread = useCallback(async () => {
     if (!company) return null
     const { data: existing } = await supabase
       .from('support_threads')
       .select('id')
       .eq('company_id', company.id)
+      .order('last_message_at', { ascending: false })
+      .limit(1)
       .maybeSingle()
     if (existing) return existing.id
     const { data: created, error } = await supabase
@@ -77,6 +83,8 @@ export function SupportChat() {
         .from('support_threads')
         .select('id')
         .eq('company_id', company.id)
+        .order('last_message_at', { ascending: false })
+        .limit(1)
         .maybeSingle()
       if (cancelled) return
       if (existing) {
@@ -187,6 +195,22 @@ export function SupportChat() {
     }
   }
 
+  async function startNewChat() {
+    if (!company) return
+    const { data: created, error } = await supabase
+      .from('support_threads')
+      .insert({ company_id: company.id })
+      .select('id')
+      .single()
+    if (error) return
+    if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current)
+    setThreadId(created.id)
+    setMessages([])
+    setEscalated(false)
+    setWaiting(false)
+    setDraft('')
+  }
+
   return (
     <div className="notif-bell-wrap" ref={ref}>
       <button className="notif-bell" onClick={() => setOpen((v) => !v)} aria-label="Support chat" data-tooltip="Support">
@@ -198,6 +222,11 @@ export function SupportChat() {
         <div className="notif-panel support-chat-panel">
           <div className="notif-panel-header">
             <span>Support</span>
+            {messages.length > 0 && (
+              <button type="button" className="link-button" onClick={startNewChat} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5 }}>
+                <PlusIcon size={13} /> New chat
+              </button>
+            )}
           </div>
 
           <div className="support-chat-list" ref={listRef}>
