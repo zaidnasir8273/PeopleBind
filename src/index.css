@@ -1398,6 +1398,136 @@ button:active:not(:disabled) {
   text-decoration: none;
 }
 
+/* ---------- login split screen ---------- */
+
+.login-split {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(380px, 1fr) minmax(380px, 1fr);
+}
+
+.login-panel-left {
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+}
+
+.login-form-wrap {
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-panel-right {
+  position: relative;
+  overflow: hidden;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  padding: 64px 56px;
+  text-align: center;
+}
+
+.login-quote-mark {
+  position: absolute;
+  top: 12px;
+  left: 32px;
+  font-family: var(--font-display);
+  font-size: 160px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.08);
+  user-select: none;
+}
+
+.login-quote-stage {
+  width: 100%;
+  max-width: 560px;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-quote {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+}
+
+.login-quote-text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(24px, 2.6vw, 34px);
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+.login-quote-text::before {
+  content: '\201C';
+}
+
+.login-quote-text::after {
+  content: '\201D';
+}
+
+.login-quote-author {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.login-quote-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+}
+
+.login-quote-role {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.login-quote-dots {
+  display: flex;
+  gap: 9px;
+}
+
+.login-quote-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: background var(--duration) var(--ease), transform var(--duration) var(--ease);
+}
+
+.login-quote-dot.active {
+  background: #fff;
+  transform: scale(1.3);
+}
+
+@media (max-width: 860px) {
+  .login-split {
+    grid-template-columns: 1fr;
+  }
+
+  .login-panel-right {
+    display: none;
+  }
+}
+
 .link-button {
   background: none;
   border: none;
