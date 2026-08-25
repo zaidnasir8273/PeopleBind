@@ -11,12 +11,13 @@ import { AttendanceAnimation } from '../components/motion/widgets/AttendanceAnim
 import { LeaveApprovalFlow } from '../components/motion/widgets/LeaveApprovalFlow'
 import { OrganizationChart } from '../components/motion/widgets/OrganizationChart'
 import { DocumentStack } from '../components/motion/widgets/DocumentStack'
+import { PayrollCalculation } from '../components/motion/widgets/PayrollCalculation'
+import { RecruitmentPipeline } from '../components/motion/widgets/RecruitmentPipeline'
+import { ReportsChart } from '../components/motion/widgets/ReportsChart'
 import { TimerIcon } from '../components/ui/timer'
 import { ReceiptIcon } from '../components/ui/receipt'
 import { LaptopMinimalCheckIcon } from '../components/ui/laptop-minimal-check'
-import { BriefcaseBusinessIcon } from '../components/ui/briefcase-business'
 import { TrendingUpIcon } from '../components/ui/trending-up'
-import { ChartColumnIncreasingIcon } from '../components/ui/chart-column-increasing'
 import { HeartHandshakeIcon } from '../components/ui/heart-handshake'
 import { SettingsIcon } from '../components/ui/settings'
 
@@ -49,10 +50,22 @@ const FEATURED_MODULES = [
     Widget: LeaveApprovalFlow,
   },
   {
+    key: 'payroll',
+    label: 'Payroll',
+    copy: 'Every deduction calculated from real attendance, leave, and policy — not a flat estimate.',
+    Widget: PayrollCalculation,
+  },
+  {
     key: 'structure',
     label: 'Team structure',
     copy: 'Reporting lines drawn once, reflected in the org chart, approvals, and dashboards alike.',
     Widget: OrganizationChart,
+  },
+  {
+    key: 'recruitment',
+    label: 'Recruitment',
+    copy: 'From application to offer to a real employee record — no re-entering candidate details.',
+    Widget: RecruitmentPipeline,
   },
   {
     key: 'documents',
@@ -60,15 +73,19 @@ const FEATURED_MODULES = [
     copy: 'Contracts, payslips, and records — organized per employee, with expiry tracking built in.',
     Widget: DocumentStack,
   },
+  {
+    key: 'reports',
+    label: 'Reports & Dashboards',
+    copy: 'Statutory and operational reports, plus live dashboards you build from real data.',
+    Widget: ReportsChart,
+  },
 ]
 
 const OTHER_MODULES = [
   { label: 'Timesheet', icon: TimerIcon },
   { label: 'Expenses', icon: ReceiptIcon },
   { label: 'Assets', icon: LaptopMinimalCheckIcon },
-  { label: 'Recruitment', icon: BriefcaseBusinessIcon },
   { label: 'Performance', icon: TrendingUpIcon },
-  { label: 'Reports & Dashboards', icon: ChartColumnIncreasingIcon },
   { label: 'Announcements & Kudos', icon: HeartHandshakeIcon },
   { label: 'Settings', icon: SettingsIcon },
 ]
