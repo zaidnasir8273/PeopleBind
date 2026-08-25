@@ -2202,7 +2202,7 @@ button:active:not(:disabled) {
 }
 
 .app-content {
-  padding: 40px clamp(24px, 4vw, 56px);
+  padding: 24px clamp(24px, 4vw, 56px) 40px;
   overflow-y: auto;
   contain: layout style;
 }
@@ -2212,7 +2212,7 @@ button:active:not(:disabled) {
   justify-content: flex-end;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .page-inner {
