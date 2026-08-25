@@ -30,6 +30,7 @@ import { PanelLeftOpenIcon } from './ui/panel-left-open'
 import { ChevronRightIcon } from './ui/chevron-right'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
+import { InstallAppButton } from './InstallAppButton'
 
 type SubItem = { to: string; label: string; icon: any }
 type NavItem =
@@ -288,6 +289,7 @@ export function Sidebar() {
           </NavLink>
         )}
         {!collapsed && <div className="sidebar-user-name">{profile?.full_name || profile?.email}</div>}
+        <InstallAppButton collapsed={collapsed} />
         <button
           className="sidebar-signout"
           onClick={signOut}

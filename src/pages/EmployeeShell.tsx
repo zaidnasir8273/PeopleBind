@@ -11,6 +11,7 @@ import { PanelLeftOpenIcon } from '../components/ui/panel-left-open'
 import { useAuth } from '../context/AuthContext'
 import { NotificationBell } from '../components/NotificationBell'
 import { PageTransition } from '../components/motion'
+import { InstallAppButton } from '../components/InstallAppButton'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
 
 const NAV_ITEMS = [
@@ -81,6 +82,7 @@ export default function EmployeeShell() {
 
         <div className="sidebar-user">
           {!collapsed && <div className="sidebar-user-name">{employeeRecord?.full_name}</div>}
+          <InstallAppButton collapsed={collapsed} />
           <button
             className="sidebar-signout"
             onClick={signOut}
