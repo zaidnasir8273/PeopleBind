@@ -2,11 +2,13 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { MessageCircleIcon } from './ui/message-circle'
 import { SendIcon } from './ui/send'
 import { PlusIcon } from './ui/plus'
+import { ClockIcon } from './ui/clock'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { Database } from '../lib/database.types'
 
 type Message = Database['public']['Tables']['support_messages']['Row']
+type ThreadSummary = { id: string; last_message_at: string; preview: string | null }
 
 const WAITING_LABELS = ['Typing', 'Processing', 'Baking your reply']
 const WAITING_TIMEOUT_MS = 45000
@@ -49,6 +51,9 @@ export function SupportChat() {
   const [waiting, setWaiting] = useState(false)
   const [waitingLabelIndex, setWaitingLabelIndex] = useState(0)
   const [escalated, setEscalated] = useState(false)
+  const [view, setView] = useState<'chat' | 'history'>('chat')
+  const [threads, setThreads] = useState<ThreadSummary[]>([])
+  const [loadingThreads, setLoadingThreads] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const waitingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -75,6 +80,16 @@ export function SupportChat() {
     return created.id
   }, [company])
 
+  const loadMessagesInto = useCallback(async (id: string) => {
+    const { data } = await supabase
+      .from('support_messages')
+      .select('*')
+      .eq('thread_id', id)
+      .order('created_at', { ascending: true })
+    setMessages(data ?? [])
+    setEscalated(computeEscalated(data ?? []))
+  }, [])
+
   useEffect(() => {
     if (!company) return
     let cancelled = false
@@ -89,21 +104,13 @@ export function SupportChat() {
       if (cancelled) return
       if (existing) {
         setThreadId(existing.id)
-        const { data } = await supabase
-          .from('support_messages')
-          .select('*')
-          .eq('thread_id', existing.id)
-          .order('created_at', { ascending: true })
-        if (!cancelled) {
-          setMessages(data ?? [])
-          setEscalated(computeEscalated(data ?? []))
-        }
+        await loadMessagesInto(existing.id)
       }
     })()
     return () => {
       cancelled = true
     }
-  }, [company])
+  }, [company, loadMessagesInto])
 
   useEffect(() => {
     if (!threadId) return
@@ -209,6 +216,47 @@ export function SupportChat() {
     setEscalated(false)
     setWaiting(false)
     setDraft('')
+    setView('chat')
+  }
+
+  async function openHistory() {
+    if (!company) return
+    setView('history')
+    setLoadingThreads(true)
+    const { data: threadRows } = await supabase
+      .from('support_threads')
+      .select('id, last_message_at')
+      .eq('company_id', company.id)
+      .order('last_message_at', { ascending: false })
+    const rows = threadRows ?? []
+    // One extra query per thread to grab its latest message as a preview --
+    // a company's support history is small, so this stays cheap.
+    const withPreviews = await Promise.all(
+      rows.map(async (t): Promise<ThreadSummary> => {
+        const { data: last } = await supabase
+          .from('support_messages')
+          .select('body')
+          .eq('thread_id', t.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        return { id: t.id, last_message_at: t.last_message_at, preview: last?.body ?? null }
+      })
+    )
+    setThreads(withPreviews)
+    setLoadingThreads(false)
+  }
+
+  async function openThread(id: string) {
+    if (id === threadId) {
+      setView('chat')
+      return
+    }
+    if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current)
+    setWaiting(false)
+    setThreadId(id)
+    await loadMessagesInto(id)
+    setView('chat')
   }
 
   return (
@@ -221,16 +269,47 @@ export function SupportChat() {
       {open && (
         <div className="notif-panel support-chat-panel">
           <div className="notif-panel-header">
-            <span>Support</span>
-            {messages.length > 0 && (
-              <button type="button" className="link-button" onClick={startNewChat} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5 }}>
-                <PlusIcon size={13} /> New chat
-              </button>
-            )}
+            <span>{view === 'history' ? 'Conversations' : 'Support'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {view === 'history' ? (
+                <button type="button" className="link-button" onClick={() => setView('chat')} style={{ fontSize: 12.5 }}>
+                  Back
+                </button>
+              ) : (
+                <>
+                  <button type="button" className="link-button" onClick={openHistory} aria-label="Past conversations" data-tooltip="Past conversations">
+                    <ClockIcon size={14} />
+                  </button>
+                  {messages.length > 0 && (
+                    <button type="button" className="link-button" onClick={startNewChat} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5 }}>
+                      <PlusIcon size={13} /> New chat
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           <div className="support-chat-list" ref={listRef}>
-            {messages.length === 0 ? (
+            {view === 'history' ? (
+              loadingThreads ? (
+                <p className="muted" style={{ padding: '20px 16px', fontSize: 13 }}>Loading…</p>
+              ) : threads.length === 0 ? (
+                <p className="muted" style={{ padding: '20px 16px', fontSize: 13 }}>No past conversations yet.</p>
+              ) : (
+                threads.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`support-chat-thread-item${t.id === threadId ? ' active' : ''}`}
+                    onClick={() => openThread(t.id)}
+                  >
+                    <span className="support-chat-thread-preview">{t.preview || '(no messages yet)'}</span>
+                    <span className="support-chat-thread-time">{relativeTime(t.last_message_at)}</span>
+                  </button>
+                ))
+              )
+            ) : messages.length === 0 ? (
               <p className="muted" style={{ padding: '20px 16px', fontSize: 13 }}>
                 Message our team and we'll get back to you here.
               </p>
@@ -242,7 +321,7 @@ export function SupportChat() {
                 </div>
               ))
             )}
-            {waiting && (
+            {view === 'chat' && waiting && (
               <div className="support-chat-typing">
                 <div className="support-chat-typing-bubble">
                   <span className="support-chat-typing-dot" />
@@ -254,18 +333,20 @@ export function SupportChat() {
             )}
           </div>
 
-          <div className="support-chat-input-row">
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a message…"
-              rows={1}
-            />
-            <button type="button" className="btn-icon-round" onClick={send} disabled={sending || !draft.trim()} aria-label="Send">
-              <SendIcon size={15} />
-            </button>
-          </div>
+          {view === 'chat' && (
+            <div className="support-chat-input-row">
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type a message…"
+                rows={1}
+              />
+              <button type="button" className="btn-icon-round" onClick={send} disabled={sending || !draft.trim()} aria-label="Send">
+                <SendIcon size={15} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
