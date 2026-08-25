@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import { NotificationBell } from '../components/NotificationBell'
 import { GaugeIcon } from '../components/ui/gauge'
 import { BoxesIcon } from '../components/ui/boxes'
 import { TicketIcon } from '../components/ui/ticket'
@@ -117,6 +118,9 @@ export default function PlatformAdminShell() {
         </div>
       </aside>
       <div className="app-content">
+        <div className="topbar">
+          <NotificationBell portal="platform" />
+        </div>
         <Outlet />
       </div>
     </div>

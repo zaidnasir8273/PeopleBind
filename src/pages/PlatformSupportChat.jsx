@@ -47,6 +47,22 @@ export default function PlatformSupportChat() {
     loadThreads()
   }, [loadThreads])
 
+  // The list needs to reflect every company's conversations, not just
+  // whichever thread happens to be open -- last_message_at gets touched on
+  // every new message (including brand-new threads), so listening for that
+  // covers both without a separate subscription per thread.
+  useEffect(() => {
+    const channel = supabase
+      .channel('platform_support_threads')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_threads' }, () => {
+        loadThreads()
+      })
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [loadThreads])
+
   useEffect(() => {
     if (!activeThreadId) return
     let cancelled = false

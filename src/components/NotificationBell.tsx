@@ -44,6 +44,7 @@ export function NotificationBell({ portal = 'app' }: { portal?: string }) {
     const { data } = await supabase
       .from('notifications')
       .select('id, type, title, body, link, read_at, created_at')
+      .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(20)
     setItems(data ?? [])
