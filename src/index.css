@@ -1398,15 +1398,15 @@ button:active:not(:disabled) {
   text-decoration: none;
 }
 
-/* ---------- login split screen ---------- */
+/* ---------- auth split screen (login + signup) ---------- */
 
-.login-split {
+.auth-split {
   min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(380px, 1fr) minmax(380px, 1fr);
 }
 
-.login-panel-left {
+.auth-panel-left {
   background: var(--paper);
   display: flex;
   align-items: center;
@@ -1414,12 +1414,12 @@ button:active:not(:disabled) {
   padding: 48px 40px;
 }
 
-.login-form-wrap {
+.auth-form-wrap {
   width: 100%;
   max-width: 380px;
 }
 
-.login-panel-right {
+.auth-panel-right {
   position: relative;
   overflow: hidden;
   background: var(--accent);
@@ -1433,7 +1433,7 @@ button:active:not(:disabled) {
   text-align: center;
 }
 
-.login-quote-mark {
+.auth-quote-mark {
   position: absolute;
   top: 12px;
   left: 32px;
@@ -1444,24 +1444,29 @@ button:active:not(:disabled) {
   user-select: none;
 }
 
-.login-quote-stage {
+.auth-quote-stage {
   width: 100%;
   max-width: 560px;
-  min-height: 220px;
+  min-height: 260px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.login-quote {
+.auth-quote {
   margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 26px;
+  gap: 22px;
 }
 
-.login-quote-text {
+.auth-quote-motif {
+  width: 120px;
+  height: 84px;
+}
+
+.auth-quote-text {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 500;
@@ -1471,38 +1476,38 @@ button:active:not(:disabled) {
   color: #fff;
 }
 
-.login-quote-text::before {
+.auth-quote-text::before {
   content: '\201C';
 }
 
-.login-quote-text::after {
+.auth-quote-text::after {
   content: '\201D';
 }
 
-.login-quote-author {
+.auth-quote-author {
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.login-quote-name {
+.auth-quote-name {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 15px;
   color: #fff;
 }
 
-.login-quote-role {
+.auth-quote-role {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.65);
 }
 
-.login-quote-dots {
+.auth-quote-dots {
   display: flex;
   gap: 9px;
 }
 
-.login-quote-dot {
+.auth-quote-dot {
   width: 8px;
   height: 8px;
   padding: 0;
@@ -1513,17 +1518,17 @@ button:active:not(:disabled) {
   transition: background var(--duration) var(--ease), transform var(--duration) var(--ease);
 }
 
-.login-quote-dot.active {
+.auth-quote-dot.active {
   background: #fff;
   transform: scale(1.3);
 }
 
 @media (max-width: 860px) {
-  .login-split {
+  .auth-split {
     grid-template-columns: 1fr;
   }
 
-  .login-panel-right {
+  .auth-panel-right {
     display: none;
   }
 }
