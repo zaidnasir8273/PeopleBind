@@ -5,13 +5,15 @@ import { MagneticButton } from './motion/MagneticButton'
 
 const navVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+  show: { transition: { staggerChildren: 0.1, delayChildren: 0.15 } },
 }
 
 const navItemVariants = {
-  hidden: { opacity: 0, y: 8 },
-  show: { opacity: 1, y: 0, transition: { duration: DURATION.base, ease: EASE } },
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: DURATION.slow, ease: EASE } },
 }
+
+const linkHover = { y: -3, transition: SPRING.snappy }
 
 const MotionLink = resolveMotionComponent(Link)
 
@@ -23,20 +25,10 @@ export function SiteHeader() {
         <span className="wm-people">People</span><span className="wm-bind">Bind</span>
       </FadeIn>
       <motion.nav className="header-nav" initial="hidden" animate="show" variants={navVariants}>
-        <MotionLink
-          to="/pricing"
-          className="header-link"
-          variants={navItemVariants}
-          whileHover={{ y: -1, transition: SPRING.snappy }}
-        >
+        <MotionLink to="/pricing" className="header-link" variants={navItemVariants} whileHover={linkHover}>
           Pricing
         </MotionLink>
-        <MotionLink
-          to="/login"
-          className="header-link"
-          variants={navItemVariants}
-          whileHover={{ y: -1, transition: SPRING.snappy }}
-        >
+        <MotionLink to="/login" className="header-link" variants={navItemVariants} whileHover={linkHover}>
           Sign in
         </MotionLink>
         <MagneticButton as={Link} to="/signup" className="header-cta" variants={navItemVariants}>

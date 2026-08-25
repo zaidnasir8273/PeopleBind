@@ -612,7 +612,7 @@ h1 {
 
 .modules-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   margin-bottom: 40px;
 }
@@ -4893,10 +4893,24 @@ a.attention-item:hover {
 
 .header-link {
   position: relative;
+  display: inline-block;
   font-size: 14px;
   color: var(--ink-soft);
   text-decoration: none;
   font-weight: 500;
+  transition: color 0.25s var(--ease-out);
+}
+
+/*
+ * The lift-on-hover for this link is driven by Framer Motion (whileHover
+ * in SiteHeader.jsx), not CSS -- the component already writes an inline
+ * `transform` for its mount animation, and inline styles always beat a
+ * stylesheet rule regardless of specificity, so a competing CSS
+ * `transform` here would silently never apply. Color and the underline
+ * sweep below stay in CSS since neither touches `transform`.
+ */
+.header-link:hover {
+  color: var(--ink);
 }
 
 .header-link::after {
@@ -4904,16 +4918,13 @@ a.attention-item:hover {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -3px;
-  height: 1px;
-  background: currentColor;
+  bottom: -4px;
+  height: 2px;
+  border-radius: 100px;
+  background: var(--teal-deep);
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform var(--duration) var(--ease-out);
-}
-
-.header-link:hover {
-  color: var(--ink);
+  transition: transform 0.3s var(--ease-out);
 }
 
 .header-link:hover::after {
@@ -4929,8 +4940,10 @@ a.attention-item:hover {
   padding: 8px 16px;
   border-radius: var(--radius);
   text-decoration: none;
+  transition: background 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out);
 }
 
 .header-cta:hover {
   background: var(--teal);
+  box-shadow: 0 8px 18px rgba(18, 63, 51, 0.28);
 }
