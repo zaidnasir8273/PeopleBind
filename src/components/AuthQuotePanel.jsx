@@ -29,16 +29,76 @@ const HR_QUOTES = [
     motif: 'align',
   },
   {
-    text: 'Employees who feel genuinely cared for are more productive, more satisfied, and more fulfilled.',
-    author: 'Anne M. Mulcahy',
-    role: 'Former CEO, Xerox',
-    motif: 'ripple',
-  },
-  {
     text: 'The way your employees feel is the way your customers will feel.',
     author: 'Sybil F. Stershic',
     role: 'Author, marketing strategist',
     motif: 'mirror',
+  },
+  {
+    text: "Great things in business are never done by one person. They're done by a team of people.",
+    author: 'Steve Jobs',
+    role: 'Co-founder, Apple',
+    motif: 'align',
+  },
+  {
+    text: 'Coming together is a beginning; keeping together is progress; working together is success.',
+    author: 'Henry Ford',
+    role: 'Founder, Ford Motor Company',
+    motif: 'growth',
+  },
+  {
+    text: 'Leadership is about making others better as a result of your presence and making sure that impact lasts in your absence.',
+    author: 'Sheryl Sandberg',
+    role: 'Author, Lean In',
+    motif: 'ripple',
+  },
+  {
+    text: 'As we look ahead into the next century, leaders will be those who empower others.',
+    author: 'Bill Gates',
+    role: 'Co-founder, Microsoft',
+    motif: 'align',
+  },
+  {
+    text: "People will forget what you said, people will forget what you did, but people will never forget how you made them feel.",
+    author: 'Maya Angelou',
+    role: 'Poet and author',
+    motif: 'mirror',
+  },
+  {
+    text: 'Teamwork makes the dream work.',
+    author: 'John C. Maxwell',
+    role: 'Author, leadership expert',
+    motif: 'growth',
+  },
+  {
+    text: 'Individual commitment to a group effort — that is what makes a team work, a company work, a society work, a civilization work.',
+    author: 'Vince Lombardi',
+    role: 'NFL Hall of Fame coach',
+    motif: 'growth',
+  },
+  {
+    text: "Take care of your employees, and they'll take care of your customers.",
+    author: 'Herb Kelleher',
+    role: 'Co-founder, Southwest Airlines',
+    motif: 'pass-on',
+  },
+  {
+    text: 'To win in the marketplace, you must first win in the workplace.',
+    author: 'Doug Conant',
+    role: 'Former CEO, Campbell Soup Company',
+    motif: 'absorb',
+  },
+  {
+    text: "People are definitely a company's greatest asset. A company is only as good as the people it keeps.",
+    author: 'Mary Kay Ash',
+    role: 'Founder, Mary Kay Inc.',
+    motif: 'ripple',
+  },
+  {
+    text: 'The key to successful leadership today is influence, not authority.',
+    author: 'Ken Blanchard',
+    role: 'Author, The One Minute Manager',
+    motif: 'absorb',
   },
 ]
 

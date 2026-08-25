@@ -115,6 +115,7 @@
   --font-display: "Inter", "Segoe UI", sans-serif;
   --font-body: "Inter", "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-quote: "Lora", "Georgia", serif;
 
   --radius-sm: 6px;
   --radius: 8px;
@@ -1468,11 +1469,12 @@ button:active:not(:disabled) {
 
 .auth-quote-text {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-quote);
+  font-style: italic;
   font-weight: 500;
   font-size: clamp(24px, 2.6vw, 34px);
   line-height: 1.45;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   color: #fff;
 }
 
@@ -1504,12 +1506,15 @@ button:active:not(:disabled) {
 
 .auth-quote-dots {
   display: flex;
-  gap: 9px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+  max-width: 260px;
 }
 
 .auth-quote-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   padding: 0;
   border: none;
   border-radius: 50%;
