@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, useReducedMotion } from 'motion/react'
-import { Reveal, RevealGroup, RevealItem } from '../components/motion'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { ChevronDown } from 'lucide-react'
+import { DURATION, EASE, Reveal, RevealGroup, RevealItem } from '../components/motion'
 import { MagneticButton } from '../components/motion/MagneticButton'
 import { SiteHeader } from '../components/SiteHeader'
 import { SiteFooter } from '../components/SiteFooter'
@@ -16,10 +17,10 @@ import { DocumentStack } from '../components/motion/widgets/DocumentStack'
 import { PayrollCalculation } from '../components/motion/widgets/PayrollCalculation'
 import { RecruitmentPipeline } from '../components/motion/widgets/RecruitmentPipeline'
 import { ReportsChart } from '../components/motion/widgets/ReportsChart'
+import { PerformanceGoals } from '../components/motion/widgets/PerformanceGoals'
 import { TimerIcon } from '../components/ui/timer'
 import { ReceiptIcon } from '../components/ui/receipt'
 import { LaptopMinimalCheckIcon } from '../components/ui/laptop-minimal-check'
-import { TrendingUpIcon } from '../components/ui/trending-up'
 import { HeartHandshakeIcon } from '../components/ui/heart-handshake'
 import { SettingsIcon } from '../components/ui/settings'
 
@@ -81,13 +82,18 @@ const FEATURED_MODULES = [
     copy: 'Statutory and operational reports, plus live dashboards you build from real data.',
     Widget: ReportsChart,
   },
+  {
+    key: 'performance',
+    label: 'Performance',
+    copy: 'Goals, KPIs, and review cycles — progress tracked against real numbers, not gut feel.',
+    Widget: PerformanceGoals,
+  },
 ]
 
 const OTHER_MODULES = [
   { label: 'Timesheet', icon: TimerIcon },
   { label: 'Expenses', icon: ReceiptIcon },
   { label: 'Assets', icon: LaptopMinimalCheckIcon },
-  { label: 'Performance', icon: TrendingUpIcon },
   { label: 'Announcements & Kudos', icon: HeartHandshakeIcon },
   { label: 'Settings', icon: SettingsIcon },
 ]
@@ -100,6 +106,66 @@ const COMPLIANCE_ITEMS = [
   'Gratuity',
   'Full & Final Settlement',
 ]
+
+const FAQ_ITEMS = [
+  {
+    q: 'What is PeopleBind?',
+    a: 'A cloud-based HR and payroll platform built for Pakistani businesses — employee records, attendance, leave, payroll, recruitment, documents, and reporting in one place, with every number traceable back to its source.',
+  },
+  {
+    q: 'Which statutory deductions does it calculate automatically?',
+    a: 'SESSI, PESSI, KPESSI, BESSI, Provident Fund, Professional Tax, EOBI, gratuity, and full & final settlement — all calculated from your own configured rates, not a generic template.',
+  },
+  {
+    q: 'Can employees access their own records?',
+    a: 'Yes. Employees get their own sign-in to view payslips, apply for leave, and update their own information, without going through HR for every request.',
+  },
+  {
+    q: 'How is PeopleBind priced?',
+    a: 'One plan, the full platform included — no feature-gated tiers.',
+    link: { to: '/pricing', label: 'Get a price quote' },
+  },
+  {
+    q: "Is my company's data kept separate from other companies?",
+    a: "Yes. Every company's data is isolated at the database level — no company can see another's records.",
+  },
+  {
+    q: 'Can I try it before committing to anything?',
+    a: 'Set up your company in a few minutes — no sales call required.',
+    link: { to: '/signup', label: 'Sign up' },
+  },
+  {
+    q: 'Is PeopleBind still being actively developed?',
+    a: 'Yes — PeopleBind is built by UpScale in Islamabad and under active development, with new modules and refinements shipping regularly.',
+  },
+]
+
+function FaqItem({ question, answer, link }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="faq-item">
+      <button type="button" className="faq-question" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        {question}
+        <ChevronDown size={16} className="faq-chevron" style={{ transform: open ? 'rotate(180deg)' : 'none' }} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: DURATION.base, ease: EASE }}
+            style={{ overflow: 'hidden' }}
+          >
+            <p className="faq-answer">
+              {answer} {link && <Link to={link.to}>{link.label} →</Link>}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
 
 const EMPLOYEE_CARDS = [
   { name: 'Ahmed Khan', role: 'Finance', className: 'employee-card ec-1', delay: 0.9, floatDuration: 4.2, depth: 1, rotate: 1.5 },
@@ -223,6 +289,20 @@ export default function Landing() {
         <RevealGroup as="div" className="compliance-chip-row" staggerDelay={0.05}>
           {COMPLIANCE_ITEMS.map((item) => (
             <RevealItem as="span" key={item} className="compliance-chip">{item}</RevealItem>
+          ))}
+        </RevealGroup>
+      </section>
+
+      <section className="faq-section">
+        <Reveal as="p" className="section-eyebrow">QUESTIONS</Reveal>
+        <Reveal as="h2" delay={0.05} className="section-title">
+          Frequently asked questions
+        </Reveal>
+        <RevealGroup as="div" className="faq-list" staggerDelay={0.04}>
+          {FAQ_ITEMS.map(({ q, a, link }) => (
+            <RevealItem as="div" key={q}>
+              <FaqItem question={q} answer={a} link={link} />
+            </RevealItem>
           ))}
         </RevealGroup>
       </section>
