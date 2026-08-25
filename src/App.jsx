@@ -5,6 +5,8 @@ import { AuthProvider } from './context/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 import Landing from './pages/Landing'
+import Pricing from './pages/Pricing'
+import PhotoCredits from './pages/PhotoCredits'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import InviteAccept from './pages/InviteAccept'
@@ -37,6 +39,7 @@ import PlatformDashboard from './pages/PlatformDashboard'
 import PlatformCompanies from './pages/PlatformCompanies'
 import PlatformSupportChat from './pages/PlatformSupportChat'
 import PlatformTickets from './pages/PlatformTickets'
+import PlatformSalesInquiries from './pages/PlatformSalesInquiries'
 import PlatformPayroll from './pages/PlatformPayroll'
 import PlatformHelp from './pages/PlatformHelp'
 import { EmployeeProtectedRoute } from './components/EmployeeProtectedRoute'
@@ -75,6 +78,8 @@ export default function App() {
         />
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/photo-credits" element={<PhotoCredits />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/invite/:token" element={<InviteAccept />} />

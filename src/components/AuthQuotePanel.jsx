@@ -1,104 +1,138 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { DURATION, EASE_INOUT } from './motion'
 import { QuoteMotif } from './motion/QuoteMotif'
+import bransonPhoto from '../assets/authors/richard-branson.webp'
+import sinekPhoto from '../assets/authors/simon-sinek.webp'
+import collinsPhoto from '../assets/authors/jim-collins.webp'
+import jobsPhoto from '../assets/authors/steve-jobs.webp'
+import fordPhoto from '../assets/authors/henry-ford.webp'
+import sandbergPhoto from '../assets/authors/sheryl-sandberg.webp'
+import gatesPhoto from '../assets/authors/bill-gates.webp'
+import angelouPhoto from '../assets/authors/maya-angelou.webp'
+import maxwellPhoto from '../assets/authors/john-maxwell.webp'
+import lombardiPhoto from '../assets/authors/vince-lombardi.webp'
+import kelleherPhoto from '../assets/authors/herb-kelleher.webp'
+import blanchardPhoto from '../assets/authors/ken-blanchard.webp'
 
+// A few authors (Stershic, Drucker, Conant, Mary Kay Ash) have no photo
+// here on purpose -- either nothing exists on Wikimedia Commons under a
+// free license, or what exists has a genuinely doubtful license chain
+// (see /photo-credits). They fall back to an initials avatar instead of
+// a guessed/borrowed image.
 const HR_QUOTES = [
   {
     text: "Take care of your employees and they'll take care of your business.",
     author: 'Richard Branson',
     role: 'Founder, Virgin Group',
     motif: 'growth',
+    photo: bransonPhoto,
   },
   {
     text: 'Culture eats strategy for breakfast.',
     author: 'Peter Drucker',
     role: 'Management consultant',
     motif: 'absorb',
+    initials: 'PD',
   },
   {
     text: 'Customers will never love a company until the employees love it first.',
     author: 'Simon Sinek',
     role: 'Author, Start with Why',
     motif: 'pass-on',
+    photo: sinekPhoto,
   },
   {
     text: 'Great vision without great people is irrelevant.',
     author: 'Jim Collins',
     role: 'Author, Good to Great',
     motif: 'align',
+    photo: collinsPhoto,
   },
   {
     text: 'The way your employees feel is the way your customers will feel.',
     author: 'Sybil F. Stershic',
     role: 'Author, marketing strategist',
     motif: 'mirror',
+    initials: 'SS',
   },
   {
     text: "Great things in business are never done by one person. They're done by a team of people.",
     author: 'Steve Jobs',
     role: 'Co-founder, Apple',
     motif: 'align',
+    photo: jobsPhoto,
   },
   {
     text: 'Coming together is a beginning; keeping together is progress; working together is success.',
     author: 'Henry Ford',
     role: 'Founder, Ford Motor Company',
     motif: 'growth',
+    photo: fordPhoto,
   },
   {
     text: 'Leadership is about making others better as a result of your presence and making sure that impact lasts in your absence.',
     author: 'Sheryl Sandberg',
     role: 'Author, Lean In',
     motif: 'ripple',
+    photo: sandbergPhoto,
   },
   {
     text: 'As we look ahead into the next century, leaders will be those who empower others.',
     author: 'Bill Gates',
     role: 'Co-founder, Microsoft',
     motif: 'align',
+    photo: gatesPhoto,
   },
   {
     text: "People will forget what you said, people will forget what you did, but people will never forget how you made them feel.",
     author: 'Maya Angelou',
     role: 'Poet and author',
     motif: 'mirror',
+    photo: angelouPhoto,
   },
   {
     text: 'Teamwork makes the dream work.',
     author: 'John C. Maxwell',
     role: 'Author, leadership expert',
     motif: 'growth',
+    photo: maxwellPhoto,
   },
   {
     text: 'Individual commitment to a group effort — that is what makes a team work, a company work, a society work, a civilization work.',
     author: 'Vince Lombardi',
     role: 'NFL Hall of Fame coach',
     motif: 'growth',
+    photo: lombardiPhoto,
   },
   {
     text: "Take care of your employees, and they'll take care of your customers.",
     author: 'Herb Kelleher',
     role: 'Co-founder, Southwest Airlines',
     motif: 'pass-on',
+    photo: kelleherPhoto,
   },
   {
     text: 'To win in the marketplace, you must first win in the workplace.',
     author: 'Doug Conant',
     role: 'Former CEO, Campbell Soup Company',
     motif: 'absorb',
+    initials: 'DC',
   },
   {
     text: "People are definitely a company's greatest asset. A company is only as good as the people it keeps.",
     author: 'Mary Kay Ash',
     role: 'Founder, Mary Kay Inc.',
     motif: 'ripple',
+    initials: 'MA',
   },
   {
     text: 'The key to successful leadership today is influence, not authority.',
     author: 'Ken Blanchard',
     role: 'Author, The One Minute Manager',
     motif: 'absorb',
+    photo: blanchardPhoto,
   },
 ]
 
@@ -131,22 +165,34 @@ export function AuthQuotePanel() {
             <QuoteMotif variant={quote.motif} className="auth-quote-motif" />
             <blockquote className="auth-quote-text">{quote.text}</blockquote>
             <figcaption className="auth-quote-author">
-              <span className="auth-quote-name">{quote.author}</span>
-              <span className="auth-quote-role">{quote.role}</span>
+              {quote.photo ? (
+                <img src={quote.photo} alt={quote.author} className="auth-quote-avatar" />
+              ) : (
+                <span className="auth-quote-avatar auth-quote-avatar-initials" aria-hidden="true">
+                  {quote.initials}
+                </span>
+              )}
+              <span className="auth-quote-author-text">
+                <span className="auth-quote-name">{quote.author}</span>
+                <span className="auth-quote-role">{quote.role}</span>
+              </span>
             </figcaption>
           </motion.figure>
         </AnimatePresence>
       </div>
-      <div className="auth-quote-dots">
-        {HR_QUOTES.map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            className={`auth-quote-dot${i === index ? ' active' : ''}`}
-            aria-label={`Show quote ${i + 1}`}
-            onClick={() => setIndex(i)}
-          />
-        ))}
+      <div className="auth-quote-footer">
+        <div className="auth-quote-dots">
+          {HR_QUOTES.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              className={`auth-quote-dot${i === index ? ' active' : ''}`}
+              aria-label={`Show quote ${i + 1}`}
+              onClick={() => setIndex(i)}
+            />
+          ))}
+        </div>
+        <Link to="/photo-credits" className="auth-quote-credits">Photo credits</Link>
       </div>
     </div>
   )

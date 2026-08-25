@@ -4,6 +4,7 @@ import { GaugeIcon } from '../components/ui/gauge'
 import { BoxesIcon } from '../components/ui/boxes'
 import { TicketIcon } from '../components/ui/ticket'
 import { MessageCircleIcon } from '../components/ui/message-circle'
+import { PhoneCallIcon } from '../components/ui/phone-call'
 import { WalletIcon } from '../components/ui/wallet'
 import { BookTextIcon } from '../components/ui/book-text'
 import { LogoutIcon } from '../components/ui/logout'
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { to: '/platform-admin/companies', label: 'Companies', icon: BoxesIcon },
   { to: '/platform-admin/chat', label: 'Live chat', icon: MessageCircleIcon },
   { to: '/platform-admin/tickets', label: 'Support tickets', icon: TicketIcon },
+  { to: '/platform-admin/quotes', label: 'Price quote requests', icon: PhoneCallIcon },
   { to: '/platform-admin/payroll', label: 'Payroll monitor', icon: WalletIcon },
   { to: '/platform-admin/help', label: 'Documentation', icon: BookTextIcon },
 ]

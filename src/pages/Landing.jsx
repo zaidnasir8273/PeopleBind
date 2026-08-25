@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'motion/react'
-import { FadeIn, Reveal, RevealGroup, RevealItem } from '../components/motion'
+import { Reveal, RevealGroup, RevealItem } from '../components/motion'
 import { MagneticButton } from '../components/motion/MagneticButton'
+import { SiteHeader } from '../components/SiteHeader'
+import { SiteFooter } from '../components/SiteFooter'
 import { TiltCard } from '../components/motion/TiltCard'
 import { FloatingEmployeeCard } from '../components/motion/FloatingEmployeeCard'
 import { AnimatedNumber } from '../components/motion/AnimatedNumber'
@@ -116,16 +118,7 @@ export default function Landing() {
 
   return (
     <div className="page">
-      <header className="header">
-        <FadeIn as={Link} to="/" className="wordmark" y={6}>
-          <span className="wordmark-mark" aria-hidden="true" />
-          <span className="wm-people">People</span><span className="wm-bind">Bind</span>
-        </FadeIn>
-        <nav className="header-nav">
-          <Link to="/login" className="header-link">Sign in</Link>
-          <MagneticButton as={Link} to="/signup" className="header-cta">Sign up</MagneticButton>
-        </nav>
-      </header>
+      <SiteHeader />
 
       <main className="hero">
         <motion.div
@@ -240,10 +233,7 @@ export default function Landing() {
         <MagneticButton as={Link} to="/signup" className="header-cta closing-cta-btn">Sign up</MagneticButton>
       </Reveal>
 
-      <footer className="footer">
-        <span><span className="wm-people">People</span><span className="wm-bind">Bind</span></span>
-        <span>© 2026</span>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }
