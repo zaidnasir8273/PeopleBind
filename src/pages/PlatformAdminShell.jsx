@@ -12,6 +12,7 @@ import { PanelLeftCloseIcon } from '../components/ui/panel-left-close'
 import { PanelLeftOpenIcon } from '../components/ui/panel-left-open'
 import { useAuth } from '../context/AuthContext'
 import { useSidebarCollapse } from '../hooks/useSidebarCollapse'
+import { InstallAppButton } from '../components/InstallAppButton'
 
 const NAV_ITEMS = [
   { to: '/platform-admin', label: 'Dashboard', icon: GaugeIcon, end: true },
@@ -99,6 +100,7 @@ export default function PlatformAdminShell() {
             </NavLink>
           )}
           {!collapsed && <div className="sidebar-user-name">{profile?.full_name || profile?.email}</div>}
+          <InstallAppButton collapsed={collapsed} />
           <button
             className="sidebar-signout"
             onClick={signOut}
