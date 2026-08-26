@@ -9,6 +9,7 @@ import { SiteFooter } from '../components/SiteFooter'
 import { ModuleShowcase } from '../components/ModuleShowcase'
 import { DashboardMockup } from '../components/motion/widgets/DashboardMockup'
 import { WorkflowTimeline } from '../components/motion/WorkflowTimeline'
+import { AiSupportMockup } from '../components/motion/AiSupportMockup'
 import { TiltCard } from '../components/motion/TiltCard'
 import { FloatingEmployeeCard } from '../components/motion/FloatingEmployeeCard'
 import { AnimatedNumber } from '../components/motion/AnimatedNumber'
@@ -317,6 +318,30 @@ export default function Landing() {
           </Reveal>
         </div>
         <WorkflowTimeline />
+      </section>
+
+      <section className="ai-section">
+        <Reveal as="p" className="section-eyebrow">BUILT IN</Reveal>
+        <Reveal as="h2" delay={0.05} className="section-title">
+          Your HR assistant, built into the workflow.
+        </Reveal>
+        <div className="ai-section-inner">
+          <Reveal delay={0.1} className="ai-section-copy">
+            <p className="pricing-lede" style={{ margin: 0, textAlign: 'left' }}>
+              Employees message support right from the app. PeopleBind
+              answers what it can immediately — and when it can't, it hands
+              the conversation to a real person instead of leaving anyone
+              stuck.
+            </p>
+            <p className="ai-section-caption">
+              Built into the company support chat — not a general chatbot,
+              a fallback that always ends with a human.
+            </p>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <AiSupportMockup />
+          </Reveal>
+        </div>
       </section>
 
       <section className="compliance-section">

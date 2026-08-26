@@ -1291,6 +1291,71 @@ h1 {
   }
 }
 
+/* ---------- AI support section ---------- */
+
+.ai-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 64px clamp(20px, 5vw, 64px);
+  border-top: 1px solid var(--line);
+}
+
+.ai-section-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.ai-section-copy {
+  max-width: 420px;
+}
+
+.ai-section-caption {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
+.ai-mockup {
+  position: relative;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 28px 24px;
+  min-height: 220px;
+  overflow: hidden;
+}
+
+.ai-mockup-motif {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  width: 64px;
+  height: 44px;
+  opacity: 0.5;
+}
+
+.ai-mockup-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (max-width: 860px) {
+  .ai-section-inner {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .ai-section-copy {
+    max-width: none;
+  }
+}
+
 /* ---------- compliance section ---------- */
 
 .compliance-lede {
