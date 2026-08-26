@@ -13,12 +13,17 @@ const NET = 96800
 
 export function PayrollCalculation({ className }) {
   const [net, setNet] = useState(0)
+  const [status, setStatus] = useState('idle')
 
   return (
     <motion.div
       className={className}
       whileInView="visible"
-      onViewportEnter={() => setTimeout(() => setNet(NET), 500)}
+      onViewportEnter={() => {
+        setTimeout(() => setNet(NET), 500)
+        setTimeout(() => setStatus('processing'), 1100)
+        setTimeout(() => setStatus('processed'), 2000)
+      }}
       viewport={{ once: true, margin: '-40px' }}
     >
       <div className="widget-payroll-rows">
@@ -44,6 +49,24 @@ export function PayrollCalculation({ className }) {
           Rs. <AnimatedNumber value={net} />
         </span>
       </div>
+      {status !== 'idle' && (
+        <motion.div
+          key={status}
+          className="widget-card-row widget-payroll-status"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: DURATION.base, ease: EASE }}
+        >
+          {status === 'processing' ? (
+            <>
+              <span className="status-dot" />
+              <span className="widget-mono">Processing…</span>
+            </>
+          ) : (
+            <span className="widget-status-badge in">✓ Payroll processed</span>
+          )}
+        </motion.div>
+      )}
     </motion.div>
   )
 }

@@ -8,5 +8,12 @@ const STAGES = [
 ]
 
 export function LeaveApprovalFlow({ className }) {
-  return <StageFlow className={className} stages={STAGES} />
+  return (
+    <div className={className}>
+      <p className="widget-flow-context">Sarah Ahmed · Annual Leave · Aug 28–30</p>
+      <div className="widget-leave-flow">
+        <StageFlow stages={STAGES} />
+      </div>
+    </div>
+  )
 }

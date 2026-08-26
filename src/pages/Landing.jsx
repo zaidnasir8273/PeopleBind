@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ChevronDown } from 'lucide-react'
-import { DURATION, EASE, Reveal, RevealGroup, RevealItem } from '../components/motion'
+import { DURATION, EASE, Reveal, RevealGroup, RevealItem, StaggerContainer, StaggerItem } from '../components/motion'
 import { MagneticButton } from '../components/motion/MagneticButton'
 import { SiteHeader } from '../components/SiteHeader'
 import { SiteFooter } from '../components/SiteFooter'
@@ -14,7 +14,7 @@ import { QuoteMotif } from '../components/motion/QuoteMotif'
 import { TiltCard } from '../components/motion/TiltCard'
 import { FloatingEmployeeCard } from '../components/motion/FloatingEmployeeCard'
 import { AnimatedNumber } from '../components/motion/AnimatedNumber'
-import { PeopleNetwork } from '../components/motion/widgets/PeopleNetwork'
+import { EmployeeProfile } from '../components/motion/widgets/EmployeeProfile'
 import { AttendanceAnimation } from '../components/motion/widgets/AttendanceAnimation'
 import { LeaveApprovalFlow } from '../components/motion/widgets/LeaveApprovalFlow'
 import { OrganizationChart } from '../components/motion/widgets/OrganizationChart'
@@ -43,7 +43,7 @@ const FEATURED_MODULES = [
     key: 'people',
     label: 'People',
     copy: 'Every hire flows straight from application to a real employee record — nothing re-typed.',
-    Widget: PeopleNetwork,
+    Widget: EmployeeProfile,
   },
   {
     key: 'attendance',
@@ -215,6 +215,26 @@ export default function Landing() {
           </p>
         </motion.div>
 
+        <div className="hero-visual-col">
+        <StaggerContainer as="div" className="stat-row hero-metrics-row" staggerDelay={0.06}>
+          <StaggerItem as="div" className="stat-card hero-stat-card">
+            <span className="stat-label">Employees</span>
+            <AnimatedNumber value={24} className="stat-value" />
+          </StaggerItem>
+          <StaggerItem as="div" className="stat-card hero-stat-card">
+            <span className="stat-label">Present today</span>
+            <AnimatedNumber value={21} className="stat-value" />
+          </StaggerItem>
+          <StaggerItem as="div" className="stat-card hero-stat-card">
+            <span className="stat-label">On leave</span>
+            <AnimatedNumber value={2} className="stat-value" />
+          </StaggerItem>
+          <StaggerItem as="div" className="stat-card hero-stat-card">
+            <span className="stat-label">Payroll</span>
+            <span className="stat-value">Rs. <AnimatedNumber value={1245000} /></span>
+          </StaggerItem>
+        </StaggerContainer>
+
         <div className="hero-payroll-visual">
           <TiltCard className="payslip" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}>
             <div className="payslip-head">
@@ -252,6 +272,7 @@ export default function Landing() {
               <span className="widget-status-badge in employee-card-chip">{text}</span>
             </FloatingEmployeeCard>
           ))}
+        </div>
         </div>
       </main>
 

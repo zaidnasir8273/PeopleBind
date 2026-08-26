@@ -2,9 +2,9 @@ import { motion } from 'motion/react'
 import { DURATION, EASE } from '../index'
 
 const GOALS = [
-  { label: 'Sales target', value: 0.82 },
-  { label: 'CSAT score', value: 0.94 },
-  { label: 'On-time delivery', value: 0.76 },
+  { label: 'Productivity', value: 0.82 },
+  { label: 'Goals completed', value: 0.94 },
+  { label: 'Attendance', value: 0.76 },
 ]
 
 export function PerformanceGoals({ className }) {
