@@ -1439,22 +1439,51 @@ h1 {
 
 /* ---------- closing CTA ---------- */
 
+.closing-cta-outer {
+  position: relative;
+  overflow: hidden;
+  background: var(--accent);
+}
+
+.closing-cta-motif {
+  position: absolute;
+  bottom: -10px;
+  right: 6%;
+  width: 140px;
+  height: 140px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 .closing-cta {
+  position: relative;
   max-width: 1200px;
   margin: 0 auto;
   padding: 72px clamp(20px, 5vw, 64px) 80px;
   text-align: center;
-  border-top: 1px solid var(--line);
+}
+
+.closing-cta .section-title {
+  color: #fff;
 }
 
 .closing-cta-copy {
-  color: var(--ink-soft);
+  color: rgba(255, 255, 255, 0.75);
   font-size: 14px;
   margin: 0 0 28px;
 }
 
 .closing-cta-btn {
   display: inline-flex;
+}
+
+.closing-cta .closing-cta-btn {
+  background: #fff;
+  color: var(--accent);
+}
+
+.closing-cta .closing-cta-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
 }
 
 /* ---------- pricing page ---------- */

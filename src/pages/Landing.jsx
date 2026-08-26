@@ -10,6 +10,7 @@ import { ModuleShowcase } from '../components/ModuleShowcase'
 import { DashboardMockup } from '../components/motion/widgets/DashboardMockup'
 import { WorkflowTimeline } from '../components/motion/WorkflowTimeline'
 import { AiSupportMockup } from '../components/motion/AiSupportMockup'
+import { QuoteMotif } from '../components/motion/QuoteMotif'
 import { TiltCard } from '../components/motion/TiltCard'
 import { FloatingEmployeeCard } from '../components/motion/FloatingEmployeeCard'
 import { AnimatedNumber } from '../components/motion/AnimatedNumber'
@@ -374,11 +375,14 @@ export default function Landing() {
         </RevealGroup>
       </section>
 
-      <Reveal as="section" className="closing-cta">
-        <h2 className="section-title">Ready to see it for yourself?</h2>
-        <p className="closing-cta-copy">Set up your company in a few minutes — no sales call required.</p>
-        <MagneticButton as={Link} to="/signup" className="header-cta closing-cta-btn">Sign up</MagneticButton>
-      </Reveal>
+      <section className="closing-cta-outer">
+        <QuoteMotif variant="ripple" className="closing-cta-motif" />
+        <Reveal as="div" className="closing-cta">
+          <h2 className="section-title">Ready to see it for yourself?</h2>
+          <p className="closing-cta-copy">Set up your company in a few minutes — no sales call required.</p>
+          <MagneticButton as={Link} to="/signup" className="header-cta closing-cta-btn">Sign up</MagneticButton>
+        </Reveal>
+      </section>
 
       <SiteFooter />
     </div>
