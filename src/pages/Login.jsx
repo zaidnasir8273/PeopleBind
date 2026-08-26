@@ -36,9 +36,8 @@ export default function Login() {
     <div className="auth-split">
       <div className="auth-panel-left">
         <div className="auth-form-wrap">
-          <FadeIn as={Link} to="/" className="auth-wordmark" y={6}>
-            <span className="wordmark-mark" aria-hidden="true" />
-            <span className="wm-people">People</span><span className="wm-bind">Bind</span>
+          <FadeIn as={Link} to="/" className="auth-wordmark" y={6} aria-label="PeopleBind">
+            <span className="wordmark-full" aria-hidden="true" />
           </FadeIn>
 
           <h1 className="auth-title">Sign in</h1>

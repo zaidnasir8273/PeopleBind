@@ -281,6 +281,17 @@ body {
   background: url('/logo-mark.png') no-repeat center / contain;
 }
 
+/* Full "icon + PeopleBind" lockup -- used where the wordmark stands alone
+   as brand identity (marketing header, auth pages). Sidebars keep the
+   icon-only .wordmark-mark since they pair it with dynamic text (company
+   name, "Platform Admin", etc.), not the literal wordmark. */
+.wordmark-full {
+  height: 40px;
+  width: auto;
+  aspect-ratio: 1375 / 281;
+  background: url('/logo-full.png') no-repeat center / contain;
+}
+
 .wm-people {
   color: var(--ink);
 }
@@ -2012,6 +2023,10 @@ button:active:not(:disabled) {
 
 .auth-wordmark .wordmark-mark {
   width: 34px;
+  height: 34px;
+}
+
+.auth-wordmark .wordmark-full {
   height: 34px;
 }
 

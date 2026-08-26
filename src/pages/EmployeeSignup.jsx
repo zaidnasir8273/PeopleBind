@@ -58,9 +58,8 @@ export default function EmployeeSignup() {
     return (
       <div className="auth-page">
         <div className="auth-card">
-          <Link to="/" className="auth-wordmark">
-            <span className="wordmark-mark" aria-hidden="true" />
-            <span className="wm-people">People</span><span className="wm-bind">Bind</span>
+          <Link to="/" className="auth-wordmark" aria-label="PeopleBind">
+            <span className="wordmark-full" aria-hidden="true" />
           </Link>
           <h1 className="auth-title">Check your email</h1>
           <p className="auth-subtitle">
@@ -75,9 +74,8 @@ export default function EmployeeSignup() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-wordmark">
-          <span className="wordmark-mark" aria-hidden="true" />
-          <span className="wm-people">People</span><span className="wm-bind">Bind</span>
+        <Link to="/" className="auth-wordmark" aria-label="PeopleBind">
+          <span className="wordmark-full" aria-hidden="true" />
         </Link>
 
         <h1 className="auth-title">Set up your account</h1>
