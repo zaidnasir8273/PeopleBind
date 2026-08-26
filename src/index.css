@@ -719,6 +719,14 @@ h1 {
   margin-bottom: 40px;
 }
 
+/* The interactive showcase replaces this grid above 860px -- see
+   .showcase-shell's own ≤860px rule for the reverse. */
+@media (min-width: 861px) {
+  .modules-grid {
+    display: none;
+  }
+}
+
 .module-card {
   background: var(--paper-raised);
   border: 1px solid var(--line);
@@ -759,6 +767,102 @@ h1 {
   color: var(--ink-soft);
   line-height: 1.5;
   margin: 0;
+}
+
+/* ---------- interactive module showcase (desktop only, >860px) ---------- */
+
+.showcase-shell {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+.showcase-nav {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.showcase-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  padding: 11px 14px;
+  border: none;
+  background: none;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.showcase-nav-item.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.showcase-active-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+}
+
+.showcase-nav-label {
+  position: relative;
+}
+
+.showcase-stage {
+  position: relative;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  min-height: 380px;
+}
+
+.showcase-stage-panel {
+  position: absolute;
+  inset: 0;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease-out);
+}
+
+.showcase-stage-panel.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.showcase-stage-widget {
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22px;
+}
+
+.showcase-stage-panel .module-card-copy {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+@media (max-width: 860px) {
+  .showcase-shell {
+    display: none;
+  }
 }
 
 .modules-chip-row {

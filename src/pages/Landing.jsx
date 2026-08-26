@@ -6,6 +6,7 @@ import { DURATION, EASE, Reveal, RevealGroup, RevealItem } from '../components/m
 import { MagneticButton } from '../components/motion/MagneticButton'
 import { SiteHeader } from '../components/SiteHeader'
 import { SiteFooter } from '../components/SiteFooter'
+import { ModuleShowcase } from '../components/ModuleShowcase'
 import { TiltCard } from '../components/motion/TiltCard'
 import { FloatingEmployeeCard } from '../components/motion/FloatingEmployeeCard'
 import { AnimatedNumber } from '../components/motion/AnimatedNumber'
@@ -264,6 +265,10 @@ export default function Landing() {
         <Reveal as="p" className="section-eyebrow">EVERYTHING IN ONE PLACE</Reveal>
         <Reveal as="h2" delay={0.05} className="section-title">
           One record of truth, across every module.
+        </Reveal>
+
+        <Reveal as="div" delay={0.1}>
+          <ModuleShowcase modules={FEATURED_MODULES} />
         </Reveal>
 
         <RevealGroup as="div" className="modules-grid" staggerDelay={0.09}>
