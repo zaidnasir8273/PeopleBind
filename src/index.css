@@ -350,7 +350,7 @@ h1 {
 
 .footnote {
   font-size: 13px;
-  color: var(--ink-soft);
+  color: var(--ink-faint);
 }
 
 .footnote strong {
@@ -663,6 +663,20 @@ h1 {
 .ec-3 {
   bottom: -16px;
   left: 20%;
+}
+
+.ec-4 {
+  top: 8%;
+  right: -36px;
+}
+
+.ec-5 {
+  bottom: 12%;
+  right: -22px;
+}
+
+.employee-card-chip {
+  white-space: nowrap;
 }
 
 /* ---------- modules section ---------- */

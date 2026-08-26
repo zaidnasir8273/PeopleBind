@@ -3,7 +3,7 @@ import { DURATION, EASE, SPRING, FLOAT_DISTANCE_PX } from './index'
 
 const EASE_LOOP = [0.45, 0, 0.55, 1]
 
-export function FloatingEmployeeCard({ name, role, className, style, delay = 0, floatDuration = 4.5, depth = 1, rotate = 0 }) {
+export function FloatingEmployeeCard({ name, role, className, style, delay = 0, floatDuration = 4.5, depth = 1, rotate = 0, children }) {
   const prefersReducedMotion = useReducedMotion()
 
   return (
@@ -28,8 +28,12 @@ export function FloatingEmployeeCard({ name, role, className, style, delay = 0, 
           : { duration: floatDuration, ease: EASE_LOOP, repeat: Infinity, delay: delay + 0.6 },
       }}
     >
-      <div className="employee-card-name">{name}</div>
-      <div className="employee-card-role">{role}</div>
+      {children ?? (
+        <>
+          <div className="employee-card-name">{name}</div>
+          <div className="employee-card-role">{role}</div>
+        </>
+      )}
     </motion.div>
   )
 }

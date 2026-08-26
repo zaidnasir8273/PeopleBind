@@ -173,6 +173,11 @@ const EMPLOYEE_CARDS = [
   { name: 'Usman Malik', role: 'Operations', className: 'employee-card ec-3', delay: 1.3, floatDuration: 4.7, depth: 0.8, rotate: 1.2 },
 ]
 
+const STATUS_CHIPS = [
+  { text: 'Leave request approved ✓', className: 'employee-card ec-4', delay: 1.4, floatDuration: 4.8, depth: 0.9, rotate: -1.5 },
+  { text: 'Payroll processed', className: 'employee-card ec-5', delay: 1.6, floatDuration: 4.4, depth: 1.1, rotate: 1.8 },
+]
+
 export default function Landing() {
   const prefersReducedMotion = useReducedMotion()
   const [netSalary, setNetSalary] = useState(0)
@@ -235,6 +240,12 @@ export default function Landing() {
 
           {EMPLOYEE_CARDS.map((card) => (
             <FloatingEmployeeCard key={card.name} {...card} />
+          ))}
+
+          {STATUS_CHIPS.map(({ text, ...card }) => (
+            <FloatingEmployeeCard key={text} {...card}>
+              <span className="widget-status-badge in employee-card-chip">{text}</span>
+            </FloatingEmployeeCard>
           ))}
         </div>
       </main>
