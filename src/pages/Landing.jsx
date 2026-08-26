@@ -249,7 +249,7 @@ export default function Landing() {
         </p>
       </Reveal>
 
-      <section className="modules-section">
+      <section id="modules" className="modules-section">
         <Reveal as="p" className="section-eyebrow">EVERYTHING IN ONE PLACE</Reveal>
         <Reveal as="h2" delay={0.05} className="section-title">
           One record of truth, across every module.
@@ -293,7 +293,7 @@ export default function Landing() {
         </RevealGroup>
       </section>
 
-      <section className="faq-section">
+      <section id="faq" className="faq-section">
         <Reveal as="p" className="section-eyebrow">QUESTIONS</Reveal>
         <Reveal as="h2" delay={0.05} className="section-title">
           Frequently asked questions

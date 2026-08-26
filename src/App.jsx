@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { MotionConfig } from 'motion/react'
+import { MotionConfig, useReducedMotion } from 'motion/react'
 import { AuthProvider } from './context/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
@@ -52,11 +53,27 @@ import EmployeeLeave from './pages/EmployeeLeave'
 import EmployeeTimesheet from './pages/EmployeeTimesheet'
 import EmployeeProfile from './pages/EmployeeProfile'
 
+// React Router v6 doesn't auto-scroll to a URL hash on navigation -- this
+// picks up where SiteHeader's "/#modules" / "/#faq" links land.
+function ScrollToHash() {
+  const location = useLocation()
+  const prefersReducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    if (!location.hash) return
+    const el = document.getElementById(location.hash.slice(1))
+    el?.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' })
+  }, [location.pathname, location.hash, prefersReducedMotion])
+
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <MotionConfig reducedMotion="user" transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
       <AuthProvider>
+        <ScrollToHash />
         <Toaster
           position="top-right"
           gap={8}
