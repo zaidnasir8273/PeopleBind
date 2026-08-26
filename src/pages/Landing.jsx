@@ -8,6 +8,7 @@ import { SiteHeader } from '../components/SiteHeader'
 import { SiteFooter } from '../components/SiteFooter'
 import { ModuleShowcase } from '../components/ModuleShowcase'
 import { DashboardMockup } from '../components/motion/widgets/DashboardMockup'
+import { WorkflowTimeline } from '../components/motion/WorkflowTimeline'
 import { TiltCard } from '../components/motion/TiltCard'
 import { FloatingEmployeeCard } from '../components/motion/FloatingEmployeeCard'
 import { AnimatedNumber } from '../components/motion/AnimatedNumber'
@@ -306,6 +307,16 @@ export default function Landing() {
         <Reveal delay={0.15}>
           <DashboardMockup />
         </Reveal>
+      </section>
+
+      <section className="workflow-section">
+        <div className="workflow-heading">
+          <Reveal as="p" className="section-eyebrow">THE FULL LIFECYCLE</Reveal>
+          <Reveal as="h2" delay={0.05} className="section-title">
+            From first application to your next report.
+          </Reveal>
+        </div>
+        <WorkflowTimeline />
       </section>
 
       <section className="compliance-section">

@@ -1161,6 +1161,136 @@ h1 {
   }
 }
 
+/* ---------- HR workflow timeline ---------- */
+
+.workflow-section {
+  border-top: 1px solid var(--line);
+}
+
+.workflow-heading {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 64px clamp(20px, 5vw, 64px) 0;
+}
+
+.workflow-track {
+  position: relative;
+  height: 220vh;
+}
+
+.workflow-pin {
+  position: sticky;
+  top: 110px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px clamp(20px, 5vw, 64px);
+}
+
+.workflow-rail {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 56px;
+}
+
+.workflow-rail-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6px;
+  height: 2px;
+  background: var(--line);
+}
+
+.workflow-rail-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6px;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: left;
+}
+
+.workflow-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.workflow-node-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--paper-raised);
+  border: 2px solid var(--line);
+  transition: background 0.25s var(--ease-out), border-color 0.25s var(--ease-out);
+}
+
+.workflow-node.active .workflow-node-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.workflow-node-verb {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  transition: color 0.25s var(--ease-out);
+}
+
+.workflow-node.active .workflow-node-verb {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.workflow-detail {
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100px;
+}
+
+.workflow-detail-label {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.workflow-detail-copy {
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.workflow-static.history-timeline {
+  display: none;
+  max-width: 560px;
+  margin: 40px auto 0;
+}
+
+.workflow-static-copy {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+@media (max-width: 860px), (prefers-reduced-motion: reduce) {
+  .workflow-track {
+    display: none;
+  }
+
+  .workflow-static.history-timeline {
+    display: flex;
+  }
+}
+
 /* ---------- compliance section ---------- */
 
 .compliance-lede {
