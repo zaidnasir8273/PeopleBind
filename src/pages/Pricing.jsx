@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Reveal, RevealGroup, RevealItem } from '../components/motion'
+import { TiltCard } from '../components/motion/TiltCard'
+import { MagneticButton } from '../components/motion/MagneticButton'
 import { SiteHeader } from '../components/SiteHeader'
 import { SiteFooter } from '../components/SiteFooter'
 import { supabase } from '../lib/supabase'
@@ -95,7 +97,8 @@ export default function Pricing() {
           </div>
         </RevealGroup>
 
-        <Reveal as="div" delay={0.05} className="pricing-form-card">
+        <Reveal delay={0.05}>
+        <TiltCard className="pricing-form-card" maxTilt={2.5}>
           {submitted ? (
             <div className="pricing-success">
               <h3>Thanks — we'll be in touch.</h3>
@@ -145,13 +148,14 @@ export default function Pricing() {
 
                 {error && <p className="field-error">{error}</p>}
 
-                <button type="submit" className="btn-primary" disabled={submitting}>
+                <MagneticButton as="button" type="submit" className="btn-primary" disabled={submitting}>
                   {submitting && <Loader2 size={14} className="btn-spinner" />}
                   {submitting ? 'Sending…' : 'Get a price quote'}
-                </button>
+                </MagneticButton>
               </form>
             </>
           )}
+        </TiltCard>
         </Reveal>
       </section>
 
