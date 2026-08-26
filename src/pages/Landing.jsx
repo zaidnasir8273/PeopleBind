@@ -7,6 +7,7 @@ import { MagneticButton } from '../components/motion/MagneticButton'
 import { SiteHeader } from '../components/SiteHeader'
 import { SiteFooter } from '../components/SiteFooter'
 import { ModuleShowcase } from '../components/ModuleShowcase'
+import { DashboardMockup } from '../components/motion/widgets/DashboardMockup'
 import { TiltCard } from '../components/motion/TiltCard'
 import { FloatingEmployeeCard } from '../components/motion/FloatingEmployeeCard'
 import { AnimatedNumber } from '../components/motion/AnimatedNumber'
@@ -291,6 +292,20 @@ export default function Landing() {
             </RevealItem>
           ))}
         </RevealGroup>
+      </section>
+
+      <section className="dashboard-section">
+        <Reveal as="p" className="section-eyebrow">SEE IT WORKING</Reveal>
+        <Reveal as="h2" delay={0.05} className="section-title">
+          From data to decisions, at a glance.
+        </Reveal>
+        <Reveal as="p" delay={0.1} className="pricing-lede" style={{ margin: '14px auto 0' }}>
+          A live look at what your team sees the moment they sign in —
+          illustrative data, same dashboard.
+        </Reveal>
+        <Reveal delay={0.15}>
+          <DashboardMockup />
+        </Reveal>
       </section>
 
       <section className="compliance-section">

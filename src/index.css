@@ -1112,6 +1112,55 @@ h1 {
   background: var(--accent);
 }
 
+/* ---------- dashboard visualization section ---------- */
+
+.dashboard-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 64px clamp(20px, 5vw, 64px);
+  border-top: 1px solid var(--line);
+}
+
+.dashboard-mockup {
+  margin-top: 40px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 28px clamp(20px, 4vw, 36px) 32px;
+  box-shadow: var(--shadow);
+}
+
+.dashboard-mockup-stats {
+  margin-bottom: 32px;
+}
+
+.dashboard-mockup-body {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 32px;
+}
+
+.dashboard-mockup-heading {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0 0 12px;
+}
+
+.dashboard-mockup-activity .activity-row:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 860px) {
+  .dashboard-mockup-body {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
 /* ---------- compliance section ---------- */
 
 .compliance-lede {
