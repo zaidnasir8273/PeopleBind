@@ -21,15 +21,9 @@ import { BriefcaseBusinessIcon } from '../components/ui/briefcase-business'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Avatar } from '../components/Avatar'
+import { SmartGreeting } from '../components/SmartGreeting'
 import { StaggerContainer, StaggerItem, DURATION, EASE } from '../components/motion'
 import { AnimatedNumber } from '../components/motion/AnimatedNumber'
-
-function greeting() {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
-  return 'Good evening'
-}
 
 function firstName(fullName) {
   if (!fullName) return ''
@@ -118,7 +112,7 @@ const axisStyle = { fontSize: 11, fontFamily: 'Inter, sans-serif', fill: INK_SOF
 const tooltipStyle = { fontSize: 13, fontFamily: 'Inter, sans-serif', borderRadius: 8, border: `1px solid ${LINE}` }
 
 export default function Home() {
-  const { profile, company } = useAuth()
+  const { profile } = useAuth()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ employeeCount: 0, pendingLeave: 0, pendingExpenses: 0, pendingCorrections: 0, openRoles: 0 })
   const [actionItems, setActionItems] = useState([])
@@ -394,10 +388,11 @@ export default function Home() {
   return (
     <div className="page-inner">
       <p className="page-eyebrow">HOME</p>
-      <h1 className="page-title">
-        {greeting()}, {firstName(profile?.full_name)}
-      </h1>
-      <p className="page-subtitle">{company?.name}</p>
+      <SmartGreeting
+        fullName={profile?.full_name}
+        loading={loading}
+        actionCounts={{ leave: stats.pendingLeave, total: actionItems.length }}
+      />
 
       <div className="quick-actions-row">
         <Link to="/app/people" className="quick-action">

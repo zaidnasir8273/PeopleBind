@@ -2840,6 +2840,17 @@ button:active:not(:disabled) {
   margin: 0 0 28px;
 }
 
+.smart-greeting-stage {
+  min-height: 22px;
+  margin-bottom: 28px;
+}
+
+.smart-greeting-message {
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin: 0;
+}
+
 .stat-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
