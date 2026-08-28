@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'motion/react'
-import { ChevronDown, Loader2 } from 'lucide-react'
+import { ChevronDown, Loader2, Copy } from 'lucide-react'
 import { DeleteIcon } from '../components/ui/delete'
 import { PlusIcon } from '../components/ui/plus'
 import { SendIcon } from '../components/ui/send'
@@ -2068,7 +2068,7 @@ function RolesTab() {
       supabase.from('role_permissions').select('role_id, permission_id'),
       supabase.from('profiles').select('id, full_name, email, status').eq('company_id', company.id).order('full_name'),
       supabase.from('user_roles').select('id, user_id, role_id'),
-      supabase.from('invites').select('id, email, role_id, created_at').eq('company_id', company.id).eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('invites').select('id, email, role_id, token, created_at').eq('company_id', company.id).eq('status', 'pending').order('created_at', { ascending: false }),
     ])
     setRoles(r ?? [])
     setPermissions(p ?? [])
@@ -2162,6 +2162,16 @@ function RolesTab() {
     setInviteEmail('')
     setInviteRoleId('')
     await load()
+  }
+
+  async function copyInviteLink(token) {
+    const link = `${window.location.origin}/invite/${token}`
+    try {
+      await navigator.clipboard.writeText(link)
+      toast.success('Invite link copied')
+    } catch {
+      toast.error('Could not copy link')
+    }
   }
 
   async function revokeInvite(id) {
@@ -2265,15 +2275,25 @@ function RolesTab() {
                     {roles.find((r) => r.id === inv.role_id)?.name} · sent {new Date(inv.created_at).toLocaleDateString()}
                   </span>
                 </span>
-                <button
-                  type="button"
-                  className="btn-icon-round reject lookup-row-remove"
-                  onClick={() => revokeInvite(inv.id)}
-                  disabled={revokingInviteId === inv.id}
-                  aria-label="Revoke invite"
-                >
-                  <DeleteIcon size={14} />
-                </button>
+                <span style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    className="btn-icon-round"
+                    onClick={() => copyInviteLink(inv.token)}
+                    aria-label="Copy invite link"
+                  >
+                    <Copy size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon-round reject lookup-row-remove"
+                    onClick={() => revokeInvite(inv.id)}
+                    disabled={revokingInviteId === inv.id}
+                    aria-label="Revoke invite"
+                  >
+                    <DeleteIcon size={14} />
+                  </button>
+                </span>
               </div>
             ))}
           </div>
