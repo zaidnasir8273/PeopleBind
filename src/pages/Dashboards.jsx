@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { toast } from 'sonner'
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { ChevronDown } from 'lucide-react'
@@ -31,7 +31,7 @@ function fmtValue(value, unit) {
   return unit === 'Rs' ? `Rs. ${rounded}` : unit ? `${rounded} ${unit}` : rounded
 }
 
-function WidgetChart({ widget, company }) {
+function WidgetChart({ widget, company, filters }) {
   const [state, setState] = useState({ loading: true, value: null, series: [], rows: [] })
   const isBreakdown = BREAKDOWN_CHART_TYPES.includes(widget.chart_type)
 
@@ -42,18 +42,18 @@ function WidgetChart({ widget, company }) {
       if (isBreakdown) {
         const def = DASHBOARD_LEADERBOARDS[widget.metric_key]
         if (!def) return
-        const rows = await def.fetch(widget._from, widget._to, company)
+        const rows = await def.fetch(widget._from, widget._to, company, filters)
         if (active) setState({ loading: false, value: null, series: [], rows })
       } else {
         const def = DASHBOARD_METRICS[widget.metric_key]
         if (!def) return
-        const { value, series } = await def.fetch(widget._from, widget._to, company)
+        const { value, series } = await def.fetch(widget._from, widget._to, company, filters)
         if (active) setState({ loading: false, value, series, rows: [] })
       }
     }
     load()
     return () => { active = false }
-  }, [widget.metric_key, widget.chart_type, widget._from, widget._to, isBreakdown, company.id])
+  }, [widget.metric_key, widget.chart_type, widget._from, widget._to, isBreakdown, company.id, filters])
 
   const metricDef = isBreakdown ? DASHBOARD_LEADERBOARDS[widget.metric_key] : DASHBOARD_METRICS[widget.metric_key]
   if (!metricDef) return <p className="muted">Unknown metric.</p>
@@ -126,7 +126,7 @@ function WidgetChart({ widget, company }) {
   return null
 }
 
-function WidgetCard({ widget, company, onEdit, onRemove, dragHandlers }) {
+function WidgetCard({ widget, company, filters, onEdit, onRemove, dragHandlers }) {
   return (
     <div className={`dashboard-widget dashboard-widget-${widget.size}`} draggable onDragStart={() => dragHandlers.onDragStart(widget)} onDragOver={(e) => dragHandlers.onDragOver(e, widget)} onDrop={dragHandlers.onDrop}>
       <div className="dashboard-widget-head">
@@ -140,7 +140,7 @@ function WidgetCard({ widget, company, onEdit, onRemove, dragHandlers }) {
           </button>
         </div>
       </div>
-      <WidgetChart widget={widget} company={company} />
+      <WidgetChart widget={widget} company={company} filters={filters} />
     </div>
   )
 }
@@ -231,6 +231,9 @@ export default function Dashboards() {
   const [widgets, setWidgets] = useState([])
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState(defaultRange())
+  const [filters, setFilters] = useState({ departmentId: '', teamId: '', branchId: '', employeeId: '' })
+  const [filterOptions, setFilterOptions] = useState({ departments: [], teams: [], branches: [], employees: [] })
+  const [resolvedEmployeeIds, setResolvedEmployeeIds] = useState(null)
   const [picker, setPicker] = useState(false)
   const [widgetDrawer, setWidgetDrawer] = useState(null) // null | 'new' | widget object
   const [nameDrawer, setNameDrawer] = useState(null) // null | 'create' | 'rename'
@@ -246,6 +249,12 @@ export default function Dashboards() {
       const def = data.find((d) => d.is_default) ?? data[0]
       setActiveId(def.id)
       setRange({ from: def.date_from ?? defaultRange().from, to: def.date_to ?? defaultRange().to })
+      setFilters({
+        departmentId: def.filter_department_id ?? '',
+        teamId: def.filter_team_id ?? '',
+        branchId: def.filter_branch_id ?? '',
+        employeeId: def.filter_employee_id ?? '',
+      })
     }
     setLoading(false)
   }, [activeId, company.id])
@@ -253,6 +262,55 @@ export default function Dashboards() {
   useEffect(() => {
     loadDashboards()
   }, [loadDashboards])
+
+  // Filter picker options -- company-scoped, loaded once per company rather
+  // than once per widget (every widget shares the same dashboard-wide
+  // filters, so there's no reason to re-fetch these per widget).
+  useEffect(() => {
+    let active = true
+    async function loadFilterOptions() {
+      const [{ data: departments }, { data: teams }, { data: branches }, { data: employeesList }] = await Promise.all([
+        supabase.from('departments').select('id, name').eq('company_id', company.id).order('name'),
+        supabase.from('teams').select('id, name').eq('company_id', company.id).order('name'),
+        supabase.from('branches').select('id, name').eq('company_id', company.id).order('name'),
+        supabase.from('employees').select('id, full_name').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
+      ])
+      if (active) setFilterOptions({ departments: departments ?? [], teams: teams ?? [], branches: branches ?? [], employees: employeesList ?? [] })
+    }
+    loadFilterOptions()
+    return () => { active = false }
+  }, [company.id])
+
+  // Most metrics only have an employee_id column, not department/team/branch
+  // directly -- resolve the picked filters into a concrete list of matching
+  // employee ids once here, so every widget doesn't repeat the same lookup.
+  useEffect(() => {
+    const { departmentId, teamId, branchId, employeeId } = filters
+    if (!departmentId && !teamId && !branchId && !employeeId) {
+      setResolvedEmployeeIds(null)
+      return
+    }
+    let active = true
+    async function resolve() {
+      let query = supabase.from('employees').select('id').eq('company_id', company.id)
+      if (departmentId) query = query.eq('department_id', departmentId)
+      if (teamId) query = query.eq('team_id', teamId)
+      if (branchId) query = query.eq('branch_id', branchId)
+      if (employeeId) query = query.eq('id', employeeId)
+      const { data } = await query
+      if (active) setResolvedEmployeeIds((data ?? []).map((r) => r.id))
+    }
+    resolve()
+    return () => { active = false }
+  }, [filters.departmentId, filters.teamId, filters.branchId, filters.employeeId, company.id])
+
+  const activeFilters = useMemo(() => ({
+    departmentId: filters.departmentId || null,
+    teamId: filters.teamId || null,
+    branchId: filters.branchId || null,
+    employeeId: filters.employeeId || null,
+    employeeIds: resolvedEmployeeIds,
+  }), [filters.departmentId, filters.teamId, filters.branchId, filters.employeeId, resolvedEmployeeIds])
 
   const loadWidgets = useCallback(async () => {
     if (!activeId) { setWidgets([]); return }
@@ -278,6 +336,7 @@ export default function Dashboards() {
     toast.success('Dashboard created')
     setActiveId(data.id)
     setRange(def)
+    setFilters({ departmentId: '', teamId: '', branchId: '', employeeId: '' })
     setNameDrawer(null)
     loadDashboards()
   }
@@ -317,6 +376,28 @@ export default function Dashboards() {
     loadWidgets()
   }
 
+  function updateFilter(key, value) {
+    const next = { ...filters, [key]: value }
+    setFilters(next)
+    saveFilters(next)
+  }
+
+  function clearFilters() {
+    const next = { departmentId: '', teamId: '', branchId: '', employeeId: '' }
+    setFilters(next)
+    saveFilters(next)
+  }
+
+  async function saveFilters(next) {
+    if (!activeId) return
+    await supabase.from('custom_dashboards').update({
+      filter_department_id: next.departmentId || null,
+      filter_team_id: next.teamId || null,
+      filter_branch_id: next.branchId || null,
+      filter_employee_id: next.employeeId || null,
+    }).eq('id', activeId)
+  }
+
   async function removeWidget(id) {
     const { error } = await supabase.from('custom_dashboard_widgets').delete().eq('id', id)
     if (error) { toast.error(error.message); return }
@@ -347,7 +428,8 @@ export default function Dashboards() {
   }
 
   const activeDashboard = dashboards.find((d) => d.id === activeId)
-  const widgetsWithRange = widgets.map((w) => ({ ...w, _from: range.from, _to: range.to }))
+  const widgetsWithFilters = widgets.map((w) => ({ ...w, _from: range.from, _to: range.to }))
+  const hasActiveFilters = !!(filters.departmentId || filters.teamId || filters.branchId || filters.employeeId)
 
   return (
     <div className="page-inner" style={{ maxWidth: 1180 }}>
@@ -376,7 +458,22 @@ export default function Dashboards() {
               {picker && (
                 <div className="dashboard-picker-panel">
                   {dashboards.map((d) => (
-                    <button key={d.id} type="button" className="account-menu-item" onClick={() => { setActiveId(d.id); setRange({ from: d.date_from ?? defaultRange().from, to: d.date_to ?? defaultRange().to }); setPicker(false) }}>
+                    <button
+                      key={d.id}
+                      type="button"
+                      className="account-menu-item"
+                      onClick={() => {
+                        setActiveId(d.id)
+                        setRange({ from: d.date_from ?? defaultRange().from, to: d.date_to ?? defaultRange().to })
+                        setFilters({
+                          departmentId: d.filter_department_id ?? '',
+                          teamId: d.filter_team_id ?? '',
+                          branchId: d.filter_branch_id ?? '',
+                          employeeId: d.filter_employee_id ?? '',
+                        })
+                        setPicker(false)
+                      }}
+                    >
                       {d.is_default ? '★ ' : ''}{d.name}
                     </button>
                   ))}
@@ -398,6 +495,23 @@ export default function Dashboards() {
               <button type="button" className="link-button" style={{ fontSize: 12, color: 'var(--danger)' }} onClick={() => setConfirmingDelete(true)}>Delete</button>
             )}
             <span style={{ flex: 1 }} />
+            <select value={filters.departmentId} onChange={(e) => updateFilter('departmentId', e.target.value)} style={{ fontSize: 12 }}>
+              <option value="">All departments</option>
+              {filterOptions.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            <select value={filters.teamId} onChange={(e) => updateFilter('teamId', e.target.value)} style={{ fontSize: 12 }}>
+              <option value="">All teams</option>
+              {filterOptions.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <select value={filters.branchId} onChange={(e) => updateFilter('branchId', e.target.value)} style={{ fontSize: 12 }}>
+              <option value="">All branches</option>
+              {filterOptions.branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+            <select value={filters.employeeId} onChange={(e) => updateFilter('employeeId', e.target.value)} style={{ fontSize: 12 }}>
+              <option value="">All employees</option>
+              {filterOptions.employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
+            </select>
+            {hasActiveFilters && <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={clearFilters}>Clear filters</button>}
             <input type="date" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} onBlur={saveRange} style={{ fontSize: 12 }} />
             <span className="muted" style={{ fontSize: 12 }}>to</span>
             <input type="date" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} onBlur={saveRange} style={{ fontSize: 12 }} />
@@ -414,11 +528,12 @@ export default function Dashboards() {
             </div>
           ) : (
             <div className="dashboard-grid">
-              {widgetsWithRange.map((w) => (
+              {widgetsWithFilters.map((w) => (
                 <WidgetCard
                   key={w.id}
                   widget={w}
                   company={company}
+                  filters={activeFilters}
                   onEdit={setWidgetDrawer}
                   onRemove={removeWidget}
                   dragHandlers={{ onDragStart: handleDragStart, onDragOver: handleDragOver, onDrop: handleDrop }}
