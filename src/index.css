@@ -5030,8 +5030,9 @@ a.attention-item:hover {
 /* ---------- tabs ---------- */
 
 .tabs {
-  display: inline-flex;
-  flex-wrap: wrap;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 2px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);

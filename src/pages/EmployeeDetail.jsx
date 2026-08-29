@@ -923,11 +923,11 @@ function PerformanceTab({ employeeId, company }) {
         ) : kpiCatalog.length === 0 ? (
           <p className="muted">No standard KPIs configured.</p>
         ) : (
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
             {kpiCatalog.map((kpi) => {
               const value = kpiValues[kpi.id]
               return (
-                <div key={kpi.id} className="mini-card" style={{ minWidth: 140 }}>
+                <div key={kpi.id} className="mini-card">
                   <div className="muted" style={{ fontSize: 12 }}>{kpi.name}</div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
                     {value == null ? '—' : `${Math.round(value * 100)}%`}
