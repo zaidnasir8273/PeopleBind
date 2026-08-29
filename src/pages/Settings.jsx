@@ -375,11 +375,11 @@ function StructureTab() {
   const load = useCallback(async () => {
     setLoading(true)
     const [{ data: d }, { data: des }, { data: tm }, { data: et }, { data: b }] = await Promise.all([
-      supabase.from('departments').select('id, name, status').order('name'),
-      supabase.from('designations').select('id, name, status').order('name'),
-      supabase.from('teams').select('id, name, status').order('name'),
-      supabase.from('employment_types').select('id, name').order('name'),
-      supabase.from('branches').select('id, name, city, is_head_office').order('name'),
+      supabase.from('departments').select('id, name, status').eq('company_id', company.id).order('name'),
+      supabase.from('designations').select('id, name, status').eq('company_id', company.id).order('name'),
+      supabase.from('teams').select('id, name, status').eq('company_id', company.id).order('name'),
+      supabase.from('employment_types').select('id, name').eq('company_id', company.id).order('name'),
+      supabase.from('branches').select('id, name, city, is_head_office').eq('company_id', company.id).order('name'),
     ])
     setDepartments(d ?? [])
     setDesignations(des ?? [])
@@ -387,7 +387,7 @@ function StructureTab() {
     setEmploymentTypes(et ?? [])
     setBranches(b ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
@@ -593,13 +593,13 @@ function ShiftsTab() {
   const load = useCallback(async () => {
     setLoading(true)
     const [{ data: s }, { data: h }] = await Promise.all([
-      supabase.from('shifts').select('id, name, start_time, end_time, break_minutes, grace_period_minutes, overtime_eligible, working_days, status').order('name'),
-      supabase.from('holidays').select('id, name, holiday_date').order('holiday_date'),
+      supabase.from('shifts').select('id, name, start_time, end_time, break_minutes, grace_period_minutes, overtime_eligible, working_days, status').eq('company_id', company.id).order('name'),
+      supabase.from('holidays').select('id, name, holiday_date').eq('company_id', company.id).order('holiday_date'),
     ])
     setShifts(s ?? [])
     setHolidays(h ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
@@ -819,18 +819,19 @@ function LeaveTab() {
   const load = useCallback(async () => {
     setLoading(true)
     const [{ data: lt }, { data: p }, { data: et }] = await Promise.all([
-      supabase.from('leave_types').select('id, name, is_paid, is_encashable, applicable_gender').order('name'),
+      supabase.from('leave_types').select('id, name, is_paid, is_encashable, applicable_gender').eq('company_id', company.id).order('name'),
       supabase
         .from('leave_policies')
         .select('id, name, annual_entitlement_days, carry_forward_enabled, carry_forward_max_days, requires_approval, leave_types(name), employment_types(name)')
+        .eq('company_id', company.id)
         .order('name'),
-      supabase.from('employment_types').select('id, name').order('name'),
+      supabase.from('employment_types').select('id, name').eq('company_id', company.id).order('name'),
     ])
     setLeaveTypes(lt ?? [])
     setPolicies(p ?? [])
     setEmploymentTypes(et ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
@@ -1143,11 +1144,12 @@ function PayrollComponentsTab() {
     const { data } = await supabase
       .from('payroll_components')
       .select('id, name, component_type, calculation_method, percentage, taxable, is_basic, is_statutory, status')
+      .eq('company_id', company.id)
       .order('component_type')
       .order('name')
     setComponents(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
@@ -1290,11 +1292,12 @@ function KpiCatalogTab() {
     const { data } = await supabase
       .from('kpi_definitions')
       .select('id, name, description, kpi_type, metric_key, weight, status')
+      .eq('company_id', company.id)
       .order('kpi_type')
       .order('name')
     setKpis(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     if (hasAccess) load()
@@ -1542,11 +1545,12 @@ function TaxSlabsTab() {
     const { data } = await supabase
       .from('tax_slabs')
       .select('id, effective_from, effective_to, min_annual_income, max_annual_income, rate_percent, fixed_amount')
+      .eq('company_id', company.id)
       .order('effective_from', { ascending: false })
       .order('min_annual_income', { ascending: true })
     setSlabs(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
@@ -1735,11 +1739,12 @@ function StatutoryRatesTab() {
     const { data } = await supabase
       .from('statutory_rates')
       .select('id, rate_type, effective_from, effective_to, rate_percent')
+      .eq('company_id', company.id)
       .order('rate_type')
       .order('effective_from', { ascending: false })
     setRates(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
@@ -1872,11 +1877,12 @@ function ProfessionalTaxTab() {
     const { data } = await supabase
       .from('professional_tax_slabs')
       .select('id, effective_from, effective_to, min_annual_income, max_annual_income, rate_percent, fixed_amount')
+      .eq('company_id', company.id)
       .order('effective_from', { ascending: false })
       .order('min_annual_income', { ascending: true })
     setSlabs(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
@@ -2062,14 +2068,22 @@ function RolesTab() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [{ data: r }, { data: p }, { data: rp }, { data: u }, { data: ur }, { data: inv }] = await Promise.all([
-      supabase.from('roles').select('id, name, is_system_role, company_id').order('is_system_role', { ascending: false }).order('name'),
+    // roles.company_id is nullable -- null means a global/system role shared
+    // across every company (Admin, HR Admin, etc.), so this needs an OR, not
+    // a plain eq, or system roles would disappear for every normal company.
+    const [{ data: r }, { data: p }, { data: u }, { data: ur }, { data: inv }] = await Promise.all([
+      supabase.from('roles').select('id, name, is_system_role, company_id').or(`company_id.eq.${company.id},company_id.is.null`).order('is_system_role', { ascending: false }).order('name'),
       supabase.from('permissions').select('id, resource, action, description').order('resource').order('action'),
-      supabase.from('role_permissions').select('role_id, permission_id'),
       supabase.from('profiles').select('id, full_name, email, status').eq('company_id', company.id).order('full_name'),
-      supabase.from('user_roles').select('id, user_id, role_id'),
+      supabase.from('user_roles').select('id, user_id, role_id').eq('company_id', company.id),
       supabase.from('invites').select('id, email, role_id, token, created_at').eq('company_id', company.id).eq('status', 'pending').order('created_at', { ascending: false }),
     ])
+    // role_permissions has no company_id at all -- scope it to the roles
+    // that are actually visible to this company (fetched just above).
+    const roleIds = (r ?? []).map((role) => role.id)
+    const { data: rp } = roleIds.length
+      ? await supabase.from('role_permissions').select('role_id, permission_id').in('role_id', roleIds)
+      : { data: [] }
     setRoles(r ?? [])
     setPermissions(p ?? [])
     setRolePermissions(rp ?? [])
@@ -2368,6 +2382,7 @@ function diffFields(oldData, newData) {
 }
 
 function AuditLogTab() {
+  const { company } = useAuth()
   const [entries, setEntries] = useState([])
   const [profiles, setProfiles] = useState([])
   const [loading, setLoading] = useState(true)
@@ -2379,17 +2394,18 @@ function AuditLogTab() {
     let query = supabase
       .from('audit_log')
       .select('id, table_name, record_id, action, old_data, new_data, user_id, created_at')
+      .eq('company_id', company.id)
       .order('created_at', { ascending: false })
       .limit(150)
     if (tableFilter !== 'all') query = query.eq('table_name', tableFilter)
     const [{ data: logRows }, { data: profileRows }] = await Promise.all([
       query,
-      supabase.from('profiles').select('id, full_name, email'),
+      supabase.from('profiles').select('id, full_name, email').eq('company_id', company.id),
     ])
     setEntries(logRows ?? [])
     setProfiles(profileRows ?? [])
     setLoading(false)
-  }, [tableFilter])
+  }, [tableFilter, company.id])
 
   useEffect(() => {
     load()
@@ -2521,10 +2537,10 @@ function OnboardingTemplatesTab() {
 
   const loadTemplates = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase.from('onboarding_templates').select('id, name').order('name')
+    const { data } = await supabase.from('onboarding_templates').select('id, name').eq('company_id', company.id).order('name')
     setTemplates(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     loadTemplates()
@@ -2698,17 +2714,17 @@ function TimesheetsSetupTab() {
   const load = useCallback(async () => {
     setLoading(true)
     const [{ data: c }, { data: p }, { data: t }, { data: e }] = await Promise.all([
-      supabase.from('clients').select('id, name, status').order('name'),
-      supabase.from('projects').select('id, name, client_id, status, expected_completion_date, clients(name)').order('name'),
-      supabase.from('timesheet_tasks').select('id, name, status').order('name'),
-      supabase.from('employees').select('id, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
+      supabase.from('clients').select('id, name, status').eq('company_id', company.id).order('name'),
+      supabase.from('projects').select('id, name, client_id, status, expected_completion_date, clients(name)').eq('company_id', company.id).order('name'),
+      supabase.from('timesheet_tasks').select('id, name, status').eq('company_id', company.id).order('name'),
+      supabase.from('employees').select('id, full_name').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
     ])
     setClients(c ?? [])
     setProjects(p ?? [])
     setTasks(t ?? [])
     setEmployees(e ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
@@ -2987,10 +3003,11 @@ function SupportTab() {
     const { data } = await supabase
       .from('support_tickets')
       .select('id, subject, message, status, created_at, closed_at, resolution')
+      .eq('company_id', company.id)
       .order('created_at', { ascending: false })
     setTickets(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
