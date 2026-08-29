@@ -37,14 +37,15 @@ export default function Kudos() {
       supabase
         .from('kudos')
         .select('id, category, message, created_at, from_employee_id, to_employee_id, from:employees!kudos_from_employee_id_fkey(full_name, photo_url), to:employees!kudos_to_employee_id_fkey(full_name, photo_url)')
+        .eq('company_id', company.id)
         .order('created_at', { ascending: false })
         .limit(50),
-      supabase.from('employees').select('id, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
+      supabase.from('employees').select('id, full_name').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
     ])
     setItems(kudosRows ?? [])
     setEmployees(employeeRows ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()

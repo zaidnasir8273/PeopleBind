@@ -63,34 +63,36 @@ export default function Leave() {
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: types }] = await Promise.all([
-      supabase.from('employees').select('id, employee_code, full_name, gender').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
-      supabase.from('leave_types').select('id, name, is_paid, applicable_gender').order('name'),
+      supabase.from('employees').select('id, employee_code, full_name, gender').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
+      supabase.from('leave_types').select('id, name, is_paid, applicable_gender').eq('company_id', company.id).order('name'),
     ])
     setEmployees(emps ?? [])
     setLeaveTypes(types ?? [])
-  }, [])
+  }, [company.id])
 
   const loadRequests = useCallback(async () => {
     setRequestsLoading(true)
     let query = supabase
       .from('leave_requests')
       .select('id, start_date, end_date, days_requested, reason, status, created_at, employees(full_name, employee_code), leave_types(name)')
+      .eq('company_id', company.id)
       .order('created_at', { ascending: false })
     if (statusFilter !== 'all') query = query.eq('status', statusFilter)
     const { data } = await query.limit(200)
     setRequests(data ?? [])
     setRequestsLoading(false)
-  }, [statusFilter])
+  }, [statusFilter, company.id])
 
   const loadBalances = useCallback(async () => {
     setBalancesLoading(true)
     const { data } = await supabase
       .from('v_leave_usage')
       .select('employee_id, leave_type, year, entitled_days, used_days, remaining_days')
+      .eq('company_id', company.id)
       .eq('year', year)
     setBalances(data ?? [])
     setBalancesLoading(false)
-  }, [year])
+  }, [year, company.id])
 
   useEffect(() => {
     loadLookups()

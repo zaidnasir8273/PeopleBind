@@ -36,11 +36,12 @@ export default function Announcements() {
     const { data } = await supabase
       .from('announcements')
       .select('id, title, body, pinned, created_at, author_profile_id, profiles(full_name, email), announcement_attachments(id, file_path, file_name, file_size, content_type)')
+      .eq('company_id', company.id)
       .order('pinned', { ascending: false })
       .order('created_at', { ascending: false })
     setItems(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()

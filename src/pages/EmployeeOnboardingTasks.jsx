@@ -41,15 +41,16 @@ export default function EmployeeOnboardingTasks() {
     const { data } = await supabase
       .from('employees')
       .select('id, employee_code, full_name, joining_date')
+      .eq('company_id', company.id)
       .in('employment_status', ['training', 'probation', 'confirmed'])
       .order('joining_date', { ascending: false })
     setEmployees(data ?? [])
-  }, [])
+  }, [company.id])
 
   const loadTemplates = useCallback(async () => {
-    const { data } = await supabase.from('onboarding_templates').select('id, name').order('name')
+    const { data } = await supabase.from('onboarding_templates').select('id, name').eq('company_id', company.id).order('name')
     setTemplates(data ?? [])
-  }, [])
+  }, [company.id])
 
   const loadTasks = useCallback(async () => {
     if (!selectedEmployeeId) {
@@ -61,11 +62,12 @@ export default function EmployeeOnboardingTasks() {
       .from('onboarding_tasks')
       .select('id, title, description, category, due_date, status, completed_at')
       .eq('employee_id', selectedEmployeeId)
+      .eq('company_id', company.id)
       .order('due_date', { ascending: true, nullsFirst: false })
     clearTimeout(loadingTimer)
     setTasks(data ?? [])
     setLoading(false)
-  }, [selectedEmployeeId])
+  }, [selectedEmployeeId, company.id])
 
   useEffect(() => {
     loadEmployees()

@@ -47,24 +47,25 @@ export default function Expenses() {
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: cats }] = await Promise.all([
-      supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
-      supabase.from('expense_categories').select('id, name, requires_receipt, max_amount').eq('status', 'active').order('name'),
+      supabase.from('employees').select('id, employee_code, full_name').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
+      supabase.from('expense_categories').select('id, name, requires_receipt, max_amount').eq('company_id', company.id).eq('status', 'active').order('name'),
     ])
     setEmployees(emps ?? [])
     setCategories(cats ?? [])
-  }, [])
+  }, [company.id])
 
   const loadClaims = useCallback(async () => {
     setLoading(true)
     let query = supabase
       .from('expense_claims')
       .select('id, amount, expense_date, description, receipt_url, status, review_notes, employees(full_name, employee_code), expense_categories(name)')
+      .eq('company_id', company.id)
       .order('expense_date', { ascending: false })
     if (statusFilter !== 'all') query = query.eq('status', statusFilter)
     const { data } = await query.limit(200)
     setClaims(data ?? [])
     setLoading(false)
-  }, [statusFilter])
+  }, [statusFilter, company.id])
 
   useEffect(() => {
     loadLookups()

@@ -50,9 +50,9 @@ export default function Documents() {
   const [error, setError] = useState<string | null>(null)
 
   const loadEmployees = useCallback(async () => {
-    const { data } = await supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
+    const { data } = await supabase.from('employees').select('id, employee_code, full_name').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
     setEmployees(data ?? [])
-  }, [])
+  }, [company.id])
 
   const loadExpiring = useCallback(async () => {
     const in30 = new Date()
@@ -61,12 +61,13 @@ export default function Documents() {
     const { data } = await supabase
       .from('documents')
       .select('id, doc_type, expiry_date, employees(full_name)')
+      .eq('company_id', company.id)
       .not('expiry_date', 'is', null)
       .lte('expiry_date', in30Str)
       .order('expiry_date')
       .returns<ExpiringDoc[]>()
     setExpiringSoon(data ?? [])
-  }, [])
+  }, [company.id])
 
   const loadDocs = useCallback(async () => {
     if (!selectedEmployeeId) {
@@ -78,10 +79,11 @@ export default function Documents() {
       .from('documents')
       .select('id, doc_type, file_path, expiry_date, uploaded_at')
       .eq('employee_id', selectedEmployeeId)
+      .eq('company_id', company.id)
       .order('uploaded_at', { ascending: false })
     setDocs(data ?? [])
     setLoading(false)
-  }, [selectedEmployeeId])
+  }, [selectedEmployeeId, company.id])
 
   useEffect(() => {
     loadEmployees()

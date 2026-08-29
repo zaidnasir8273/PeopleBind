@@ -40,14 +40,14 @@ export default function Assets() {
   const [error, setError] = useState<string | null>(null)
 
   const loadEmployees = useCallback(async () => {
-    const { data } = await supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
+    const { data } = await supabase.from('employees').select('id, employee_code, full_name').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
     setEmployees(data ?? [])
-  }, [])
+  }, [company.id])
 
   const loadAssignedCount = useCallback(async () => {
-    const { count } = await supabase.from('assets').select('id', { count: 'exact', head: true }).eq('status', 'assigned')
+    const { count } = await supabase.from('assets').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'assigned')
     setAssignedCount(count ?? 0)
-  }, [])
+  }, [company.id])
 
   const loadAssets = useCallback(async () => {
     if (!selectedEmployeeId) {
@@ -59,10 +59,11 @@ export default function Assets() {
       .from('assets')
       .select('id, asset_type, description, assigned_date, returned_date, status')
       .eq('employee_id', selectedEmployeeId)
+      .eq('company_id', company.id)
       .order('assigned_date', { ascending: false })
     setAssets(data ?? [])
     setLoading(false)
-  }, [selectedEmployeeId])
+  }, [selectedEmployeeId, company.id])
 
   useEffect(() => {
     loadEmployees()

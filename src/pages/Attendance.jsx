@@ -80,12 +80,14 @@ export default function Attendance() {
       supabase
         .from('employees')
         .select('id, employee_code, full_name, shift_id, shifts(name)')
+        .eq('company_id', company.id)
         .in('employment_status', ['training', 'probation', 'confirmed'])
         .order('full_name'),
-      supabase.from('shifts').select('id, name').eq('status', 'active').order('name'),
+      supabase.from('shifts').select('id, name').eq('company_id', company.id).eq('status', 'active').order('name'),
       supabase
         .from('attendance')
         .select('id, employee_id, status, shift_id, check_in, check_out, worked_minutes, late_minutes, overtime_minutes, notes, source')
+        .eq('company_id', company.id)
         .eq('attendance_date', date),
     ])
     clearTimeout(loadingTimer)
@@ -96,19 +98,20 @@ export default function Attendance() {
     for (const row of attendanceRows ?? []) map[row.employee_id] = row
     setAttendanceByEmployee(map)
     setLoading(false)
-  }, [date])
+  }, [date, company.id])
 
   const loadCorrections = useCallback(async () => {
     const loadingTimer = setTimeout(() => setCorrectionsLoading(true), LOADING_DELAY)
     const { data } = await supabase
       .from('attendance_corrections')
       .select('id, attendance_date, requested_check_in, requested_check_out, reason, status, created_at, employees(full_name, employee_code)')
+      .eq('company_id', company.id)
       .order('created_at', { ascending: false })
       .limit(100)
     clearTimeout(loadingTimer)
     setCorrections(data ?? [])
     setCorrectionsLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     loadRoster()

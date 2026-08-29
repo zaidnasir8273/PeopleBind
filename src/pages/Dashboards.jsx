@@ -240,7 +240,7 @@ export default function Dashboards() {
 
   const loadDashboards = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase.from('custom_dashboards').select('*').order('sort_order')
+    const { data } = await supabase.from('custom_dashboards').select('*').eq('company_id', company.id).order('sort_order')
     setDashboards(data ?? [])
     if (data && data.length && !data.find((d) => d.id === activeId)) {
       const def = data.find((d) => d.is_default) ?? data[0]
@@ -248,17 +248,17 @@ export default function Dashboards() {
       setRange({ from: def.date_from ?? defaultRange().from, to: def.date_to ?? defaultRange().to })
     }
     setLoading(false)
-  }, [activeId])
+  }, [activeId, company.id])
 
   useEffect(() => {
     loadDashboards()
-  }, [])
+  }, [loadDashboards])
 
   const loadWidgets = useCallback(async () => {
     if (!activeId) { setWidgets([]); return }
-    const { data } = await supabase.from('custom_dashboard_widgets').select('*').eq('dashboard_id', activeId).order('sort_order')
+    const { data } = await supabase.from('custom_dashboard_widgets').select('*').eq('dashboard_id', activeId).eq('company_id', company.id).order('sort_order')
     setWidgets(data ?? [])
-  }, [activeId])
+  }, [activeId, company.id])
 
   useEffect(() => {
     loadWidgets()
