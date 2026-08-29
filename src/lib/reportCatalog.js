@@ -14,6 +14,13 @@ import { FolderOpenIcon } from '../components/ui/folder-open'
 // A report can also be `{ unavailable: 'reason' }` for the handful that
 // need schema/features this app doesn't have yet -- flagged in the nav
 // rather than silently dropped.
+//
+// Every `fetch` takes the current company as its only argument and every
+// query is scoped by `company_id` -- these all relied on RLS alone before,
+// which only scopes normal company users correctly, not platform admins
+// viewing a company via "View as" (their RLS branch has no company filter
+// by design, so they'd otherwise see every company's reports merged
+// together).
 
 function fmtDate(d) {
   if (!d) return '—'
@@ -30,15 +37,17 @@ function fmtMoney(n) {
 // entirely employer-funded (no employee row) or entirely employee-funded
 // still shows up correctly, with the missing side reported as 0, rather
 // than only ever reflecting whichever side has a payroll_items row.
-async function fetchStatutoryContribution(names) {
+async function fetchStatutoryContribution(names, company) {
   const [{ data: empData }, { data: erData }] = await Promise.all([
     supabase
       .from('payroll_items')
       .select('component_name, amount, employee_id, payroll_run_id, employees(full_name, employee_code), payroll_runs(payroll_periods(label))')
+      .eq('company_id', company.id)
       .in('component_name', names),
     supabase
       .from('payroll_employer_contributions')
       .select('contribution_type, amount, employee_id, payroll_run_id, employees(full_name, employee_code), payroll_runs(payroll_periods(label))')
+      .eq('company_id', company.id)
       .in('contribution_type', names),
   ])
 
@@ -183,10 +192,11 @@ const ACTIVE_STATUSES = ['training', 'probation', 'confirmed']
 export const REPORT_DEFINITIONS = {
   // ---------- Employee Overview ----------
   'ov-directory': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('employees')
         .select('employee_code, full_name, designations(name), departments!employees_department_id_fkey(name), employment_status, joining_date')
+        .eq('company_id', company.id)
         .in('employment_status', ACTIVE_STATUSES)
         .order('full_name')
       return (data ?? []).map((e) => ({
@@ -200,10 +210,11 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'ov-details': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('employees')
         .select('employee_code, full_name, personal_email, phone, cnic, date_of_birth, gender, address')
+        .eq('company_id', company.id)
         .in('employment_status', ACTIVE_STATUSES)
         .order('full_name')
       return (data ?? []).map((e) => ({
@@ -218,10 +229,11 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'ov-hire': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('employees')
         .select('employee_code, full_name, joining_date, employment_status, designations(name), employment_types(name)')
+        .eq('company_id', company.id)
         .in('employment_status', ACTIVE_STATUSES)
         .order('joining_date', { ascending: false })
       return (data ?? []).map((e) => ({
@@ -235,10 +247,11 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'ov-pay-elements': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('employee_salary_components')
         .select('amount, effective_from, effective_to, employees(full_name, employee_code), payroll_components(name, component_type)')
+        .eq('company_id', company.id)
         .order('effective_from', { ascending: false })
       return (data ?? []).map((r) => ({
         employee: r.employees?.full_name ?? '—', code: r.employees?.employee_code ?? '—', component: r.payroll_components?.name ?? '—',
@@ -251,10 +264,11 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'ov-timeline': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('employment_history')
         .select('effective_from, effective_to, reason, employees(full_name, employee_code), departments(name), designations(name)')
+        .eq('company_id', company.id)
         .order('effective_from', { ascending: false })
       return (data ?? []).map((r) => ({
         employee: r.employees?.full_name ?? '—', code: r.employees?.employee_code ?? '—', department: r.departments?.name ?? '—',
@@ -267,8 +281,8 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'ov-gross-salary': {
-    fetch: async () => {
-      const { data } = await supabase.from('employee_salary_components').select('amount, employees(full_name, employee_code), payroll_components(name)').is('effective_to', null)
+    fetch: async (company) => {
+      const { data } = await supabase.from('employee_salary_components').select('amount, employees(full_name, employee_code), payroll_components(name)').eq('company_id', company.id).is('effective_to', null)
       const byEmployee = new Map()
       for (const r of data ?? []) {
         const key = r.employees?.employee_code ?? r.employees?.full_name
@@ -283,9 +297,9 @@ export const REPORT_DEFINITIONS = {
 
   // ---------- Attendance ----------
   'att-daily-summary': {
-    fetch: async () => {
+    fetch: async (company) => {
       const today = new Date().toISOString().slice(0, 10)
-      const { data } = await supabase.from('attendance').select('status').eq('attendance_date', today)
+      const { data } = await supabase.from('attendance').select('status').eq('company_id', company.id).eq('attendance_date', today)
       const counts = {}
       for (const r of data ?? []) counts[r.status] = (counts[r.status] ?? 0) + 1
       return Object.entries(counts).map(([status, count]) => ({ status, count }))
@@ -294,11 +308,12 @@ export const REPORT_DEFINITIONS = {
   },
   'att-summary': { chart: true },
   'att-register': {
-    fetch: async () => {
+    fetch: async (company) => {
       const thirtyDaysAgo = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10)
       const { data } = await supabase
         .from('attendance')
         .select('attendance_date, status, worked_minutes, late_minutes, employees(full_name, employee_code)')
+        .eq('company_id', company.id)
         .gte('attendance_date', thirtyDaysAgo)
         .order('attendance_date', { ascending: false })
       return (data ?? []).map((r) => ({
@@ -312,11 +327,12 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'att-activity': {
-    fetch: async () => {
+    fetch: async (company) => {
       const sevenDaysAgo = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10)
       const { data } = await supabase
         .from('attendance')
         .select('attendance_date, check_in, check_out, source, employees(full_name)')
+        .eq('company_id', company.id)
         .gte('attendance_date', sevenDaysAgo)
         .order('attendance_date', { ascending: false })
       return (data ?? []).map((r) => ({
@@ -332,10 +348,11 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'att-overtime-detail': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('overtime_records')
         .select('work_date, minutes, rate_multiplier, approval_status, payroll_status, employees(full_name, employee_code)')
+        .eq('company_id', company.id)
         .order('work_date', { ascending: false })
         .limit(200)
       return (data ?? []).map((r) => ({
@@ -349,8 +366,8 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'att-overtime-summary': {
-    fetch: async () => {
-      const { data } = await supabase.from('overtime_records').select('minutes, employees(full_name, employee_code)')
+    fetch: async (company) => {
+      const { data } = await supabase.from('overtime_records').select('minutes, employees(full_name, employee_code)').eq('company_id', company.id)
       const byEmployee = new Map()
       for (const r of data ?? []) {
         const key = r.employees?.employee_code ?? r.employees?.full_name
@@ -364,10 +381,11 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'name', label: 'Employee' }, { key: 'entries', label: 'Entries' }, { key: 'hours', label: 'Total hours' }],
   },
   'att-timesheet': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('timesheets')
         .select('period_start, period_end, status, submitted_at, employees(full_name, employee_code)')
+        .eq('company_id', company.id)
         .order('period_start', { ascending: false })
         .limit(100)
       return (data ?? []).map((r) => ({
@@ -378,8 +396,8 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'period', label: 'Period' }, { key: 'status', label: 'Status' }, { key: 'submitted', label: 'Submitted' }],
   },
   'att-time-entry-summary': {
-    fetch: async () => {
-      const { data } = await supabase.from('time_entries').select('duration_minutes, employees(full_name, employee_code), projects(name)')
+    fetch: async (company) => {
+      const { data } = await supabase.from('time_entries').select('duration_minutes, employees(full_name, employee_code), projects(name)').eq('company_id', company.id)
       const byEmployee = new Map()
       for (const r of data ?? []) {
         const key = r.employees?.employee_code ?? r.employees?.full_name
@@ -391,16 +409,16 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'name', label: 'Employee' }, { key: 'hours', label: 'Total logged hours' }],
   },
   'att-night-shift': {
-    fetch: async () => {
-      const { data } = await supabase.from('shifts').select('id, name, start_time, end_time').order('name')
+    fetch: async (company) => {
+      const { data } = await supabase.from('shifts').select('id, name, start_time, end_time').eq('company_id', company.id).order('name')
       const nightShifts = (data ?? []).filter((s) => s.start_time && (s.start_time >= '18:00:00' || s.start_time < '06:00:00'))
       return nightShifts.map((s) => ({ name: s.name, start: s.start_time?.slice(0, 5) ?? '—', end: s.end_time?.slice(0, 5) ?? '—' }))
     },
     columns: [{ key: 'name', label: 'Shift' }, { key: 'start', label: 'Start' }, { key: 'end', label: 'End' }],
   },
   'att-vs-leave': {
-    fetch: async () => {
-      const { data } = await supabase.from('leave_balances').select('entitled_days, carried_forward_days, used_days, employees(full_name, employee_code), leave_types(name)')
+    fetch: async (company) => {
+      const { data } = await supabase.from('leave_balances').select('entitled_days, carried_forward_days, used_days, employees(full_name, employee_code), leave_types(name)').eq('company_id', company.id)
       return (data ?? []).map((r) => ({
         code: r.employees?.employee_code ?? '—', employee: r.employees?.full_name ?? '—', type: r.leave_types?.name ?? '—',
         entitled: r.entitled_days, used: r.used_days, remaining: Number(r.entitled_days ?? 0) + Number(r.carried_forward_days ?? 0) - Number(r.used_days ?? 0),
@@ -414,8 +432,8 @@ export const REPORT_DEFINITIONS = {
 
   // ---------- Fund ----------
   'fund-pf-summary': {
-    fetch: async () => {
-      const rows = await fetchStatutoryContribution(['Provident Fund'])
+    fetch: async (company) => {
+      const rows = await fetchStatutoryContribution(['Provident Fund'], company)
       const byEmployee = new Map()
       for (const r of rows) {
         if (!byEmployee.has(r.code)) byEmployee.set(r.code, { code: r.code, employee: r.employee, employee_total: 0, employer_total: 0 })
@@ -428,8 +446,8 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'employee_total', label: 'Employee contributed' }, { key: 'employer_total', label: 'Employer contributed' }],
   },
   'fund-pf-detail': {
-    fetch: async () => {
-      const rows = await fetchStatutoryContribution(['Provident Fund'])
+    fetch: async (company) => {
+      const rows = await fetchStatutoryContribution(['Provident Fund'], company)
       return rows.map((r) => ({
         code: r.code, employee: r.employee, period: r.period,
         employee_amount: fmtMoney(r.employee_amount), employer_amount: fmtMoney(r.employer_amount),
@@ -441,8 +459,8 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'fund-social-security': {
-    fetch: async () => {
-      const rows = await fetchStatutoryContribution(['SESSI', 'PESSI', 'KPESSI', 'BESSI'])
+    fetch: async (company) => {
+      const rows = await fetchStatutoryContribution(['SESSI', 'PESSI', 'KPESSI', 'BESSI'], company)
       return rows.map((r) => ({
         scheme: r.scheme, code: r.code, employee: r.employee, period: r.period,
         employee_amount: fmtMoney(r.employee_amount), employer_amount: fmtMoney(r.employer_amount),
@@ -456,10 +474,11 @@ export const REPORT_DEFINITIONS = {
 
   // ---------- Income ----------
   'inc-bank-transaction': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('payroll_items')
         .select('amount, employees(full_name, employee_code, bank_name, bank_account_number), payroll_runs(payroll_periods(label))')
+        .eq('company_id', company.id)
         .eq('component_type', 'earning')
         .in('component_name', ['Basic Salary'])
       const byEmployee = new Map()
@@ -476,8 +495,8 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'name', label: 'Employee' }, { key: 'bank', label: 'Bank' }, { key: 'account', label: 'Account #' }, { key: 'amount', label: 'Amount' }],
   },
   'inc-tax-summary': {
-    fetch: async () => {
-      const { data } = await supabase.from('payroll_items').select('amount, employees(full_name, employee_code)').eq('component_name', 'Income Tax')
+    fetch: async (company) => {
+      const { data } = await supabase.from('payroll_items').select('amount, employees(full_name, employee_code)').eq('company_id', company.id).eq('component_name', 'Income Tax')
       const byEmployee = new Map()
       for (const r of data ?? []) {
         const key = r.employees?.employee_code ?? r.employees?.full_name
@@ -489,10 +508,11 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'name', label: 'Employee' }, { key: 'total', label: 'Total tax deducted' }],
   },
   'inc-tax-detail': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('payroll_items')
         .select('amount, created_at, employees(full_name, employee_code), payroll_runs(payroll_periods(label))')
+        .eq('company_id', company.id)
         .eq('component_name', 'Income Tax')
         .order('created_at', { ascending: false })
       return (data ?? []).map((r) => ({
@@ -503,10 +523,11 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'period', label: 'Period' }, { key: 'amount', label: 'Tax deducted' }],
   },
   'inc-fbr-withholding': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('payroll_items')
         .select('amount, employees(full_name, employee_code, cnic), payroll_runs(payroll_periods(label))')
+        .eq('company_id', company.id)
         .eq('component_name', 'Income Tax')
         .order('created_at', { ascending: false })
       return (data ?? []).map((r) => ({
@@ -523,8 +544,8 @@ export const REPORT_DEFINITIONS = {
   // ---------- Payroll ----------
   'pay-by-period': { chart: true },
   'pay-employee-summary': {
-    fetch: async () => {
-      const { data } = await supabase.from('payroll_items').select('amount, component_type, employees(full_name, employee_code)')
+    fetch: async (company) => {
+      const { data } = await supabase.from('payroll_items').select('amount, component_type, employees(full_name, employee_code)').eq('company_id', company.id)
       const byEmployee = new Map()
       for (const r of data ?? []) {
         const key = r.employees?.employee_code ?? r.employees?.full_name
@@ -538,10 +559,11 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'name', label: 'Employee' }, { key: 'earnings', label: 'Total earnings' }, { key: 'deductions', label: 'Total deductions' }, { key: 'net', label: 'Net' }],
   },
   'pay-detail': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('payroll_items')
         .select('component_name, component_type, amount, employees(full_name, employee_code), payroll_runs(payroll_periods(label))')
+        .eq('company_id', company.id)
         .order('created_at', { ascending: false })
         .limit(300)
       return (data ?? []).map((r) => ({
@@ -555,8 +577,8 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'pay-reconciliation': {
-    fetch: async () => {
-      const { data } = await supabase.from('payroll_runs').select('status, payroll_periods(label), payroll_items(amount, component_type)')
+    fetch: async (company) => {
+      const { data } = await supabase.from('payroll_runs').select('status, payroll_periods(label), payroll_items(amount, component_type)').eq('company_id', company.id)
       return (data ?? []).map((run) => {
         const earnings = (run.payroll_items ?? []).filter((i) => i.component_type === 'earning').reduce((s, i) => s + Number(i.amount ?? 0), 0)
         const deductions = (run.payroll_items ?? []).filter((i) => i.component_type !== 'earning').reduce((s, i) => s + Number(i.amount ?? 0), 0)
@@ -567,8 +589,8 @@ export const REPORT_DEFINITIONS = {
   },
   'pay-expenses': { chart: true },
   'pay-eobi': {
-    fetch: async () => {
-      const rows = await fetchStatutoryContribution(['EOBI'])
+    fetch: async (company) => {
+      const rows = await fetchStatutoryContribution(['EOBI'], company)
       return rows.map((r) => ({
         code: r.code, employee: r.employee, period: r.period,
         employee_amount: fmtMoney(r.employee_amount), employer_amount: fmtMoney(r.employer_amount),
@@ -580,10 +602,11 @@ export const REPORT_DEFINITIONS = {
     ],
   },
   'pay-professional-tax': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('payroll_items')
         .select('amount, employees(full_name, employee_code), payroll_runs(payroll_periods(label))')
+        .eq('company_id', company.id)
         .eq('component_name', 'Professional Tax')
         .order('created_at', { ascending: false })
       return (data ?? []).map((r) => ({ code: r.employees?.employee_code ?? '—', employee: r.employees?.full_name ?? '—', period: r.payroll_runs?.payroll_periods?.label ?? '—', amount: fmtMoney(r.amount) }))
@@ -591,9 +614,9 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'period', label: 'Period' }, { key: 'amount', label: 'Professional tax deducted' }],
   },
   'pay-tax-certificate': {
-    fetch: async () => {
+    fetch: async (company) => {
       const yearStart = `${new Date().getFullYear()}-01-01`
-      const { data } = await supabase.from('payroll_items').select('amount, created_at, employees(full_name, employee_code)').eq('component_name', 'Income Tax').gte('created_at', yearStart)
+      const { data } = await supabase.from('payroll_items').select('amount, created_at, employees(full_name, employee_code)').eq('company_id', company.id).eq('component_name', 'Income Tax').gte('created_at', yearStart)
       const byEmployee = new Map()
       for (const r of data ?? []) {
         const key = r.employees?.employee_code ?? r.employees?.full_name
@@ -605,8 +628,8 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'name', label: 'Employee' }, { key: 'year', label: 'Tax year' }, { key: 'total', label: 'Total tax deducted (YTD)' }],
   },
   'pay-dept-summary': {
-    fetch: async () => {
-      const { data } = await supabase.from('payroll_items').select('amount, component_type, employees(departments!employees_department_id_fkey(name))')
+    fetch: async (company) => {
+      const { data } = await supabase.from('payroll_items').select('amount, component_type, employees(departments!employees_department_id_fkey(name))').eq('company_id', company.id)
       const byDept = new Map()
       for (const r of data ?? []) {
         const dept = r.employees?.departments?.name ?? 'Unassigned'
@@ -622,10 +645,11 @@ export const REPORT_DEFINITIONS = {
 
   // ---------- Leave ----------
   'leave-detail': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('leave_requests')
         .select('start_date, end_date, days_requested, status, employees(full_name, employee_code), leave_types(name)')
+        .eq('company_id', company.id)
         .order('start_date', { ascending: false })
         .limit(200)
       return (data ?? []).map((r) => ({
@@ -636,8 +660,8 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'type', label: 'Type' }, { key: 'dates', label: 'Dates' }, { key: 'days', label: 'Days' }, { key: 'status', label: 'Status' }],
   },
   'leave-balance': {
-    fetch: async () => {
-      const { data } = await supabase.from('leave_balances').select('entitled_days, carried_forward_days, used_days, employees(full_name, employee_code), leave_types(name)')
+    fetch: async (company) => {
+      const { data } = await supabase.from('leave_balances').select('entitled_days, carried_forward_days, used_days, employees(full_name, employee_code), leave_types(name)').eq('company_id', company.id)
       return (data ?? [])
         .map((r) => ({
           code: r.employees?.employee_code ?? '—', employee: r.employees?.full_name ?? '—', type: r.leave_types?.name ?? '—',
@@ -651,16 +675,16 @@ export const REPORT_DEFINITIONS = {
 
   // ---------- Recruitment ----------
   'rec-today': {
-    fetch: async () => {
+    fetch: async (company) => {
       const today = new Date().toISOString().slice(0, 10)
-      const { data } = await supabase.from('candidates').select('full_name, email, phone, source, created_at').gte('created_at', `${today}T00:00:00`)
+      const { data } = await supabase.from('candidates').select('full_name, email, phone, source, created_at').eq('company_id', company.id).gte('created_at', `${today}T00:00:00`)
       return (data ?? []).map((c) => ({ name: c.full_name, email: c.email ?? '—', phone: c.phone ?? '—', source: c.source ?? '—' }))
     },
     columns: [{ key: 'name', label: 'Candidate' }, { key: 'email', label: 'Email' }, { key: 'phone', label: 'Phone' }, { key: 'source', label: 'Source' }],
   },
   'rec-by-source': {
-    fetch: async () => {
-      const { data } = await supabase.from('candidates').select('source')
+    fetch: async (company) => {
+      const { data } = await supabase.from('candidates').select('source').eq('company_id', company.id)
       const counts = {}
       for (const r of data ?? []) { const s = r.source || 'Unknown'; counts[s] = (counts[s] ?? 0) + 1 }
       return Object.entries(counts).map(([source, count]) => ({ source, count })).sort((a, b) => b.count - a.count)
@@ -668,24 +692,25 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'source', label: 'Source' }, { key: 'count', label: 'Candidates' }],
   },
   'rec-by-status': {
-    fetch: async () => {
-      const { data } = await supabase.from('applications').select('stage, candidates(full_name), job_openings(title)').order('stage')
+    fetch: async (company) => {
+      const { data } = await supabase.from('applications').select('stage, candidates(full_name), job_openings(title)').eq('company_id', company.id).order('stage')
       return (data ?? []).map((r) => ({ candidate: r.candidates?.full_name ?? '—', opening: r.job_openings?.title ?? '—', stage: r.stage }))
     },
     columns: [{ key: 'candidate', label: 'Candidate' }, { key: 'opening', label: 'Job opening' }, { key: 'stage', label: 'Stage' }],
   },
   'rec-openings-vs-candidates': {
-    fetch: async () => {
-      const { data } = await supabase.from('job_openings').select('title, status, applications(id)')
+    fetch: async (company) => {
+      const { data } = await supabase.from('job_openings').select('title, status, applications(id)').eq('company_id', company.id)
       return (data ?? []).map((r) => ({ opening: r.title, status: r.status, candidates: r.applications?.length ?? 0 }))
     },
     columns: [{ key: 'opening', label: 'Job opening' }, { key: 'status', label: 'Status' }, { key: 'candidates', label: 'Candidates' }],
   },
   'rec-interviews': {
-    fetch: async () => {
+    fetch: async (company) => {
       const { data } = await supabase
         .from('interviews')
         .select('round, status, scheduled_at, rating, applications(candidates(full_name), job_openings(title))')
+        .eq('company_id', company.id)
         .order('scheduled_at', { ascending: false })
       return (data ?? []).map((r) => ({
         candidate: r.applications?.candidates?.full_name ?? '—', opening: r.applications?.job_openings?.title ?? '—',
@@ -695,8 +720,8 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'candidate', label: 'Candidate' }, { key: 'opening', label: 'Job opening' }, { key: 'round', label: 'Round' }, { key: 'scheduled', label: 'Scheduled' }, { key: 'status', label: 'Status' }, { key: 'rating', label: 'Rating' }],
   },
   'rec-openings-by-type': {
-    fetch: async () => {
-      const { data } = await supabase.from('job_openings').select('employment_types(name)')
+    fetch: async (company) => {
+      const { data } = await supabase.from('job_openings').select('employment_types(name)').eq('company_id', company.id)
       const counts = {}
       for (const r of data ?? []) { const t = r.employment_types?.name || 'Unspecified'; counts[t] = (counts[t] ?? 0) + 1 }
       return Object.entries(counts).map(([type, count]) => ({ type, count }))
@@ -706,29 +731,29 @@ export const REPORT_DEFINITIONS = {
 
   // ---------- Other ----------
   'oth-audit-log': {
-    fetch: async () => {
-      const { data } = await supabase.from('audit_log').select('action, table_name, created_at, profiles(full_name, email)').order('created_at', { ascending: false }).limit(200)
+    fetch: async (company) => {
+      const { data } = await supabase.from('audit_log').select('action, table_name, created_at, profiles(full_name, email)').eq('company_id', company.id).order('created_at', { ascending: false }).limit(200)
       return (data ?? []).map((r) => ({ when: fmtDate(r.created_at), who: r.profiles?.full_name || r.profiles?.email || '—', action: r.action, table: r.table_name }))
     },
     columns: [{ key: 'when', label: 'When' }, { key: 'who', label: 'Who' }, { key: 'action', label: 'Action' }, { key: 'table', label: 'Table' }],
   },
   'oth-company-docs': {
-    fetch: async () => {
-      const { data } = await supabase.from('documents').select('doc_type, file_path, uploaded_at, expiry_date').is('employee_id', null).order('uploaded_at', { ascending: false })
+    fetch: async (company) => {
+      const { data } = await supabase.from('documents').select('doc_type, file_path, uploaded_at, expiry_date').eq('company_id', company.id).is('employee_id', null).order('uploaded_at', { ascending: false })
       return (data ?? []).map((r) => ({ type: r.doc_type ?? '—', file: r.file_path?.split('/').pop() ?? '—', uploaded: fmtDate(r.uploaded_at), expires: r.expiry_date ? fmtDate(r.expiry_date) : '—' }))
     },
     columns: [{ key: 'type', label: 'Type' }, { key: 'file', label: 'File' }, { key: 'uploaded', label: 'Uploaded' }, { key: 'expires', label: 'Expires' }],
   },
   'oth-employee-docs': {
-    fetch: async () => {
-      const { data } = await supabase.from('documents').select('doc_type, file_path, uploaded_at, expiry_date, employees(full_name, employee_code)').not('employee_id', 'is', null).order('uploaded_at', { ascending: false })
+    fetch: async (company) => {
+      const { data } = await supabase.from('documents').select('doc_type, file_path, uploaded_at, expiry_date, employees(full_name, employee_code)').eq('company_id', company.id).not('employee_id', 'is', null).order('uploaded_at', { ascending: false })
       return (data ?? []).map((r) => ({ code: r.employees?.employee_code ?? '—', employee: r.employees?.full_name ?? '—', type: r.doc_type ?? '—', uploaded: fmtDate(r.uploaded_at), expires: r.expiry_date ? fmtDate(r.expiry_date) : '—' }))
     },
     columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'type', label: 'Type' }, { key: 'uploaded', label: 'Uploaded' }, { key: 'expires', label: 'Expires' }],
   },
   'oth-loan-ledger': {
-    fetch: async () => {
-      const { data } = await supabase.from('loans').select('loan_type, principal_amount, installment_amount, status, start_date, employees(full_name, employee_code)').order('start_date', { ascending: false })
+    fetch: async (company) => {
+      const { data } = await supabase.from('loans').select('loan_type, principal_amount, installment_amount, status, start_date, employees(full_name, employee_code)').eq('company_id', company.id).order('start_date', { ascending: false })
       return (data ?? []).map((r) => ({
         code: r.employees?.employee_code ?? '—', employee: r.employees?.full_name ?? '—', type: r.loan_type ?? '—',
         principal: fmtMoney(r.principal_amount), installment: fmtMoney(r.installment_amount), status: r.status, started: fmtDate(r.start_date),
@@ -737,8 +762,8 @@ export const REPORT_DEFINITIONS = {
     columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'type', label: 'Type' }, { key: 'principal', label: 'Principal' }, { key: 'installment', label: 'Installment' }, { key: 'status', label: 'Status' }, { key: 'started', label: 'Started' }],
   },
   'oth-tasks': {
-    fetch: async () => {
-      const { data } = await supabase.from('onboarding_tasks').select('title, category, status, due_date, employees(full_name, employee_code)').order('due_date', { ascending: true })
+    fetch: async (company) => {
+      const { data } = await supabase.from('onboarding_tasks').select('title, category, status, due_date, employees(full_name, employee_code)').eq('company_id', company.id).order('due_date', { ascending: true })
       return (data ?? []).map((r) => ({ code: r.employees?.employee_code ?? '—', employee: r.employees?.full_name ?? '—', task: r.title, category: r.category ?? '—', due: r.due_date ? fmtDate(r.due_date) : '—', status: r.status }))
     },
     columns: [{ key: 'code', label: 'Code' }, { key: 'employee', label: 'Employee' }, { key: 'task', label: 'Task' }, { key: 'category', label: 'Category' }, { key: 'due', label: 'Due' }, { key: 'status', label: 'Status' }],

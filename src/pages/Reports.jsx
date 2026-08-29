@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { DownloadIcon } from '../components/ui/download'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import { SkeletonBlock, SkeletonTable } from '../components/Skeleton'
 import { REPORT_CATEGORIES, REPORT_DEFINITIONS } from '../lib/reportCatalog'
 import { csvEscape, exportCsv } from '../lib/csv'
@@ -110,6 +111,7 @@ function ReportsNav({ tab, setTab }) {
 }
 
 function ReportTable({ reportKey, label }) {
+  const { company } = useAuth()
   const def = REPORT_DEFINITIONS[reportKey]
   const [rows, setRows] = useState(null)
   const [error, setError] = useState(null)
@@ -119,11 +121,11 @@ function ReportTable({ reportKey, label }) {
     setRows(null)
     setError(null)
     if (!def || def.unavailable) return
-    def.fetch()
+    def.fetch(company)
       .then((data) => { if (active) setRows(data) })
       .catch((e) => { if (active) setError(e.message || 'Failed to load report') })
     return () => { active = false }
-  }, [def])
+  }, [def, company.id])
 
   if (!def) {
     return <div className="empty-state"><p>Report not found.</p></div>
@@ -326,6 +328,7 @@ function PayrollChart({ payroll }) {
 }
 
 export default function Reports() {
+  const { company } = useAuth()
   const [tab, setTab] = useState('ov-directory')
   const [headcount, setHeadcount] = useState([])
   const [attendance, setAttendance] = useState([])
@@ -347,12 +350,12 @@ export default function Reports() {
       { data: payrollRuns },
       { data: payrollSummary },
     ] = await Promise.all([
-      supabase.from('v_headcount_by_department').select('department_name, employee_count'),
-      supabase.from('v_attendance_monthly').select('month, present_days, late_days, absent_days, leave_days').gte('month', monthsAgo(6)),
-      supabase.from('v_leave_usage').select('leave_type, entitled_days, used_days, remaining_days').eq('year', leaveYear),
-      supabase.from('v_expense_summary').select('month, category_name, claim_count, total_amount').gte('month', monthsAgo(6)),
-      supabase.from('payroll_runs').select('id, payroll_periods(period_start, label)'),
-      supabase.from('v_payroll_run_summary').select('payroll_run_id, period_label, employee_count, total_earnings, total_deductions, total_net'),
+      supabase.from('v_headcount_by_department').select('department_name, employee_count').eq('company_id', company.id),
+      supabase.from('v_attendance_monthly').select('month, present_days, late_days, absent_days, leave_days').eq('company_id', company.id).gte('month', monthsAgo(6)),
+      supabase.from('v_leave_usage').select('leave_type, entitled_days, used_days, remaining_days').eq('company_id', company.id).eq('year', leaveYear),
+      supabase.from('v_expense_summary').select('month, category_name, claim_count, total_amount').eq('company_id', company.id).gte('month', monthsAgo(6)),
+      supabase.from('payroll_runs').select('id, payroll_periods(period_start, label)').eq('company_id', company.id),
+      supabase.from('v_payroll_run_summary').select('payroll_run_id, period_label, employee_count, total_earnings, total_deductions, total_net').eq('company_id', company.id),
     ])
 
     setHeadcount((headcountRows ?? []).map((r) => ({ name: r.department_name ?? 'Unassigned', count: r.employee_count })))
@@ -404,7 +407,7 @@ export default function Reports() {
     )
 
     setLoading(false)
-  }, [leaveYear])
+  }, [leaveYear, company.id])
 
   useEffect(() => {
     load()

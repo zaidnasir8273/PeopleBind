@@ -48,9 +48,15 @@ export default function Help() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    // help_categories/help_articles.company_id is nullable -- null means
+    // global PeopleBind-authored content, shared with every company, so
+    // this needs an OR filter (not a plain eq) scoped server-side, rather
+    // than fetching every company's rows and filtering client-side (which
+    // still leaked every other company's category/article metadata over
+    // the wire even though only global+own ever got displayed).
     const [{ data: cats }, { data: arts }] = await Promise.all([
-      supabase.from('help_categories').select('id, name, sort_order, company_id').order('sort_order').order('name'),
-      supabase.from('help_articles').select('id, title, category_id, sort_order').eq('status', 'published').order('sort_order').order('title'),
+      supabase.from('help_categories').select('id, name, sort_order, company_id').or(`company_id.eq.${company?.id},company_id.is.null`).order('sort_order').order('name'),
+      supabase.from('help_articles').select('id, title, category_id, sort_order').or(`company_id.eq.${company?.id},company_id.is.null`).eq('status', 'published').order('sort_order').order('title'),
     ])
 
     const global = groupByCategory((cats ?? []).filter((c) => !c.company_id), arts)
@@ -74,11 +80,11 @@ export default function Help() {
       return
     }
     let active = true
-    supabase.from('help_articles').select('id, title, body').eq('id', selectedArticleId).eq('status', 'published').maybeSingle().then(({ data }) => {
+    supabase.from('help_articles').select('id, title, body').eq('id', selectedArticleId).or(`company_id.eq.${company?.id},company_id.is.null`).eq('status', 'published').maybeSingle().then(({ data }) => {
       if (active) setArticle(data)
     })
     return () => { active = false }
-  }, [selectedArticleId])
+  }, [selectedArticleId, company?.id])
 
   const hasAnyArticles = globalCategories.length > 0 || companyCategories.length > 0
 

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { ChevronLeftIcon } from '../components/ui/chevron-left'
 import { ChevronRightIcon } from '../components/ui/chevron-right'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import { SkeletonBlock } from '../components/Skeleton'
 
 const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -24,6 +25,7 @@ function monthGrid(year, month) {
 }
 
 export default function CalendarPage() {
+  const { company } = useAuth()
   const today = new Date()
   const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() })
   const [loading, setLoading] = useState(true)
@@ -39,20 +41,23 @@ export default function CalendarPage() {
     const rangeEnd = dateKey(days[days.length - 1])
 
     const [{ data: holidayRows }, { data: leaveRows }, { data: employeeRows }, { data: projectRows }] = await Promise.all([
-      supabase.from('holidays').select('id, name, holiday_date').gte('holiday_date', rangeStart).lte('holiday_date', rangeEnd),
+      supabase.from('holidays').select('id, name, holiday_date').eq('company_id', company.id).gte('holiday_date', rangeStart).lte('holiday_date', rangeEnd),
       supabase
         .from('leave_requests')
         .select('id, start_date, end_date, employees(full_name), leave_types(name)')
+        .eq('company_id', company.id)
         .eq('status', 'approved')
         .lte('start_date', rangeEnd)
         .gte('end_date', rangeStart),
       supabase
         .from('employees')
         .select('id, full_name, date_of_birth, joining_date')
+        .eq('company_id', company.id)
         .in('employment_status', ['training', 'probation', 'confirmed']),
       supabase
         .from('projects')
         .select('id, name, expected_completion_date')
+        .eq('company_id', company.id)
         .eq('status', 'active')
         .gte('expected_completion_date', rangeStart)
         .lte('expected_completion_date', rangeEnd),
@@ -100,7 +105,7 @@ export default function CalendarPage() {
 
     setEventsByDay(byDay)
     setLoading(false)
-  }, [days])
+  }, [days, company.id])
 
   useEffect(() => {
     load()

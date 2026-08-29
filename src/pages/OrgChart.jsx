@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { ZoomIn, ZoomOut, Download, Loader2 } from 'lucide-react'
 import { RotateCCWIcon } from '../components/ui/rotate-ccw'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 import { Avatar } from '../components/Avatar'
 import { SkeletonBlock } from '../components/Skeleton'
 
@@ -38,6 +39,7 @@ function OrgNode({ employee, childrenByManager, isRoot }) {
 }
 
 export default function OrgChart() {
+  const { company } = useAuth()
   const [loading, setLoading] = useState(true)
   const [roots, setRoots] = useState([])
   const [childrenByManager, setChildrenByManager] = useState(new Map())
@@ -59,6 +61,7 @@ export default function OrgChart() {
     const { data } = await supabase
       .from('employees')
       .select('id, full_name, photo_url, manager_id, departments!employees_department_id_fkey(name), designations(name)')
+      .eq('company_id', company.id)
       .in('employment_status', ['training', 'probation', 'confirmed'])
       .order('full_name')
 
@@ -84,7 +87,7 @@ export default function OrgChart() {
     setChildrenByManager(byManager)
     setUnlinked(topLevel.length)
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
