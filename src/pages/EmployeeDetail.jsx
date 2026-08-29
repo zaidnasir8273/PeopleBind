@@ -929,7 +929,10 @@ function PerformanceTab({ employeeId, company }) {
               const value = kpiValues[kpi.id]
               return (
                 <div key={kpi.id} className="mini-card">
-                  <div className="muted" style={{ fontSize: 12 }}>{kpi.name}</div>
+                  {/* fixed to a 2-line height so a long label (e.g. "Onboarding
+                      completion rate") doesn't make its whole grid row taller
+                      than the rows around it -- every card ends up the same size */}
+                  <div className="muted" style={{ fontSize: 12, minHeight: 32, lineHeight: '16px' }}>{kpi.name}</div>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600 }}>
                     {value == null ? '—' : `${Math.round(value * 100)}%`}
                   </div>
