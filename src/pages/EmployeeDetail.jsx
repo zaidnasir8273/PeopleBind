@@ -82,28 +82,29 @@ export default function EmployeeDetail() {
         'id, employee_code, full_name, photo_url, phone, personal_email, date_of_birth, gender, father_name, marital_status, emergency_contact_name, emergency_contact_phone, cnic, address, designation_id, team_id, department_id, employment_type_id, branch_id, employment_status, manager_id, hire_date, joining_date, probation_period_months, confirmation_date, exit_date, bank_name, bank_account_number, bank_iban, basic_salary, salary_level, designations(name), teams(name), departments!employees_department_id_fkey(name), employment_types(name), branches(name, city)'
       )
       .eq('id', id)
+      .eq('company_id', company.id)
       .maybeSingle()
     if (error) toast.error(error.message || 'Failed to load employee')
     setEmployee(data ?? null)
     setLoading(false)
 
     if (data?.manager_id) {
-      const { data: manager } = await supabase.from('employees').select('full_name, designations(name)').eq('id', data.manager_id).maybeSingle()
+      const { data: manager } = await supabase.from('employees').select('full_name, designations(name)').eq('id', data.manager_id).eq('company_id', company.id).maybeSingle()
       setManagerName(manager ? `${manager.full_name}${manager.designations?.name ? ` · ${manager.designations.name}` : ''}` : null)
     } else {
       setManagerName(null)
     }
-  }, [id])
+  }, [id, company.id])
 
   const loadLookups = useCallback(async () => {
     const [{ data: departments }, { data: designations }, { data: teams }, { data: employmentTypes }, { data: branches }, { data: allEmployees }, { data: shifts }] = await Promise.all([
-      supabase.from('departments').select('id,name').eq('status', 'active').order('name'),
-      supabase.from('designations').select('id,name').eq('status', 'active').order('name'),
-      supabase.from('teams').select('id,name').eq('status', 'active').order('name'),
-      supabase.from('employment_types').select('id,name').order('name'),
-      supabase.from('branches').select('id,name').order('name'),
-      supabase.from('employees').select('id, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
-      supabase.from('shifts').select('id,name').eq('status', 'active').order('name'),
+      supabase.from('departments').select('id,name').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('designations').select('id,name').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('teams').select('id,name').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('employment_types').select('id,name').eq('company_id', company.id).order('name'),
+      supabase.from('branches').select('id,name').eq('company_id', company.id).order('name'),
+      supabase.from('employees').select('id, full_name').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
+      supabase.from('shifts').select('id,name').eq('company_id', company.id).eq('status', 'active').order('name'),
     ])
     setLookups({
       departments: departments ?? [],
@@ -114,7 +115,7 @@ export default function EmployeeDetail() {
       shifts: shifts ?? [],
     })
     setEmployees(allEmployees ?? [])
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()

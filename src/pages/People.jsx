@@ -28,22 +28,23 @@ export default function People() {
     const { data, error: loadError } = await supabase
       .from('employees')
       .select(
-        'id, employee_code, full_name, photo_url, employment_status, joining_date, phone, personal_email, cnic, bank_account_number, department_id, designation_id, employment_type_id, branch_id, manager_id, departments!employees_department_id_fkey(name), designations(name), branches(name, city)'
+        'id, employee_code, full_name, photo_url, employment_status, personal_email, manager_id, departments!employees_department_id_fkey(name), designations(name), branches(name)'
       )
+      .eq('company_id', company.id)
       .order('created_at', { ascending: false })
     if (loadError) toast.error(loadError.message || 'Failed to load employees')
     setEmployees(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   const loadLookups = useCallback(async () => {
     const [{ data: departments }, { data: designations }, { data: teams }, { data: employmentTypes }, { data: branches }, { data: shifts }] = await Promise.all([
-      supabase.from('departments').select('id,name').eq('status', 'active').order('name'),
-      supabase.from('designations').select('id,name').eq('status', 'active').order('name'),
-      supabase.from('teams').select('id,name').eq('status', 'active').order('name'),
-      supabase.from('employment_types').select('id,name').order('name'),
-      supabase.from('branches').select('id,name').order('name'),
-      supabase.from('shifts').select('id,name').eq('status', 'active').order('name'),
+      supabase.from('departments').select('id,name').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('designations').select('id,name').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('teams').select('id,name').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('employment_types').select('id,name').eq('company_id', company.id).order('name'),
+      supabase.from('branches').select('id,name').eq('company_id', company.id).order('name'),
+      supabase.from('shifts').select('id,name').eq('company_id', company.id).eq('status', 'active').order('name'),
     ])
     setLookups({
       departments: departments ?? [],
@@ -53,7 +54,7 @@ export default function People() {
       branches: branches ?? [],
       shifts: shifts ?? [],
     })
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     loadEmployees()
