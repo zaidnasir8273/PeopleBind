@@ -112,7 +112,7 @@ const axisStyle = { fontSize: 11, fontFamily: 'Inter, sans-serif', fill: INK_SOF
 const tooltipStyle = { fontSize: 13, fontFamily: 'Inter, sans-serif', borderRadius: 8, border: `1px solid ${LINE}` }
 
 export default function Home() {
-  const { profile } = useAuth()
+  const { profile, company } = useAuth()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ employeeCount: 0, pendingLeave: 0, pendingExpenses: 0, pendingCorrections: 0, openRoles: 0 })
   const [actionItems, setActionItems] = useState([])
@@ -157,26 +157,28 @@ export default function Home() {
       { data: kudosRows },
       { data: projectRows },
     ] = await Promise.all([
-      supabase.from('employees').select('id', { count: 'exact', head: true }).in('employment_status', ['training', 'probation', 'confirmed']),
-      supabase.from('leave_requests').select('id, employees(full_name), leave_types(name), days_requested').eq('status', 'pending'),
-      supabase.from('expense_claims').select('id, employees(full_name), amount').eq('status', 'submitted'),
-      supabase.from('attendance_corrections').select('id, employees(full_name)').eq('status', 'pending'),
-      supabase.from('payroll_runs').select('id, status, payroll_periods(label)').neq('status', 'finalized'),
-      supabase.from('job_openings').select('id', { count: 'exact', head: true }).eq('status', 'open'),
-      supabase.from('employees').select('id, full_name, confirmation_date').in('employment_status', ['training', 'probation']).not('confirmation_date', 'is', null),
-      supabase.from('employees').select('id, full_name, date_of_birth, joining_date').in('employment_status', ['training', 'probation', 'confirmed']),
-      supabase.from('running_timers').select('id, employee_id, started_at, employees(full_name, photo_url), projects(name)').order('started_at', { ascending: true }),
+      supabase.from('employees').select('id', { count: 'exact', head: true }).eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']),
+      supabase.from('leave_requests').select('id, employees(full_name), leave_types(name), days_requested').eq('company_id', company.id).eq('status', 'pending'),
+      supabase.from('expense_claims').select('id, employees(full_name), amount').eq('company_id', company.id).eq('status', 'submitted'),
+      supabase.from('attendance_corrections').select('id, employees(full_name)').eq('company_id', company.id).eq('status', 'pending'),
+      supabase.from('payroll_runs').select('id, status, payroll_periods(label)').eq('company_id', company.id).neq('status', 'finalized'),
+      supabase.from('job_openings').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'open'),
+      supabase.from('employees').select('id, full_name, confirmation_date').eq('company_id', company.id).in('employment_status', ['training', 'probation']).not('confirmation_date', 'is', null),
+      supabase.from('employees').select('id, full_name, date_of_birth, joining_date').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']),
+      supabase.from('running_timers').select('id, employee_id, started_at, employees(full_name, photo_url), projects(name)').eq('company_id', company.id).order('started_at', { ascending: true }),
       supabase
         .from('leave_requests')
         .select('id, employees(full_name, photo_url), leave_types(name)')
+        .eq('company_id', company.id)
         .eq('status', 'approved')
         .lte('start_date', todayStr)
         .gte('end_date', todayStr),
-      supabase.from('attendance').select('status').eq('attendance_date', todayStr),
-      supabase.from('attendance').select('attendance_date, status').gte('attendance_date', fourteenDaysAgo).lte('attendance_date', todayStr),
+      supabase.from('attendance').select('status').eq('company_id', company.id).eq('attendance_date', todayStr),
+      supabase.from('attendance').select('attendance_date, status').eq('company_id', company.id).gte('attendance_date', fourteenDaysAgo).lte('attendance_date', todayStr),
       supabase
         .from('employees')
         .select('id, full_name, photo_url, joining_date')
+        .eq('company_id', company.id)
         .in('employment_status', ['training', 'probation', 'confirmed'])
         .gte('joining_date', thirtyDaysAgo)
         .order('joining_date', { ascending: false })
@@ -184,6 +186,7 @@ export default function Home() {
       supabase
         .from('leave_requests')
         .select('id, status, reviewed_at, employees(full_name, photo_url), leave_types(name)')
+        .eq('company_id', company.id)
         .in('status', ['approved', 'rejected'])
         .not('reviewed_at', 'is', null)
         .order('reviewed_at', { ascending: false })
@@ -191,6 +194,7 @@ export default function Home() {
       supabase
         .from('expense_claims')
         .select('id, status, reviewed_at, amount, employees(full_name, photo_url)')
+        .eq('company_id', company.id)
         .in('status', ['approved', 'rejected'])
         .not('reviewed_at', 'is', null)
         .order('reviewed_at', { ascending: false })
@@ -198,6 +202,7 @@ export default function Home() {
       supabase
         .from('payroll_runs')
         .select('id, finalized_at, payroll_periods(label)')
+        .eq('company_id', company.id)
         .eq('status', 'finalized')
         .not('finalized_at', 'is', null)
         .order('finalized_at', { ascending: false })
@@ -205,25 +210,29 @@ export default function Home() {
       supabase
         .from('timesheets')
         .select('id, status, approved_at, period_start, period_end, employees(full_name, photo_url)')
+        .eq('company_id', company.id)
         .in('status', ['approved', 'rejected'])
         .not('approved_at', 'is', null)
         .order('approved_at', { ascending: false })
         .limit(5),
-      supabase.from('employees').select('id, full_name, photo_url').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name').limit(18),
+      supabase.from('employees').select('id, full_name, photo_url').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name').limit(18),
       supabase
         .from('announcements')
         .select('id, title, body, pinned, created_at')
+        .eq('company_id', company.id)
         .order('pinned', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(3),
       supabase
         .from('kudos')
         .select('id, category, message, created_at, from:employees!kudos_from_employee_id_fkey(full_name, photo_url), to:employees!kudos_to_employee_id_fkey(full_name, photo_url)')
+        .eq('company_id', company.id)
         .order('created_at', { ascending: false })
         .limit(3),
       supabase
         .from('projects')
         .select('id, name, expected_completion_date, project_members(employees(full_name, photo_url))')
+        .eq('company_id', company.id)
         .eq('status', 'active')
         .not('expected_completion_date', 'is', null)
         .order('expected_completion_date', { ascending: true })
@@ -379,7 +388,7 @@ export default function Home() {
     })
 
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
