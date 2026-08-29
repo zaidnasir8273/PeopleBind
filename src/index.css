@@ -5031,6 +5031,14 @@ a.attention-item:hover {
   border-radius: var(--radius);
   padding: 4px;
   margin-bottom: 20px;
+  /* still scrolls (drag, trackpad, shift+wheel) when tabs overflow -- just
+     without the chunky native scrollbar track sitting under the tabs. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-button {
