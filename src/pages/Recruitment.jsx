@@ -51,19 +51,20 @@ export default function Recruitment() {
     const { data } = await supabase
       .from('job_openings')
       .select('id, title, status, opened_at, closed_at, departments(name), applications(count)')
+      .eq('company_id', company.id)
       .order('created_at', { ascending: false })
     setOpenings(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   const loadLookups = useCallback(async () => {
     const [{ data: departments }, { data: designations }, { data: employmentTypes }] = await Promise.all([
-      supabase.from('departments').select('id,name').eq('status', 'active').order('name'),
-      supabase.from('designations').select('id,name').eq('status', 'active').order('name'),
-      supabase.from('employment_types').select('id,name').order('name'),
+      supabase.from('departments').select('id,name').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('designations').select('id,name').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('employment_types').select('id,name').eq('company_id', company.id).order('name'),
     ])
     setLookups({ departments: departments ?? [], designations: designations ?? [], employmentTypes: employmentTypes ?? [] })
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     loadOpenings()
@@ -231,24 +232,25 @@ function PipelineView({ openingId, profile, company, onBack }) {
   const load = useCallback(async () => {
     setLoading(true)
     const [{ data: openingRow }, { data: apps }] = await Promise.all([
-      supabase.from('job_openings').select('*').eq('id', openingId).single(),
+      supabase.from('job_openings').select('*').eq('id', openingId).eq('company_id', company.id).single(),
       supabase
         .from('applications')
         .select('id, stage, applied_at, rejected_reason, candidates(id, full_name, email, phone, source, notes)')
         .eq('job_opening_id', openingId)
+        .eq('company_id', company.id)
         .order('applied_at', { ascending: false }),
     ])
     setOpening(openingRow ?? null)
     setApplications(apps ?? [])
     setLoading(false)
-  }, [openingId])
+  }, [openingId, company.id])
 
   useEffect(() => {
     load()
   }, [load])
 
   async function openAddDrawer() {
-    const { data } = await supabase.from('candidates').select('id, full_name, email').order('full_name')
+    const { data } = await supabase.from('candidates').select('id, full_name, email').eq('company_id', company.id).order('full_name')
     setCandidates(data ?? [])
     setCandidateMode('existing')
     setCandidateId('')
@@ -441,15 +443,15 @@ function CandidateDrawer({ application, opening, profile, company, onClose, onCh
   const loadDetail = useCallback(async () => {
     setLoadingDetail(true)
     const [{ data: interviewRows }, { data: offerRows }, { data: profileRows }] = await Promise.all([
-      supabase.from('interviews').select('id, round, scheduled_at, status, rating, feedback, interviewer_id').eq('application_id', application.id).order('scheduled_at'),
-      supabase.from('offers').select('id, offered_salary, joining_date, status').eq('application_id', application.id).order('created_at', { ascending: false }),
-      supabase.from('profiles').select('id, full_name, email'),
+      supabase.from('interviews').select('id, round, scheduled_at, status, rating, feedback, interviewer_id').eq('application_id', application.id).eq('company_id', company.id).order('scheduled_at'),
+      supabase.from('offers').select('id, offered_salary, joining_date, status').eq('application_id', application.id).eq('company_id', company.id).order('created_at', { ascending: false }),
+      supabase.from('profiles').select('id, full_name, email').eq('company_id', company.id),
     ])
     setInterviews(interviewRows ?? [])
     setOffers(offerRows ?? [])
     setProfiles(profileRows ?? [])
     setLoadingDetail(false)
-  }, [application.id])
+  }, [application.id, company.id])
 
   useEffect(() => {
     loadDetail()

@@ -32,9 +32,9 @@ export default function Performance() {
   const [employees, setEmployees] = useState([])
 
   const loadEmployees = useCallback(async () => {
-    const { data } = await supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
+    const { data } = await supabase.from('employees').select('id, employee_code, full_name').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
     setEmployees(data ?? [])
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     loadEmployees()
@@ -77,10 +77,11 @@ function GoalsTab({ employees, profile, company }) {
     const { data } = await supabase
       .from('goals')
       .select('id, employee_id, title, description, target_date, status, employees(full_name, employee_code)')
+      .eq('company_id', company.id)
       .order('target_date', { ascending: true, nullsFirst: false })
     setGoals(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
@@ -263,26 +264,27 @@ function ReviewsTab({ employees, profile, company }) {
 
   const loadLookups = useCallback(async () => {
     const [{ data: cycleRows }, { data: profileRows }, { data: kpiRows }] = await Promise.all([
-      supabase.from('review_cycles').select('id, name, cycle_start, cycle_end, status').order('cycle_start', { ascending: false }),
-      supabase.from('profiles').select('id, full_name, email'),
-      supabase.from('kpi_definitions').select('id, name, kpi_type, metric_key, weight').eq('status', 'active').order('kpi_type').order('name'),
+      supabase.from('review_cycles').select('id, name, cycle_start, cycle_end, status').eq('company_id', company.id).order('cycle_start', { ascending: false }),
+      supabase.from('profiles').select('id, full_name, email').eq('company_id', company.id),
+      supabase.from('kpi_definitions').select('id, name, kpi_type, metric_key, weight').eq('company_id', company.id).eq('status', 'active').order('kpi_type').order('name'),
     ])
     setCycles(cycleRows ?? [])
     setProfiles(profileRows ?? [])
     setKpiCatalog(kpiRows ?? [])
-  }, [])
+  }, [company.id])
 
   const loadReviews = useCallback(async () => {
     setLoading(true)
     let query = supabase
       .from('performance_reviews')
       .select('id, employee_id, overall_rating, comments, status, submitted_at, acknowledged_at, reviewer_id, review_cycle_id, employees(full_name, employee_code), review_cycles(name)')
+      .eq('company_id', company.id)
       .order('created_at', { ascending: false })
     if (activeCycleId !== 'all') query = query.eq('review_cycle_id', activeCycleId)
     const { data } = await query
     setReviews(data ?? [])
     setLoading(false)
-  }, [activeCycleId])
+  }, [activeCycleId, company.id])
 
   useEffect(() => {
     loadLookups()
@@ -321,7 +323,7 @@ function ReviewsTab({ employees, profile, company }) {
 
   async function openManageKpis(cycle) {
     setManagingCycle(cycle)
-    const { data } = await supabase.from('review_cycle_kpis').select('kpi_definition_id, weight_override').eq('review_cycle_id', cycle.id)
+    const { data } = await supabase.from('review_cycle_kpis').select('kpi_definition_id, weight_override').eq('review_cycle_id', cycle.id).eq('company_id', company.id)
     setSelectedKpiIds(new Set((data ?? []).map((r) => r.kpi_definition_id)))
     const overrides = {}
     for (const r of data ?? []) if (r.weight_override != null) overrides[r.kpi_definition_id] = String(r.weight_override)
@@ -367,6 +369,7 @@ function ReviewsTab({ employees, profile, company }) {
       .from('review_cycle_kpis')
       .select('id, weight_override, kpi_definitions(id, name, kpi_type, metric_key, weight)')
       .eq('review_cycle_id', cycleId)
+      .eq('company_id', company.id)
       .order('sort_order')
     setCycleKpis(ckRows ?? [])
 
@@ -375,13 +378,14 @@ function ReviewsTab({ employees, profile, company }) {
         .from('performance_review_kpi_scores')
         .select('kpi_definition_id, score, computed_value, notes')
         .eq('performance_review_id', reviewId)
+        .eq('company_id', company.id)
       const map = {}
       for (const s of scoreRows ?? []) map[s.kpi_definition_id] = { score: s.score, computed_value: s.computed_value, notes: s.notes || '' }
       setKpiScores(map)
     } else {
       setKpiScores({})
     }
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     if (reviewDrawerOpen) loadScorecard(reviewForm.review_cycle_id, editingReview?.id)
@@ -797,11 +801,12 @@ function FeedbackTab({ employees, profile, company }) {
     const { data } = await supabase
       .from('feedback_notes')
       .select('id, note, created_at, employees(full_name, employee_code), given_by')
+      .eq('company_id', company.id)
       .order('created_at', { ascending: false })
       .limit(200)
     setNotes(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()

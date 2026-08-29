@@ -100,28 +100,29 @@ export default function Timesheet() {
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: depts }, { data: projs }, { data: tsks }] = await Promise.all([
-      supabase.from('employees').select('id, employee_code, full_name, department_id, departments!employees_department_id_fkey(name)').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
-      supabase.from('departments').select('id, name').eq('status', 'active').order('name'),
-      supabase.from('projects').select('id, name, clients(name)').eq('status', 'active').order('name'),
-      supabase.from('timesheet_tasks').select('id, name').eq('status', 'active').order('name'),
+      supabase.from('employees').select('id, employee_code, full_name, department_id, departments!employees_department_id_fkey(name)').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
+      supabase.from('departments').select('id, name').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('projects').select('id, name, clients(name)').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('timesheet_tasks').select('id, name').eq('company_id', company.id).eq('status', 'active').order('name'),
     ])
     setEmployees(emps ?? [])
     setDepartments(depts ?? [])
     setProjects(projs ?? [])
     setTasks(tsks ?? [])
-  }, [])
+  }, [company.id])
 
   const loadEntries = useCallback(async () => {
     setLoading(true)
     let query = supabase
       .from('time_entries')
       .select('id, entry_date, duration_minutes, billable, notes, status, created_at, employees(full_name, employee_code), projects(name, clients(name)), timesheet_tasks(name)')
+      .eq('company_id', company.id)
       .order('entry_date', { ascending: false })
     if (statusFilter !== 'all') query = query.eq('status', statusFilter)
     const { data } = await query.limit(200)
     setEntries(data ?? [])
     setLoading(false)
-  }, [statusFilter])
+  }, [statusFilter, company.id])
 
   useEffect(() => { loadLookups() }, [loadLookups])
   useEffect(() => { if (view === 'entries') loadEntries() }, [loadEntries, view])
@@ -244,7 +245,7 @@ export default function Timesheet() {
       )}
 
       {view === 'dashboard' && (
-        <DashboardTab employees={employees} />
+        <DashboardTab employees={employees} company={company} />
       )}
 
       {view === 'entries' && (
@@ -417,6 +418,7 @@ function TeamTimesheetsTab({ employees, departments, projects, tasks, profile, c
     let query = supabase
       .from('timesheets')
       .select('id, employee_id, period_start, period_end, status, submitted_at, approved_at, rejection_reason, total_minutes, billable_minutes, employees(full_name, employee_code, department_id, departments!employees_department_id_fkey(name))')
+      .eq('company_id', company.id)
       .order('submitted_at', { ascending: false })
       .limit(200)
     if (statusFilter !== 'all') query = query.eq('status', statusFilter)
@@ -425,7 +427,7 @@ function TeamTimesheetsTab({ employees, departments, projects, tasks, profile, c
     const { data } = await query
     setRows(data ?? [])
     setLoading(false)
-  }, [statusFilter, employeeFilter, dateFilter])
+  }, [statusFilter, employeeFilter, dateFilter, company.id])
 
   useEffect(() => { load() }, [load])
 
@@ -607,7 +609,7 @@ function TeamTimesheetsTab({ employees, departments, projects, tasks, profile, c
 
 /* =========================== DASHBOARD =========================== */
 
-function DashboardTab({ employees }) {
+function DashboardTab({ employees, company }) {
   const [loading, setLoading] = useState(true)
   const [entries, setEntries] = useState([])
   const [submittedCount, setSubmittedCount] = useState(0)
@@ -621,10 +623,11 @@ function DashboardTab({ employees }) {
     const [{ data: entryRows }, { count: pendingApprovals }, { data: thisWeekTimesheets }] = await Promise.all([
       supabase.from('time_entries')
         .select('employee_id, project_id, entry_date, duration_minutes, billable, employees(full_name), projects(name)')
+        .eq('company_id', company.id)
         .gte('entry_date', eightWeeksAgo)
         .lte('entry_date', weekEnd),
-      supabase.from('timesheets').select('id', { count: 'exact', head: true }).eq('status', 'submitted'),
-      supabase.from('timesheets').select('employee_id').gte('period_start', weekStart).lte('period_start', weekStart).in('status', ['submitted', 'approved', 'locked']),
+      supabase.from('timesheets').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'submitted'),
+      supabase.from('timesheets').select('employee_id').eq('company_id', company.id).gte('period_start', weekStart).lte('period_start', weekStart).in('status', ['submitted', 'approved', 'locked']),
     ])
 
     setEntries(entryRows ?? [])
@@ -635,7 +638,7 @@ function DashboardTab({ employees }) {
 
     setLoading(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employees.length])
+  }, [employees.length, company.id])
 
   useEffect(() => { if (employees.length >= 0) load() }, [load])
 
