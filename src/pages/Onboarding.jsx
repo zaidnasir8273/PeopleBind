@@ -48,7 +48,8 @@ export default function Onboarding() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-wordmark" aria-label="PeopleBind">
-          <span className="wordmark-full" aria-hidden="true" />
+          <span className="wordmark-mark" aria-hidden="true" />
+          <span><span className="wm-people">People</span><span className="wm-bind">Bind</span></span>
         </div>
 
         <h1 className="auth-title">Set up your company</h1>

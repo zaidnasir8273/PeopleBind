@@ -62,7 +62,8 @@ export function SiteHeader() {
     <>
       <header className={`header${scrolled ? ' is-scrolled' : ''}`}>
         <FadeIn as={Link} to="/" className="wordmark" y={6} aria-label="PeopleBind">
-          <span className="wordmark-full" aria-hidden="true" />
+          <span className="wordmark-mark" aria-hidden="true" />
+          <span><span className="wm-people">People</span><span className="wm-bind">Bind</span></span>
         </FadeIn>
 
         <motion.nav className="header-nav" initial="hidden" animate="show" variants={navVariants}>
