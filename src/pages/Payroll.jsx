@@ -95,14 +95,15 @@ function RunsTab({ profile, company }) {
       supabase
         .from('payroll_runs')
         .select('id, status, created_at, payroll_periods(label, period_start, period_end)')
+        .eq('company_id', company.id)
         .order('created_at', { ascending: false }),
-      supabase.from('v_payroll_run_summary').select('payroll_run_id, employee_count, total_earnings, total_deductions, total_net'),
+      supabase.from('v_payroll_run_summary').select('payroll_run_id, employee_count, total_earnings, total_deductions, total_net').eq('company_id', company.id),
     ])
     const summaryByRun = {}
     for (const s of summaryRows ?? []) summaryByRun[s.payroll_run_id] = s
     setRuns((runRows ?? []).map((r) => ({ ...r, summary: summaryByRun[r.id] })))
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     loadRuns()
@@ -154,6 +155,7 @@ function RunsTab({ profile, company }) {
       <RunDetail
         runId={activeRunId}
         profile={profile}
+        company={company}
         onBack={() => {
           setActiveRunId(null)
           loadRuns()
@@ -249,7 +251,7 @@ function RunsTab({ profile, company }) {
   )
 }
 
-function RunDetail({ runId, profile, onBack }) {
+function RunDetail({ runId, profile, company, onBack }) {
   const [run, setRun] = useState(null)
   const [items, setItems] = useState([])
   const [exceptions, setExceptions] = useState([])
@@ -267,18 +269,20 @@ function RunDetail({ runId, profile, onBack }) {
         .from('payroll_runs')
         .select('id, status, finalized_at, payroll_periods(label, period_start, period_end)')
         .eq('id', runId)
+        .eq('company_id', company.id)
         .single(),
       supabase
         .from('payroll_items')
         .select('id, employee_id, component_name, component_type, amount, notes, employees(full_name, employee_code, personal_email, bank_name, bank_account_number, bank_iban)')
-        .eq('payroll_run_id', runId),
+        .eq('payroll_run_id', runId)
+        .eq('company_id', company.id),
       supabase.rpc('get_payroll_exceptions', { p_payroll_run_id: runId }),
     ])
     setRun(runRow ?? null)
     setItems(itemRows ?? [])
     setExceptions(exceptionRows ?? [])
     setLoading(false)
-  }, [runId])
+  }, [runId, company.id])
 
   useEffect(() => {
     load()
@@ -547,12 +551,12 @@ function StructuresTab({ profile, company }) {
 
   const loadLookups = useCallback(async () => {
     const [{ data: emps }, { data: comps }] = await Promise.all([
-      supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
-      supabase.from('payroll_components').select('id, name, component_type').eq('status', 'active').order('component_type').order('name'),
+      supabase.from('employees').select('id, employee_code, full_name').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name'),
+      supabase.from('payroll_components').select('id, name, component_type').eq('company_id', company.id).eq('status', 'active').order('component_type').order('name'),
     ])
     setEmployees(emps ?? [])
     setComponents(comps ?? [])
-  }, [])
+  }, [company.id])
 
   const loadRows = useCallback(async () => {
     if (!selectedEmployeeId) {
@@ -564,10 +568,11 @@ function StructuresTab({ profile, company }) {
       .from('employee_salary_components')
       .select('id, amount, effective_from, effective_to, payroll_components(name, component_type)')
       .eq('employee_id', selectedEmployeeId)
+      .eq('company_id', company.id)
       .order('effective_from', { ascending: false })
     setRows(data ?? [])
     setLoading(false)
-  }, [selectedEmployeeId])
+  }, [selectedEmployeeId, company.id])
 
   useEffect(() => {
     loadLookups()
@@ -765,9 +770,9 @@ function LoansOvertimeTab({ profile, company }) {
   const [employees, setEmployees] = useState([])
 
   const loadEmployees = useCallback(async () => {
-    const { data } = await supabase.from('employees').select('id, employee_code, full_name').in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
+    const { data } = await supabase.from('employees').select('id, employee_code, full_name').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed']).order('full_name')
     setEmployees(data ?? [])
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     loadEmployees()
@@ -779,7 +784,7 @@ function LoansOvertimeTab({ profile, company }) {
         <button className={`tab-button${subTab === 'loans' ? ' active' : ''}`} onClick={() => setSubTab('loans')}><HandHelpingIcon size={15} /> Loans & advances</button>
         <button className={`tab-button${subTab === 'overtime' ? ' active' : ''}`} onClick={() => setSubTab('overtime')}><HourglassIcon size={15} /> Overtime</button>
       </div>
-      {subTab === 'loans' ? <LoansSection employees={employees} profile={profile} company={company} /> : <OvertimeSection />}
+      {subTab === 'loans' ? <LoansSection employees={employees} profile={profile} company={company} /> : <OvertimeSection company={company} />}
     </>
   )
 }
@@ -800,10 +805,11 @@ function LoansSection({ employees, profile, company }) {
     const { data } = await supabase
       .from('loans')
       .select('id, loan_type, principal_amount, installment_amount, start_date, status, employees(full_name, employee_code)')
+      .eq('company_id', company.id)
       .order('created_at', { ascending: false })
     setLoans(data ?? [])
     setLoading(false)
-  }, [])
+  }, [company.id])
 
   useEffect(() => {
     load()
@@ -849,6 +855,7 @@ function LoansSection({ employees, profile, company }) {
       .from('loan_installments')
       .select('id, installment_number, due_amount, status')
       .eq('loan_id', loan.id)
+      .eq('company_id', company.id)
       .order('installment_number')
     setInstallments(data ?? [])
   }
@@ -980,7 +987,7 @@ function LoansSection({ employees, profile, company }) {
   )
 }
 
-function OvertimeSection() {
+function OvertimeSection({ company }) {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('pending')
@@ -990,12 +997,13 @@ function OvertimeSection() {
     let query = supabase
       .from('overtime_records')
       .select('id, work_date, minutes, rate_multiplier, approval_status, payroll_status, employees(full_name, employee_code)')
+      .eq('company_id', company.id)
       .order('work_date', { ascending: false })
     if (filter === 'pending') query = query.eq('approval_status', 'pending')
     const { data } = await query
     setRecords(data ?? [])
     setLoading(false)
-  }, [filter])
+  }, [filter, company.id])
 
   useEffect(() => {
     load()
