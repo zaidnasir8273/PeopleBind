@@ -216,30 +216,34 @@ export default function EmployeeDetail() {
         </div>
       </div>
 
-      <div className="tabs">
-        {TABS.map((t) => (
-          <button key={t.key} className={`tab-button${tab === t.key ? ' active' : ''}`} onClick={() => setTab(t.key)}>
-            <t.icon size={15} /> {t.label}
-          </button>
-        ))}
-      </div>
+      <div className="employee-detail-shell">
+        <div className="employee-detail-tabs">
+          {TABS.map((t) => (
+            <button key={t.key} className={`tab-button${tab === t.key ? ' active' : ''}`} onClick={() => setTab(t.key)}>
+              <t.icon size={15} /> {t.label}
+            </button>
+          ))}
+        </div>
 
-      {tab === 'personal' && <PersonalTab employee={employee} onEdit={() => setEditOpen(true)} />}
-      {tab === 'employment' && (
-        <EmploymentTab
-          employee={employee}
-          managerName={managerName}
-          onEdit={() => setEditOpen(true)}
-          onDeleted={() => navigate('/app/people')}
-          onOffboarded={load}
-        />
-      )}
-      {tab === 'salary' && <SalaryTab employee={employee} onEdit={() => setEditOpen(true)} />}
-      {tab === 'leaves' && <LeavesTab employeeId={employee.id} company={company} />}
-      {tab === 'performance' && <PerformanceTab employeeId={employee.id} company={company} />}
-      {tab === 'assets' && <AssetsTab employeeId={employee.id} company={company} />}
-      {tab === 'benefits' && <BenefitsTab employeeId={employee.id} company={company} />}
-      {tab === 'documents' && <DocumentsTab employeeId={employee.id} company={company} />}
+        <div className="employee-detail-content">
+          {tab === 'personal' && <PersonalTab employee={employee} onEdit={() => setEditOpen(true)} />}
+          {tab === 'employment' && (
+            <EmploymentTab
+              employee={employee}
+              managerName={managerName}
+              onEdit={() => setEditOpen(true)}
+              onDeleted={() => navigate('/app/people')}
+              onOffboarded={load}
+            />
+          )}
+          {tab === 'salary' && <SalaryTab employee={employee} onEdit={() => setEditOpen(true)} />}
+          {tab === 'leaves' && <LeavesTab employeeId={employee.id} company={company} />}
+          {tab === 'performance' && <PerformanceTab employeeId={employee.id} company={company} />}
+          {tab === 'assets' && <AssetsTab employeeId={employee.id} company={company} />}
+          {tab === 'benefits' && <BenefitsTab employeeId={employee.id} company={company} />}
+          {tab === 'documents' && <DocumentsTab employeeId={employee.id} company={company} />}
+        </div>
+      </div>
 
       <EmployeeFormDrawer
         open={editOpen}

@@ -5069,6 +5069,55 @@ a.attention-item:hover {
   font-weight: 600;
 }
 
+/* ---------- employee detail: vertical tab nav ---------- */
+/* A horizontal .tabs row couldn't fit this page's 8 tabs without either
+   wrapping (uneven row heights) or scrolling (a stray scrollbar under the
+   tabs) -- a vertical list on the left sidesteps both: it only ever grows
+   downward, which the page already scrolls for. */
+
+.employee-detail-shell {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.employee-detail-tabs {
+  width: 190px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 20px;
+}
+
+.employee-detail-tabs .tab-button {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.employee-detail-content {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .employee-detail-shell {
+    flex-direction: column;
+  }
+
+  .employee-detail-tabs {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    position: static;
+  }
+
+  .employee-detail-tabs .tab-button {
+    width: auto;
+  }
+}
+
 /* ---------- settings: modules + submodules nav ---------- */
 
 .settings-shell {
