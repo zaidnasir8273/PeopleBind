@@ -235,7 +235,7 @@ export default function EmployeeDetail() {
         />
       )}
       {tab === 'salary' && <SalaryTab employee={employee} onEdit={() => setEditOpen(true)} />}
-      {tab === 'leaves' && <LeavesTab employeeId={employee.id} />}
+      {tab === 'leaves' && <LeavesTab employeeId={employee.id} company={company} />}
       {tab === 'performance' && <PerformanceTab employeeId={employee.id} company={company} />}
       {tab === 'assets' && <AssetsTab employeeId={employee.id} company={company} />}
       {tab === 'benefits' && <BenefitsTab employeeId={employee.id} company={company} />}
@@ -627,8 +627,8 @@ function SalaryTab({ employee: e, onEdit }) {
     let active = true
     async function loadLookups() {
       const [{ data: comps }, { data: runs }] = await Promise.all([
-        supabase.from('payroll_components').select('id, name, component_type').eq('status', 'active').order('component_type').order('name'),
-        supabase.from('payroll_runs').select('id, status, payroll_periods(period_start, period_end, label)').neq('status', 'draft'),
+        supabase.from('payroll_components').select('id, name, component_type').eq('company_id', company.id).eq('status', 'active').order('component_type').order('name'),
+        supabase.from('payroll_runs').select('id, status, payroll_periods(period_start, period_end, label)').eq('company_id', company.id).neq('status', 'draft'),
       ])
       if (active) {
         setPayrollComponents(comps ?? [])
@@ -637,7 +637,7 @@ function SalaryTab({ employee: e, onEdit }) {
     }
     loadLookups()
     return () => { active = false }
-  }, [])
+  }, [company.id])
 
   const overlappingLockedRun = form.effective_from
     ? lockedRuns.find((r) => r.payroll_periods && r.payroll_periods.period_end >= form.effective_from)
@@ -790,7 +790,7 @@ function SalaryTab({ employee: e, onEdit }) {
   )
 }
 
-function LeavesTab({ employeeId }) {
+function LeavesTab({ employeeId, company }) {
   const [balances, setBalances] = useState([])
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
@@ -802,7 +802,7 @@ function LeavesTab({ employeeId }) {
       const year = new Date().getFullYear()
       const [{ data: b }, { data: r }] = await Promise.all([
         supabase.from('v_leave_usage').select('leave_type, entitled_days, used_days, remaining_days').eq('employee_id', employeeId).eq('year', year),
-        supabase.from('leave_requests').select('id, start_date, end_date, days_requested, status, leave_types(name)').eq('employee_id', employeeId).order('created_at', { ascending: false }),
+        supabase.from('leave_requests').select('id, start_date, end_date, days_requested, status, leave_types(name)').eq('employee_id', employeeId).eq('company_id', company.id).order('created_at', { ascending: false }),
       ])
       if (active) {
         setBalances(b ?? [])
@@ -812,7 +812,7 @@ function LeavesTab({ employeeId }) {
     }
     load()
     return () => { active = false }
-  }, [employeeId])
+  }, [employeeId, company.id])
 
   if (loading) return <SkeletonBlock rows={4} />
 
@@ -872,8 +872,8 @@ function PerformanceTab({ employeeId, company }) {
     async function load() {
       setLoading(true)
       const [{ data: r }, { data: g }] = await Promise.all([
-        supabase.from('performance_reviews').select('id, overall_rating, status, submitted_at, review_cycles(name), profiles(full_name)').eq('employee_id', employeeId).order('created_at', { ascending: false }),
-        supabase.from('goals').select('id, title, status, target_date').eq('employee_id', employeeId).order('target_date', { ascending: false, nullsFirst: false }),
+        supabase.from('performance_reviews').select('id, overall_rating, status, submitted_at, review_cycles(name), profiles(full_name)').eq('employee_id', employeeId).eq('company_id', company.id).order('created_at', { ascending: false }),
+        supabase.from('goals').select('id, title, status, target_date').eq('employee_id', employeeId).eq('company_id', company.id).order('target_date', { ascending: false, nullsFirst: false }),
       ])
       if (active) {
         setReviews(r ?? [])
@@ -883,7 +883,7 @@ function PerformanceTab({ employeeId, company }) {
     }
     load()
     return () => { active = false }
-  }, [employeeId])
+  }, [employeeId, company.id])
 
   useEffect(() => {
     let active = true

@@ -31,7 +31,7 @@ function fmtValue(value, unit) {
   return unit === 'Rs' ? `Rs. ${rounded}` : unit ? `${rounded} ${unit}` : rounded
 }
 
-function WidgetChart({ widget }) {
+function WidgetChart({ widget, company }) {
   const [state, setState] = useState({ loading: true, value: null, series: [], rows: [] })
   const isBreakdown = BREAKDOWN_CHART_TYPES.includes(widget.chart_type)
 
@@ -42,18 +42,18 @@ function WidgetChart({ widget }) {
       if (isBreakdown) {
         const def = DASHBOARD_LEADERBOARDS[widget.metric_key]
         if (!def) return
-        const rows = await def.fetch(widget._from, widget._to)
+        const rows = await def.fetch(widget._from, widget._to, company)
         if (active) setState({ loading: false, value: null, series: [], rows })
       } else {
         const def = DASHBOARD_METRICS[widget.metric_key]
         if (!def) return
-        const { value, series } = await def.fetch(widget._from, widget._to)
+        const { value, series } = await def.fetch(widget._from, widget._to, company)
         if (active) setState({ loading: false, value, series, rows: [] })
       }
     }
     load()
     return () => { active = false }
-  }, [widget.metric_key, widget.chart_type, widget._from, widget._to, isBreakdown])
+  }, [widget.metric_key, widget.chart_type, widget._from, widget._to, isBreakdown, company.id])
 
   const metricDef = isBreakdown ? DASHBOARD_LEADERBOARDS[widget.metric_key] : DASHBOARD_METRICS[widget.metric_key]
   if (!metricDef) return <p className="muted">Unknown metric.</p>
@@ -126,7 +126,7 @@ function WidgetChart({ widget }) {
   return null
 }
 
-function WidgetCard({ widget, onEdit, onRemove, dragHandlers }) {
+function WidgetCard({ widget, company, onEdit, onRemove, dragHandlers }) {
   return (
     <div className={`dashboard-widget dashboard-widget-${widget.size}`} draggable onDragStart={() => dragHandlers.onDragStart(widget)} onDragOver={(e) => dragHandlers.onDragOver(e, widget)} onDrop={dragHandlers.onDrop}>
       <div className="dashboard-widget-head">
@@ -140,7 +140,7 @@ function WidgetCard({ widget, onEdit, onRemove, dragHandlers }) {
           </button>
         </div>
       </div>
-      <WidgetChart widget={widget} />
+      <WidgetChart widget={widget} company={company} />
     </div>
   )
 }
@@ -418,6 +418,7 @@ export default function Dashboards() {
                 <WidgetCard
                   key={w.id}
                   widget={w}
+                  company={company}
                   onEdit={setWidgetDrawer}
                   onRemove={removeWidget}
                   dragHandlers={{ onDragStart: handleDragStart, onDragOver: handleDragOver, onDrop: handleDrop }}

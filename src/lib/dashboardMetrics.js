@@ -1,12 +1,14 @@
 import { supabase } from './supabase'
 
 // Each metric mirrors PetroBind's DASH_METRICS shape (see js/dashboard-engine.js
-// in that project): { label, unit, trend, fetch(from, to) => { value, series } }.
+// in that project): { label, unit, trend, fetch(from, to, company) => { value, series } }.
 // `series` is a [{date, value}] array used by line/bar/area charts; metrics
 // without a natural daily breakdown (headcount, open roles, loan balance)
 // just return an empty series and render as a number/leaderboard only.
-// company scoping happens via RLS -- every query below is already
-// company_id-filtered server-side, same as the rest of this app.
+// Every query below explicitly filters by company_id -- a platform admin's
+// RLS branch has no company filter of its own (by design, for
+// /platform-admin/* management), so "View as company" only actually scopes
+// the data if these queries filter it themselves.
 
 function sumByDate(rows, dateKey, valueFn) {
   const byDate = new Map()
@@ -21,47 +23,47 @@ function sumByDate(rows, dateKey, valueFn) {
 export const DASHBOARD_METRICS = {
   headcount: {
     label: 'Headcount', unit: '', trend: false,
-    fetch: async () => {
-      const { count } = await supabase.from('employees').select('id', { count: 'exact', head: true }).in('employment_status', ['training', 'probation', 'confirmed'])
+    fetch: async (_from, _to, company) => {
+      const { count } = await supabase.from('employees').select('id', { count: 'exact', head: true }).eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed'])
       return { value: count ?? 0, series: [] }
     },
   },
   attendance_present: {
     label: 'Present days', unit: '', trend: true,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('attendance').select('attendance_date').eq('status', 'present').gte('attendance_date', from).lte('attendance_date', to)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('attendance').select('attendance_date').eq('company_id', company.id).eq('status', 'present').gte('attendance_date', from).lte('attendance_date', to)
       const series = sumByDate(data ?? [], 'attendance_date', () => 1)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
   attendance_absent: {
     label: 'Absent days', unit: '', trend: true, higherIsBetter: false,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('attendance').select('attendance_date').eq('status', 'absent').gte('attendance_date', from).lte('attendance_date', to)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('attendance').select('attendance_date').eq('company_id', company.id).eq('status', 'absent').gte('attendance_date', from).lte('attendance_date', to)
       const series = sumByDate(data ?? [], 'attendance_date', () => 1)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
   attendance_late: {
     label: 'Late days', unit: '', trend: true, higherIsBetter: false,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('attendance').select('attendance_date').eq('status', 'late').gte('attendance_date', from).lte('attendance_date', to)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('attendance').select('attendance_date').eq('company_id', company.id).eq('status', 'late').gte('attendance_date', from).lte('attendance_date', to)
       const series = sumByDate(data ?? [], 'attendance_date', () => 1)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
   leave_days_taken: {
     label: 'Leave days taken', unit: '', trend: true,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('leave_requests').select('start_date, days_requested').eq('status', 'approved').gte('start_date', from).lte('start_date', to)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('leave_requests').select('start_date, days_requested').eq('company_id', company.id).eq('status', 'approved').gte('start_date', from).lte('start_date', to)
       const series = sumByDate(data ?? [], 'start_date', (r) => Number(r.days_requested ?? 0))
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
   payroll_net: {
     label: 'Payroll net pay', unit: 'Rs', trend: true,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('payroll_items').select('amount, component_type, created_at').gte('created_at', from).lte('created_at', `${to}T23:59:59`)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('payroll_items').select('amount, component_type, created_at').eq('company_id', company.id).gte('created_at', from).lte('created_at', `${to}T23:59:59`)
       const rows = (data ?? []).map((r) => ({ date: r.created_at.slice(0, 10), value: (r.component_type === 'earning' ? 1 : -1) * Number(r.amount ?? 0) }))
       const series = sumByDate(rows, 'date', (r) => r.value)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
@@ -69,8 +71,8 @@ export const DASHBOARD_METRICS = {
   },
   payroll_gross: {
     label: 'Payroll gross earnings', unit: 'Rs', trend: true,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('payroll_items').select('amount, created_at').eq('component_type', 'earning').gte('created_at', from).lte('created_at', `${to}T23:59:59`)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('payroll_items').select('amount, created_at').eq('company_id', company.id).eq('component_type', 'earning').gte('created_at', from).lte('created_at', `${to}T23:59:59`)
       const rows = (data ?? []).map((r) => ({ date: r.created_at.slice(0, 10), amount: r.amount }))
       const series = sumByDate(rows, 'date', (r) => Number(r.amount ?? 0))
       return { value: series.reduce((s, r) => s + r.value, 0), series }
@@ -78,23 +80,23 @@ export const DASHBOARD_METRICS = {
   },
   expense_total: {
     label: 'Expenses claimed', unit: 'Rs', trend: true, higherIsBetter: false,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('expense_claims').select('amount, expense_date').in('status', ['approved', 'reimbursed']).gte('expense_date', from).lte('expense_date', to)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('expense_claims').select('amount, expense_date').eq('company_id', company.id).in('status', ['approved', 'reimbursed']).gte('expense_date', from).lte('expense_date', to)
       const series = sumByDate(data ?? [], 'expense_date', (r) => Number(r.amount ?? 0))
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
   open_roles: {
     label: 'Open roles', unit: '', trend: false,
-    fetch: async () => {
-      const { count } = await supabase.from('job_openings').select('id', { count: 'exact', head: true }).eq('status', 'open')
+    fetch: async (_from, _to, company) => {
+      const { count } = await supabase.from('job_openings').select('id', { count: 'exact', head: true }).eq('company_id', company.id).eq('status', 'open')
       return { value: count ?? 0, series: [] }
     },
   },
   new_candidates: {
     label: 'New candidates', unit: '', trend: true,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('candidates').select('created_at').gte('created_at', from).lte('created_at', `${to}T23:59:59`)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('candidates').select('created_at').eq('company_id', company.id).gte('created_at', from).lte('created_at', `${to}T23:59:59`)
       const rows = (data ?? []).map((r) => ({ date: r.created_at.slice(0, 10) }))
       const series = sumByDate(rows, 'date', () => 1)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
@@ -102,31 +104,31 @@ export const DASHBOARD_METRICS = {
   },
   timesheet_hours: {
     label: 'Timesheet hours logged', unit: 'h', trend: true,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('time_entries').select('duration_minutes, entry_date').gte('entry_date', from).lte('entry_date', to)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('time_entries').select('duration_minutes, entry_date').eq('company_id', company.id).gte('entry_date', from).lte('entry_date', to)
       const series = sumByDate(data ?? [], 'entry_date', (r) => Number(r.duration_minutes ?? 0) / 60)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
   overtime_hours: {
     label: 'Overtime hours', unit: 'h', trend: true,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('overtime_records').select('minutes, work_date').gte('work_date', from).lte('work_date', to)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('overtime_records').select('minutes, work_date').eq('company_id', company.id).gte('work_date', from).lte('work_date', to)
       const series = sumByDate(data ?? [], 'work_date', (r) => Number(r.minutes ?? 0) / 60)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
   loan_outstanding: {
     label: 'Loan balance outstanding', unit: 'Rs', trend: false, higherIsBetter: false,
-    fetch: async () => {
-      const { data } = await supabase.from('loan_installments').select('due_amount').eq('status', 'pending')
+    fetch: async (_from, _to, company) => {
+      const { data } = await supabase.from('loan_installments').select('due_amount').eq('company_id', company.id).eq('status', 'pending')
       return { value: (data ?? []).reduce((s, r) => s + Number(r.due_amount ?? 0), 0), series: [] }
     },
   },
   avg_overall_performance_rating: {
     label: 'Avg. performance rating', unit: '/5', trend: true,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('performance_reviews').select('overall_rating, submitted_at').in('status', ['submitted', 'acknowledged']).not('overall_rating', 'is', null).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('performance_reviews').select('overall_rating, submitted_at').eq('company_id', company.id).in('status', ['submitted', 'acknowledged']).not('overall_rating', 'is', null).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`)
       const rows = (data ?? []).map((r) => ({ date: r.submitted_at.slice(0, 10), amount: Number(r.overall_rating) }))
       const sums = new Map()
       const counts = new Map()
@@ -141,8 +143,8 @@ export const DASHBOARD_METRICS = {
   },
   performance_reviews_completed: {
     label: 'Reviews completed', unit: '', trend: true,
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('performance_reviews').select('submitted_at').in('status', ['submitted', 'acknowledged']).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('performance_reviews').select('submitted_at').eq('company_id', company.id).in('status', ['submitted', 'acknowledged']).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`)
       const rows = (data ?? []).map((r) => ({ date: r.submitted_at.slice(0, 10) }))
       const series = sumByDate(rows, 'date', () => 1)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
@@ -158,8 +160,8 @@ export const DASHBOARD_METRIC_KEYS = Object.keys(DASHBOARD_METRICS)
 export const DASHBOARD_LEADERBOARDS = {
   overtime_by_employee: {
     label: 'Overtime hours by employee',
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('overtime_records').select('minutes, work_date, employees(full_name)').gte('work_date', from).lte('work_date', to)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('overtime_records').select('minutes, work_date, employees(full_name)').eq('company_id', company.id).gte('work_date', from).lte('work_date', to)
       const byEmployee = new Map()
       for (const r of data ?? []) {
         const name = r.employees?.full_name ?? 'Unknown'
@@ -170,8 +172,8 @@ export const DASHBOARD_LEADERBOARDS = {
   },
   expenses_by_category: {
     label: 'Expenses by category',
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('expense_claims').select('amount, expense_date, expense_categories(name)').in('status', ['approved', 'reimbursed']).gte('expense_date', from).lte('expense_date', to)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('expense_claims').select('amount, expense_date, expense_categories(name)').eq('company_id', company.id).in('status', ['approved', 'reimbursed']).gte('expense_date', from).lte('expense_date', to)
       const byCategory = new Map()
       for (const r of data ?? []) {
         const name = r.expense_categories?.name ?? 'Uncategorized'
@@ -182,15 +184,15 @@ export const DASHBOARD_LEADERBOARDS = {
   },
   headcount_by_department: {
     label: 'Headcount by department',
-    fetch: async () => {
-      const { data } = await supabase.from('v_headcount_by_department').select('department_name, employee_count')
+    fetch: async (_from, _to, company) => {
+      const { data } = await supabase.from('v_headcount_by_department').select('department_name, employee_count').eq('company_id', company.id)
       return (data ?? []).map((r) => ({ label: r.department_name ?? 'Unassigned', value: r.employee_count })).sort((a, b) => b.value - a.value)
     },
   },
   overall_rating_by_employee: {
     label: 'Performance rating by employee',
-    fetch: async (from, to) => {
-      const { data } = await supabase.from('performance_reviews').select('overall_rating, submitted_at, employees(full_name)').in('status', ['submitted', 'acknowledged']).not('overall_rating', 'is', null).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`)
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('performance_reviews').select('overall_rating, submitted_at, employees(full_name)').eq('company_id', company.id).in('status', ['submitted', 'acknowledged']).not('overall_rating', 'is', null).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`)
       const byEmployee = new Map()
       const counts = new Map()
       for (const r of data ?? []) {
