@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { SparklesIcon } from './ui/sparkles'
+import { BotIcon } from './ui/bot'
 import { SendIcon } from './ui/send'
 import { PlusIcon } from './ui/plus'
 import { supabase } from '../lib/supabase'
@@ -98,7 +98,7 @@ export function AiAssistant() {
   return (
     <div className="notif-bell-wrap" ref={ref}>
       <button className="notif-bell" onClick={() => setOpen((v) => !v)} aria-label="PeopleBind AI" data-tooltip="Ask PeopleBind AI">
-        <SparklesIcon size={19} />
+        <BotIcon size={19} />
       </button>
 
       {open && (
