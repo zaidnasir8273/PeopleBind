@@ -6,6 +6,7 @@ import { DownloadIcon } from '../components/ui/download'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { FileDropzone } from '../components/FileDropzone'
 import { SkeletonBlock } from '../components/Skeleton'
 
 const ATTACHMENT_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,image/jpeg,image/png,image/webp'
@@ -206,10 +207,15 @@ export default function Announcements() {
             Pin to top
           </label>
 
-          <label className="field">
+          <div className="field">
             <span>Attachments</span>
-            <input type="file" multiple accept={ATTACHMENT_ACCEPT} onChange={(e) => { addFiles(e.target.files); e.target.value = '' }} />
-          </label>
+            <FileDropzone
+              multiple
+              accept={ATTACHMENT_ACCEPT}
+              onFilesSelected={addFiles}
+              label="Drop files here, or click to browse"
+            />
+          </div>
           <p className="muted" style={{ margin: 0 }}>PDF, Word, Excel, or image — up to 15MB each. Use this for supporting documents like govt notifications or company forms.</p>
 
           {attachFiles.length > 0 && (

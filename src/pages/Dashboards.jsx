@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react'
 import { DeleteIcon } from '../components/ui/delete'
 import { PlusIcon } from '../components/ui/plus'
 import { SquarePenIcon } from '../components/ui/square-pen'
+import { CalendarDaysIcon } from '../components/ui/calendar-days'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -512,9 +513,12 @@ export default function Dashboards() {
               {filterOptions.employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
             </select>
             {hasActiveFilters && <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={clearFilters}>Clear filters</button>}
-            <input type="date" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} onBlur={saveRange} style={{ fontSize: 12 }} />
-            <span className="muted" style={{ fontSize: 12 }}>to</span>
-            <input type="date" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} onBlur={saveRange} style={{ fontSize: 12 }} />
+            <div className="date-range-field" style={{ fontSize: 12 }}>
+              <CalendarDaysIcon size={13} />
+              <input type="date" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} onBlur={saveRange} />
+              <span className="muted">to</span>
+              <input type="date" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} onBlur={saveRange} />
+            </div>
             <button type="button" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setWidgetDrawer('new')}>
               <PlusIcon size={15} />
               Add widget

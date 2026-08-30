@@ -9,6 +9,7 @@ import { BotIcon } from '../components/ui/bot'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { FileDropzone } from '../components/FileDropzone'
 import { SkeletonTable, SkeletonBlock } from '../components/Skeleton'
 import { renderMarkdown } from '../lib/markdown'
 
@@ -445,10 +446,16 @@ function PipelineView({ openingId, profile, company, onBack }) {
                 <span>Source</span>
                 <input value={newCandidate.source} onChange={(e) => setNewCandidate({ ...newCandidate, source: e.target.value })} placeholder="e.g. LinkedIn, referral" />
               </label>
-              <label className="field">
+              <div className="field">
                 <span>Resume (PDF, optional)</span>
-                <input type="file" accept="application/pdf" onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)} />
-              </label>
+                <FileDropzone
+                  value={resumeFile}
+                  onChange={setResumeFile}
+                  accept="application/pdf"
+                  label="Drop a resume here, or click to browse"
+                  hint="PDF only"
+                />
+              </div>
             </>
           )}
 

@@ -33,6 +33,7 @@ import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { Avatar } from '../components/Avatar'
 import { EmployeeFormDrawer } from '../components/EmployeeFormDrawer'
+import { FileDropzone } from '../components/FileDropzone'
 import { SkeletonBlock, SkeletonTable } from '../components/Skeleton'
 import { STANDARD_KPI_METRICS } from '../lib/kpiMetrics'
 
@@ -1391,10 +1392,10 @@ function DocumentsTab({ employeeId, company }) {
               {DOC_TYPES.map((t) => <option key={t} value={t} />)}
             </datalist>
           </label>
-          <label className="field">
+          <div className="field">
             <span>File</span>
-            <input type="file" required onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-          </label>
+            <FileDropzone value={file} onChange={setFile} label="Drop a file here, or click to browse" />
+          </div>
           <label className="field">
             <span>Expiry date</span>
             <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} placeholder="Optional" />

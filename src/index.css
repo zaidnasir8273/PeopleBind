@@ -5471,6 +5471,130 @@ a.attention-item:hover {
   background: rgba(18, 63, 51, 0.04);
 }
 
+/* ---------- themed file dropzone (single/multi-file, drag & drop) ---------- */
+
+.file-dropzone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-align: left;
+}
+
+.file-dropzone:hover {
+  border-color: var(--teal);
+  color: var(--teal-deep);
+  background: rgba(18, 63, 51, 0.04);
+}
+
+.file-dropzone.dragging {
+  border-style: solid;
+  border-color: var(--teal);
+  color: var(--teal-deep);
+  background: rgba(18, 63, 51, 0.08);
+}
+
+.file-dropzone:focus-within {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--teal);
+}
+
+.file-dropzone.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.file-dropzone-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.file-dropzone-hint {
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.file-dropzone.has-file {
+  border-style: solid;
+  border-color: var(--line);
+  background: var(--paper-raised);
+  color: var(--ink);
+}
+
+.file-dropzone-name {
+  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-dropzone-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.file-dropzone-remove:hover {
+  color: var(--danger);
+  background: rgba(220, 38, 38, 0.08);
+}
+
+/* ---------- themed date-range pill ---------- */
+
+.date-range-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  padding: 4px 10px;
+  color: var(--ink-soft);
+}
+
+.date-range-field:focus-within {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--teal);
+}
+
+.date-range-field input[type='date'] {
+  border: none;
+  background: transparent;
+  padding: 2px 0;
+  color: var(--ink);
+  box-shadow: none !important;
+}
+
+.date-range-field input[type='date']:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.date-range-field input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(46%) sepia(9%) saturate(438%) hue-rotate(202deg) brightness(94%) contrast(87%);
+  cursor: pointer;
+}
+
+.date-range-field input[type='date']::-webkit-calendar-picker-indicator:hover {
+  filter: invert(21%) sepia(24%) saturate(1073%) hue-rotate(122deg) brightness(94%) contrast(93%);
+}
+
 .bulk-action-bar {
   display: flex;
   align-items: center;

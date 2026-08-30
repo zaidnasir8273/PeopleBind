@@ -7,6 +7,7 @@ import { DownloadIcon } from '../components/ui/download'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
+import { FileDropzone } from '../components/FileDropzone'
 import { SkeletonTable } from '../components/Skeleton'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table'
 import type { Database } from '../lib/database.types'
@@ -256,10 +257,15 @@ export default function Documents() {
             <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
           </label>
 
-          <label className="field">
+          <div className="field">
             <span>File</span>
-            <input type="file" required accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-          </label>
+            <FileDropzone
+              value={file}
+              onChange={setFile}
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              label="Drop a file here, or click to browse"
+            />
+          </div>
 
           <p className="muted" style={{ margin: 0 }}>PDF, JPG, PNG, or WEBP — up to 15MB.</p>
 
