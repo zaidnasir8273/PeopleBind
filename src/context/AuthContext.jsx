@@ -85,10 +85,27 @@ export function AuthProvider({ children }) {
       }
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession)
       if (newSession?.user) {
-        loadProfile(newSession.user.id)
+        if (event === 'SIGNED_IN') {
+          // A real sign-in (Login.jsx navigates to /app immediately after
+          // this fires, without waiting for loadProfile) -- keep `loading`
+          // true for this window too, exactly like the initial getSession()
+          // load above, so ProtectedRoute/EmployeeProtectedRoute hold their
+          // FullPageLoader until profile/company/employeeRecord are
+          // actually populated. Without this, every page under /app or
+          // /employee that reads company.id (291 call sites across 24
+          // pages, none of them optional-chained -- they all trust this
+          // guard) can mount with company still null and crash.
+          setLoading(true)
+          loadProfile(newSession.user.id).finally(() => setLoading(false))
+        } else {
+          // Token refresh, user-metadata update, etc. -- keep the
+          // profile/company data fresh without flashing the full-page
+          // loader over an already-loaded app.
+          loadProfile(newSession.user.id)
+        }
       } else {
         setProfile(null)
         setOwnCompany(null)
