@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { BotIcon } from './ui/bot'
 import { SendIcon } from './ui/send'
 import { PlusIcon } from './ui/plus'
+import { ClockIcon } from './ui/clock'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { renderMarkdown } from '../lib/markdown'
@@ -14,6 +15,7 @@ type PendingAction = {
 }
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string; isError?: boolean; pendingAction?: PendingAction }
+type ThreadSummary = { id: string; title: string | null; updated_at: string }
 
 const WAITING_LABELS = ['Thinking', 'Checking the data', 'Almost there']
 
@@ -34,17 +36,83 @@ async function extractErrorMessage(error: unknown): Promise<string> {
   return err?.message || 'Something went wrong. Please try again.'
 }
 
+function relativeTime(ts: string) {
+  const diffMs = Date.now() - new Date(ts).getTime()
+  const mins = Math.round(diffMs / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.round(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.round(hours / 24)
+  return `${days}d ago`
+}
+
+// Reconstructs the same outcome text the edge function generates live, for
+// a pending action being redisplayed from history (only its final `status`
+// and `description` are stored, not the exact server message).
+function describeResolvedAction(status: string, description: string): string {
+  if (status === 'executed') return `Done -- ${description.replace(/^(Approve|Reject) /, (m) => m.toLowerCase())}`
+  if (status === 'cancelled') return 'Cancelled -- no changes were made.'
+  if (status === 'failed') return "This couldn't be completed -- it may have already been decided elsewhere."
+  return 'Already resolved.'
+}
+
 export function AiAssistant() {
   const { company } = useAuth()
   const [open, setOpen] = useState(false)
+  const [view, setView] = useState<'chat' | 'history'>('chat')
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [threads, setThreads] = useState<ThreadSummary[]>([])
+  const [loadingThreads, setLoadingThreads] = useState(false)
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [waitingLabelIndex, setWaitingLabelIndex] = useState(0)
   const [resolvingActionId, setResolvingActionId] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
+
+  const loadMessagesInto = useCallback(async (id: string) => {
+    const [{ data: msgRows }, { data: actionRows }] = await Promise.all([
+      supabase.from('ai_messages').select('id, role, content').eq('conversation_id', id).order('created_at', { ascending: true }),
+      supabase.from('ai_actions').select('id, message_id, description, status').eq('conversation_id', id),
+    ])
+    const actionByMessageId = new Map((actionRows ?? []).filter((a) => a.message_id).map((a) => [a.message_id as string, a]))
+    const loaded: ChatMessage[] = (msgRows ?? []).map((m) => {
+      const action = actionByMessageId.get(m.id)
+      const pendingAction: PendingAction | undefined = action
+        ? {
+            id: action.id,
+            description: action.description,
+            resolved: action.status === 'proposed' ? undefined : (action.status as PendingAction['resolved']),
+            resolvedMessage: action.status === 'proposed' ? undefined : describeResolvedAction(action.status, action.description),
+          }
+        : undefined
+      return { role: m.role as 'user' | 'assistant', content: m.content, pendingAction }
+    })
+    setMessages(loaded)
+  }, [])
+
+  // Resume the most recent conversation on open, rather than always
+  // starting blank -- closing the panel or navigating away shouldn't lose
+  // where you left off.
+  useEffect(() => {
+    if (!company) return
+    let cancelled = false
+    ;(async () => {
+      const { data: existing } = await supabase
+        .from('ai_conversations')
+        .select('id')
+        .eq('company_id', company.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (cancelled || !existing) return
+      setConversationId(existing.id)
+      await loadMessagesInto(existing.id)
+    })()
+    return () => { cancelled = true }
+  }, [company, loadMessagesInto])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -55,10 +123,10 @@ export function AiAssistant() {
   }, [])
 
   useEffect(() => {
-    if (open && listRef.current) {
+    if (open && view === 'chat' && listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight
     }
-  }, [open, messages.length, sending])
+  }, [open, view, messages.length, sending])
 
   useEffect(() => {
     if (!sending) return
@@ -128,6 +196,31 @@ export function AiAssistant() {
     setConversationId(null)
     setMessages([])
     setDraft('')
+    setView('chat')
+  }
+
+  async function openHistory() {
+    if (!company) return
+    setView('history')
+    setLoadingThreads(true)
+    const { data } = await supabase
+      .from('ai_conversations')
+      .select('id, title, updated_at')
+      .eq('company_id', company.id)
+      .order('updated_at', { ascending: false })
+      .limit(20)
+    setThreads(data ?? [])
+    setLoadingThreads(false)
+  }
+
+  async function openThread(id: string) {
+    if (id === conversationId) {
+      setView('chat')
+      return
+    }
+    setConversationId(id)
+    await loadMessagesInto(id)
+    setView('chat')
   }
 
   return (
@@ -139,16 +232,47 @@ export function AiAssistant() {
       {open && (
         <div className="notif-panel ai-chat-panel">
           <div className="notif-panel-header">
-            <span>PeopleBind AI</span>
-            {messages.length > 0 && (
-              <button type="button" className="link-button" onClick={startNewChat} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5 }}>
-                <PlusIcon size={13} /> New chat
-              </button>
-            )}
+            <span>{view === 'history' ? 'Conversations' : 'PeopleBind AI'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {view === 'history' ? (
+                <button type="button" className="link-button" onClick={() => setView('chat')} style={{ fontSize: 12.5 }}>
+                  Back
+                </button>
+              ) : (
+                <>
+                  <button type="button" className="link-button" onClick={openHistory} aria-label="Past conversations" data-tooltip="Past conversations">
+                    <ClockIcon size={14} />
+                  </button>
+                  {messages.length > 0 && (
+                    <button type="button" className="link-button" onClick={startNewChat} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5 }}>
+                      <PlusIcon size={13} /> New chat
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           <div className="ai-chat-list" ref={listRef}>
-            {messages.length === 0 ? (
+            {view === 'history' ? (
+              loadingThreads ? (
+                <p className="muted" style={{ padding: '20px 16px', fontSize: 13 }}>Loading…</p>
+              ) : threads.length === 0 ? (
+                <p className="muted" style={{ padding: '20px 16px', fontSize: 13 }}>No past conversations yet.</p>
+              ) : (
+                threads.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`support-chat-thread-item${t.id === conversationId ? ' active' : ''}`}
+                    onClick={() => openThread(t.id)}
+                  >
+                    <span className="support-chat-thread-preview">{t.title || '(no messages yet)'}</span>
+                    <span className="support-chat-thread-time">{relativeTime(t.updated_at)}</span>
+                  </button>
+                ))
+              )
+            ) : messages.length === 0 ? (
               <div style={{ padding: '20px 16px' }}>
                 <p className="muted" style={{ fontSize: 13, marginBottom: 10 }}>
                   Ask about your team's attendance, leave, payroll, performance, or company policies.
@@ -199,7 +323,7 @@ export function AiAssistant() {
                 </div>
               ))
             )}
-            {sending && (
+            {view === 'chat' && sending && (
               <div className="support-chat-typing">
                 <div className="support-chat-typing-bubble">
                   <span className="support-chat-typing-dot" />
@@ -211,18 +335,20 @@ export function AiAssistant() {
             )}
           </div>
 
-          <div className="support-chat-input-row">
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask PeopleBind AI…"
-              rows={1}
-            />
-            <button type="button" className="btn-icon-round" onClick={send} disabled={sending || !draft.trim()} aria-label="Send">
-              <SendIcon size={15} />
-            </button>
-          </div>
+          {view === 'chat' && (
+            <div className="support-chat-input-row">
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask PeopleBind AI…"
+                rows={1}
+              />
+              <button type="button" className="btn-icon-round" onClick={send} disabled={sending || !draft.trim()} aria-label="Send">
+                <SendIcon size={15} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

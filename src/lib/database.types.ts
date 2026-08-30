@@ -10,10 +10,279 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      ai_actions: {
+        Row: {
+          action_type: string
+          company_id: string
+          conversation_id: string | null
+          description: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          proposed_at: string
+          resolved_at: string | null
+          status: string
+          target_id: string
+          target_table: string
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          company_id: string
+          conversation_id?: string | null
+          description: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          proposed_at?: string
+          resolved_at?: string | null
+          status?: string
+          target_id: string
+          target_table: string
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          company_id?: string
+          conversation_id?: string | null
+          description?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          proposed_at?: string
+          resolved_at?: string | null
+          status?: string
+          target_id?: string
+          target_table?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_actions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_actions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "ai_actions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_actions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_actions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_audit_log: {
+        Row: {
+          company_id: string
+          conversation_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          latency_ms: number | null
+          message_id: string | null
+          model: string | null
+          provider: string | null
+          success: boolean
+          tools_executed: Json | null
+          tools_requested: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          company_id: string
+          conversation_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          message_id?: string | null
+          model?: string | null
+          provider?: string | null
+          success?: boolean
+          tools_executed?: Json | null
+          tools_requested?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          message_id?: string | null
+          model?: string | null
+          provider?: string | null
+          success?: boolean
+          tools_executed?: Json | null
+          tools_requested?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_audit_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_audit_log_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "ai_audit_log_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_audit_log_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_audit_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_conversations: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_conversations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "ai_conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          company_id: string
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+          tool_calls: Json | null
+        }
+        Insert: {
+          company_id: string
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+          tool_calls?: Json | null
+        }
+        Update: {
+          company_id?: string
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          tool_calls?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_messages_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcement_attachments: {
         Row: {
           announcement_id: string
@@ -784,6 +1053,10 @@ export type Database = {
           created_by: string | null
           date_from: string | null
           date_to: string | null
+          filter_branch_id: string | null
+          filter_department_id: string | null
+          filter_employee_id: string | null
+          filter_team_id: string | null
           id: string
           is_default: boolean
           name: string
@@ -795,6 +1068,10 @@ export type Database = {
           created_by?: string | null
           date_from?: string | null
           date_to?: string | null
+          filter_branch_id?: string | null
+          filter_department_id?: string | null
+          filter_employee_id?: string | null
+          filter_team_id?: string | null
           id?: string
           is_default?: boolean
           name: string
@@ -806,6 +1083,10 @@ export type Database = {
           created_by?: string | null
           date_from?: string | null
           date_to?: string | null
+          filter_branch_id?: string | null
+          filter_department_id?: string | null
+          filter_employee_id?: string | null
+          filter_team_id?: string | null
           id?: string
           is_default?: boolean
           name?: string
@@ -831,6 +1112,34 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_dashboards_filter_branch_id_fkey"
+            columns: ["filter_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_dashboards_filter_department_id_fkey"
+            columns: ["filter_department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_dashboards_filter_employee_id_fkey"
+            columns: ["filter_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_dashboards_filter_team_id_fkey"
+            columns: ["filter_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -5257,6 +5566,7 @@ export type Database = {
           issue: string
         }[]
       }
+      get_support_draft_trigger_secret: { Args: never; Returns: string }
       is_company_working_day: {
         Args: { p_company_id: string; p_date: string; p_employee_id: string }
         Returns: boolean
