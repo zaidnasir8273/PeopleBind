@@ -4,6 +4,7 @@ import { ShieldAlert } from 'lucide-react'
 import { Sidebar } from '../components/Sidebar'
 import { NotificationBell } from '../components/NotificationBell'
 import { SupportChat } from '../components/SupportChat'
+import { AiAssistant } from '../components/AiAssistant'
 import { AccountMenu } from '../components/AccountMenu'
 import { CommandPalette } from '../components/CommandPalette'
 import { PageTransition } from '../components/motion'
@@ -45,6 +46,7 @@ export default function AppShell() {
         )}
         <div className="topbar">
           <CommandPalette />
+          <AiAssistant />
           <SupportChat />
           <NotificationBell portal="app" />
           <AccountMenu />
