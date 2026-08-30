@@ -12,6 +12,7 @@ import { BriefcaseBusinessIcon } from './ui/briefcase-business'
 import { ChartBarIncreasingIcon } from './ui/chart-bar-increasing'
 import { SettingsIcon } from './ui/settings'
 import { FileTextIcon } from './ui/file-text'
+import { BotIcon } from './ui/bot'
 import { supabase } from '../lib/supabase'
 
 const STATIC_ACTIONS = [
@@ -58,7 +59,13 @@ export function CommandPalette() {
       ...(openings ?? []).map((o) => ({ label: o.title, to: '/app/recruitment', icon: BriefcaseBusinessIcon, group: 'Job openings' })),
     ]
 
-    setResults([...staticMatches, ...dynamicMatches])
+    // Always-available fallback -- a query that matches no page/employee/
+    // candidate shouldn't dead-end at "No matches" when the AI assistant
+    // could just answer it. Appended last so it never outranks a specific
+    // record match.
+    const askAi = { label: `Ask PeopleBind AI: "${q}"`, icon: BotIcon, group: 'PeopleBind AI', action: 'ask-ai', query: q }
+
+    setResults([...staticMatches, ...dynamicMatches, askAi])
   }, [])
 
   useEffect(() => {
@@ -87,6 +94,11 @@ export function CommandPalette() {
   }, [open])
 
   function select(item) {
+    if (item.action === 'ask-ai') {
+      window.dispatchEvent(new CustomEvent('peoplebind:ask-ai', { detail: { query: item.query } }))
+      setOpen(false)
+      return
+    }
     navigate(item.to)
     setOpen(false)
   }

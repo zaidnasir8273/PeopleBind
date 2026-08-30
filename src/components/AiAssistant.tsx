@@ -122,6 +122,22 @@ export function AiAssistant() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  // Bridge from CommandPalette's "Ask PeopleBind AI: ..." result -- the
+  // two components are siblings in AppShell's topbar with no shared
+  // state, so a window event is the smallest way to let one open and
+  // drive the other without a bigger refactor for one wire-up.
+  useEffect(() => {
+    function handleAskAi(e: Event) {
+      const query = (e as CustomEvent<{ query: string }>).detail?.query
+      if (!query) return
+      setOpen(true)
+      setView('chat')
+      send(query)
+    }
+    window.addEventListener('peoplebind:ask-ai', handleAskAi)
+    return () => window.removeEventListener('peoplebind:ask-ai', handleAskAi)
+  })
+
   useEffect(() => {
     if (open && view === 'chat' && listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight
@@ -137,8 +153,8 @@ export function AiAssistant() {
     return () => clearInterval(interval)
   }, [sending])
 
-  async function send() {
-    const body = draft.trim()
+  async function send(overrideBody?: string) {
+    const body = overrideBody ?? draft.trim()
     if (!body || !company || sending) return
     setSending(true)
     setDraft('')
@@ -344,7 +360,7 @@ export function AiAssistant() {
                 placeholder="Ask PeopleBind AI…"
                 rows={1}
               />
-              <button type="button" className="btn-icon-round" onClick={send} disabled={sending || !draft.trim()} aria-label="Send">
+              <button type="button" className="btn-icon-round" onClick={() => send()} disabled={sending || !draft.trim()} aria-label="Send">
                 <SendIcon size={15} />
               </button>
             </div>
