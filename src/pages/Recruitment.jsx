@@ -5,10 +5,12 @@ import { PlusIcon } from '../components/ui/plus'
 import { ChevronLeftIcon } from '../components/ui/chevron-left'
 import { UserRoundCheckIcon } from '../components/ui/user-round-check'
 import { UserRoundPlusIcon } from '../components/ui/user-round-plus'
+import { BotIcon } from '../components/ui/bot'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonTable, SkeletonBlock } from '../components/Skeleton'
+import { renderMarkdown } from '../lib/markdown'
 
 function fmt(n) {
   return 'Rs. ' + Number(n ?? 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })
@@ -224,10 +226,15 @@ function PipelineView({ openingId, profile, company, onBack }) {
   const [candidateMode, setCandidateMode] = useState('existing')
   const [candidateId, setCandidateId] = useState('')
   const [newCandidate, setNewCandidate] = useState({ full_name: '', email: '', phone: '', source: '' })
+  const [resumeFile, setResumeFile] = useState(null)
   const [addSaving, setAddSaving] = useState(false)
   const [addError, setAddError] = useState(null)
 
   const [activeApp, setActiveApp] = useState(null)
+
+  const [rankDrawerOpen, setRankDrawerOpen] = useState(false)
+  const [ranking, setRanking] = useState('')
+  const [rankingLoading, setRankingLoading] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -235,7 +242,7 @@ function PipelineView({ openingId, profile, company, onBack }) {
       supabase.from('job_openings').select('*').eq('id', openingId).eq('company_id', company.id).single(),
       supabase
         .from('applications')
-        .select('id, stage, applied_at, rejected_reason, candidates(id, full_name, email, phone, source, notes)')
+        .select('id, stage, applied_at, rejected_reason, candidates(id, full_name, email, phone, source, notes, resume_url)')
         .eq('job_opening_id', openingId)
         .eq('company_id', company.id)
         .order('applied_at', { ascending: false }),
@@ -244,6 +251,26 @@ function PipelineView({ openingId, profile, company, onBack }) {
     setApplications(apps ?? [])
     setLoading(false)
   }, [openingId, company.id])
+
+  async function rankCandidates() {
+    setRankDrawerOpen(true)
+    setRankingLoading(true)
+    setRanking('')
+    const { data, error } = await supabase.functions.invoke('rank-candidates', { body: { job_opening_id: openingId } })
+    setRankingLoading(false)
+    if (error) {
+      let message = error.message
+      try {
+        const body = await error.context.json()
+        if (body?.error) message = body.error
+      } catch {
+        // context wasn't JSON -- keep the generic message
+      }
+      setRanking(`*${message || 'Something went wrong ranking candidates.'}*`)
+      return
+    }
+    setRanking(data?.ranking || 'No ranking was returned.')
+  }
 
   useEffect(() => {
     load()
@@ -255,6 +282,7 @@ function PipelineView({ openingId, profile, company, onBack }) {
     setCandidateMode('existing')
     setCandidateId('')
     setNewCandidate({ full_name: '', email: '', phone: '', source: '' })
+    setResumeFile(null)
     setAddError(null)
     setAddDrawerOpen(true)
   }
@@ -262,6 +290,12 @@ function PipelineView({ openingId, profile, company, onBack }) {
   async function handleAddSubmit(e) {
     e.preventDefault()
     setAddError(null)
+
+    if (resumeFile && resumeFile.type !== 'application/pdf') {
+      setAddError('Resume must be a PDF file.')
+      return
+    }
+
     setAddSaving(true)
 
     let finalCandidateId = candidateId
@@ -285,6 +319,17 @@ function PipelineView({ openingId, profile, company, onBack }) {
         return
       }
       finalCandidateId = created.id
+
+      if (resumeFile) {
+        // Same upload convention as Documents.tsx: <company>/<entity>/<timestamp>-<sanitized name>
+        const path = `${company.id}/${finalCandidateId}/${Date.now()}-${resumeFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+        const { error: uploadError } = await supabase.storage.from('resumes').upload(path, resumeFile)
+        if (uploadError) {
+          toast.error(`Candidate added, but the resume upload failed: ${uploadError.message}`)
+        } else {
+          await supabase.from('candidates').update({ resume_url: path }).eq('id', finalCandidateId)
+        }
+      }
     }
 
     const { error: appError } = await supabase.from('applications').insert({
@@ -317,9 +362,16 @@ function PipelineView({ openingId, profile, company, onBack }) {
           <p className="page-eyebrow">RECRUITMENT</p>
           <h1 className="page-title">{opening?.title ?? '…'}</h1>
         </div>
-        <button className="btn-primary btn-icon" onClick={openAddDrawer}>
-          <PlusIcon size={16} /> Add candidate
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {applications.length > 0 && (
+            <button className="btn-secondary btn-icon" onClick={rankCandidates}>
+              <BotIcon size={16} /> Rank candidates
+            </button>
+          )}
+          <button className="btn-primary btn-icon" onClick={openAddDrawer}>
+            <PlusIcon size={16} /> Add candidate
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -393,6 +445,10 @@ function PipelineView({ openingId, profile, company, onBack }) {
                 <span>Source</span>
                 <input value={newCandidate.source} onChange={(e) => setNewCandidate({ ...newCandidate, source: e.target.value })} placeholder="e.g. LinkedIn, referral" />
               </label>
+              <label className="field">
+                <span>Resume (PDF, optional)</span>
+                <input type="file" accept="application/pdf" onChange={(e) => setResumeFile(e.target.files?.[0] ?? null)} />
+              </label>
             </>
           )}
 
@@ -415,6 +471,19 @@ function PipelineView({ openingId, profile, company, onBack }) {
           onChanged={() => { load() }}
         />
       )}
+
+      <Drawer open={rankDrawerOpen} onClose={() => setRankDrawerOpen(false)} title="AI candidate ranking" wide>
+        {rankingLoading ? (
+          <SkeletonBlock rows={6} />
+        ) : (
+          <div className="report-section" style={{ marginBottom: 0 }}>
+            {renderMarkdown(ranking)}
+            <p className="muted" style={{ fontSize: 12, marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+              A draft assessment for your review, not a hiring decision — up to the 20 most recent active candidates, based on resume content where a resume is on file.
+            </p>
+          </div>
+        )}
+      </Drawer>
     </div>
   )
 }
@@ -456,6 +525,17 @@ function CandidateDrawer({ application, opening, profile, company, onClose, onCh
   useEffect(() => {
     loadDetail()
   }, [loadDetail])
+
+  async function handleViewResume() {
+    const path = application.candidates?.resume_url
+    if (!path) return
+    const { data, error: signError } = await supabase.storage.from('resumes').createSignedUrl(path, 60)
+    if (signError || !data) {
+      toast.error("Couldn't open that resume")
+      return
+    }
+    window.open(data.signedUrl, '_blank')
+  }
 
   async function saveStage(newStage) {
     setStageSaving(true)
@@ -548,6 +628,15 @@ function CandidateDrawer({ application, opening, profile, company, onClose, onCh
             <span>Phone</span>
             <p style={{ margin: 0 }}>{application.candidates?.phone || '—'}</p>
           </div>
+        </div>
+
+        <div className="field">
+          <span>Resume</span>
+          {application.candidates?.resume_url ? (
+            <button type="button" className="link-button" style={{ fontSize: 13 }} onClick={handleViewResume}>View resume</button>
+          ) : (
+            <p className="muted" style={{ margin: 0, fontSize: 13 }}>No resume on file.</p>
+          )}
         </div>
 
         <label className="field">
