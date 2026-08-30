@@ -4192,6 +4192,15 @@ a.attention-item:hover {
   color: var(--danger);
 }
 
+.ai-chat-action {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  max-width: 100%;
+}
+
 .support-chat-thread-item {
   display: flex;
   flex-direction: column;

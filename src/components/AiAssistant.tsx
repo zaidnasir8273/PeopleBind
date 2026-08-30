@@ -6,7 +6,14 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { renderMarkdown } from '../lib/markdown'
 
-type ChatMessage = { role: 'user' | 'assistant'; content: string; isError?: boolean }
+type PendingAction = {
+  id: string
+  description: string
+  resolved?: 'executed' | 'cancelled' | 'failed' | 'already_resolved' | 'not_found'
+  resolvedMessage?: string
+}
+
+type ChatMessage = { role: 'user' | 'assistant'; content: string; isError?: boolean; pendingAction?: PendingAction }
 
 const WAITING_LABELS = ['Thinking', 'Checking the data', 'Almost there']
 
@@ -35,6 +42,7 @@ export function AiAssistant() {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const [waitingLabelIndex, setWaitingLabelIndex] = useState(0)
+  const [resolvingActionId, setResolvingActionId] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -77,9 +85,36 @@ export function AiAssistant() {
       setMessages((prev) => [...prev, { role: 'assistant', content: message, isError: true }])
     } else {
       if (data.conversation_id) setConversationId(data.conversation_id)
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }])
+      const pendingAction: PendingAction | undefined = data.pendingAction
+        ? { id: data.pendingAction.id, description: data.pendingAction.description }
+        : undefined
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply, pendingAction }])
     }
     setSending(false)
+  }
+
+  // Only ever reachable from a real Confirm/Cancel click below -- never
+  // from anything typed in chat. Re-validated server-side against live
+  // data before anything is actually applied.
+  async function resolveAction(messageIndex: number, actionId: string, confirm: boolean) {
+    if (!company || resolvingActionId) return
+    setResolvingActionId(actionId)
+
+    const { data, error } = await supabase.functions.invoke('ai-assistant', {
+      body: { action_id: actionId, confirm, company_id: company.id },
+    })
+
+    const outcome = data?.outcome ?? 'failed'
+    const resolvedMessage = error ? await extractErrorMessage(error) : (data?.message ?? 'Something went wrong.')
+
+    setMessages((prev) =>
+      prev.map((m, i) =>
+        i === messageIndex && m.pendingAction
+          ? { ...m, pendingAction: { ...m.pendingAction, resolved: outcome, resolvedMessage } }
+          : m
+      )
+    )
+    setResolvingActionId(null)
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -129,6 +164,37 @@ export function AiAssistant() {
                     <div className="ai-chat-msg-body">{renderMarkdown(m.content)}</div>
                   ) : (
                     <p className="ai-chat-msg-body">{m.content}</p>
+                  )}
+                  {m.pendingAction && (
+                    <div className="ai-chat-action">
+                      {m.pendingAction.resolved ? (
+                        <span className="muted" style={{ fontSize: 12.5 }}>{m.pendingAction.resolvedMessage}</span>
+                      ) : (
+                        <>
+                          <span style={{ fontSize: 12.5 }}>{m.pendingAction.description}</span>
+                          <span style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                            <button
+                              type="button"
+                              className="btn-primary"
+                              style={{ padding: '4px 12px', fontSize: 12.5 }}
+                              disabled={resolvingActionId === m.pendingAction.id}
+                              onClick={() => resolveAction(i, m.pendingAction!.id, true)}
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              type="button"
+                              className="link-button"
+                              style={{ fontSize: 12.5 }}
+                              disabled={resolvingActionId === m.pendingAction.id}
+                              onClick={() => resolveAction(i, m.pendingAction!.id, false)}
+                            >
+                              Cancel
+                            </button>
+                          </span>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               ))
