@@ -3594,6 +3594,14 @@ a.attention-item:hover {
 .calendar-dot-anniversary { background: #6d4fc2; }
 .calendar-dot-project { background: var(--accent); }
 
+/* Company events -- one color per category, distinct from the 5 above.
+   Kept in sync with EVENT_CATEGORIES in CalendarEventForm.jsx. */
+.calendar-dot-company_wide { background: #1f7a63; }
+.calendar-dot-meeting { background: #3564a8; }
+.calendar-dot-visit { background: #8a5a2e; }
+.calendar-dot-gathering { background: #5c7c3f; }
+.calendar-dot-other { background: #71717a; }
+
 .calendar-legend {
   display: flex;
   flex-wrap: wrap;
@@ -3607,6 +3615,14 @@ a.attention-item:hover {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.calendar-event-card {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  padding: 10px 12px;
 }
 
 /* ---------- dashboards ---------- */
