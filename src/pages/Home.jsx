@@ -423,7 +423,7 @@ export default function Home() {
         </Link>
         <Link to="/app/dashboards" className="quick-action">
           <ChartBarIncreasingIcon size={18} />
-          Go to dashboards
+          Dashboards
         </Link>
       </div>
 
