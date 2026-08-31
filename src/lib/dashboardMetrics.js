@@ -157,6 +157,39 @@ export const DASHBOARD_METRICS = {
       return { value: avgHC > 0 ? Math.round((departures / avgHC) * 1000) / 10 : 0, series: [] }
     },
   },
+  // Scoped to *voluntary* departures only, unlike the three turnover
+  // metrics above -- an involuntary departure is a company decision, not
+  // a "regrettable" loss in the usual HR sense. "Regrettable" = their own
+  // most recent performance review (before leaving) was a 4+ out of 5,
+  // same rating scale as avg_overall_performance_rating.
+  regrettable_turnover_rate: {
+    label: 'Regrettable turnover rate', unit: '%', trend: false, higherIsBetter: false,
+    fetch: async (from, to, company, filters) => {
+      const REGRETTABLE_RATING_THRESHOLD = 4
+      let query = supabase.from('employees')
+        .select('id, performance_reviews(overall_rating, submitted_at, status)')
+        .eq('company_id', company.id).eq('employment_status', 'resigned')
+        .gte('exit_date', from).lte('exit_date', to)
+      if (filters?.departmentId) query = query.eq('department_id', filters.departmentId)
+      if (filters?.teamId) query = query.eq('team_id', filters.teamId)
+      if (filters?.branchId) query = query.eq('branch_id', filters.branchId)
+      if (filters?.employeeId) query = query.eq('id', filters.employeeId)
+      const [{ data: departed }, beginHC, endHC] = await Promise.all([
+        query,
+        countEmployeesAsOf(dayBefore(from), company, filters),
+        countEmployeesAsOf(to, company, filters),
+      ])
+      let regrettable = 0
+      for (const emp of departed ?? []) {
+        const reviews = (emp.performance_reviews ?? []).filter((r) => (r.status === 'submitted' || r.status === 'acknowledged') && r.overall_rating != null)
+        if (reviews.length === 0) continue
+        const latest = reviews.sort((a, b) => b.submitted_at.localeCompare(a.submitted_at))[0]
+        if (Number(latest.overall_rating) >= REGRETTABLE_RATING_THRESHOLD) regrettable++
+      }
+      const avgHC = (beginHC + endHC) / 2
+      return { value: avgHC > 0 ? Math.round((regrettable / avgHC) * 1000) / 10 : 0, series: [] }
+    },
+  },
   // Deliberately a different denominator than turnover above (beginning
   // headcount only, not the average) -- matches the standard HR
   // retention-rate formula, not an inconsistency to reconcile.
