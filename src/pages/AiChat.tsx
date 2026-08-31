@@ -7,6 +7,7 @@ import { BotIcon } from '../components/ui/bot'
 import { useAuth } from '../context/AuthContext'
 import { renderMarkdown } from '../lib/markdown'
 import { useAiChat } from '../hooks/useAiChat'
+import { markAiExplored } from '../lib/aiFeatureBadge'
 
 function relativeTime(ts: string) {
   const diffMs = Date.now() - new Date(ts).getTime()
@@ -47,6 +48,7 @@ export default function AiChat() {
 
   useEffect(() => {
     loadThreads()
+    markAiExplored()
   }, [loadThreads])
 
   useEffect(() => {

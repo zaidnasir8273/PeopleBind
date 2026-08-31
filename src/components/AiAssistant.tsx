@@ -6,6 +6,7 @@ import { ClockIcon } from './ui/clock'
 import { useAuth } from '../context/AuthContext'
 import { renderMarkdown } from '../lib/markdown'
 import { useAiChat } from '../hooks/useAiChat'
+import { hasExploredAi, markAiExplored, onAiExplored } from '../lib/aiFeatureBadge'
 
 function relativeTime(ts: string) {
   const diffMs = Date.now() - new Date(ts).getTime()
@@ -23,6 +24,7 @@ export function AiAssistant() {
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<'chat' | 'history'>('chat')
   const [draft, setDraft] = useState('')
+  const [showNewBadge, setShowNewBadge] = useState(() => !hasExploredAi())
   const ref = useRef<HTMLDivElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -50,9 +52,17 @@ export function AiAssistant() {
   // dedicated PeopleBind AI page -- shows up here too, without needing a
   // full reload.
   useEffect(() => {
-    if (open) resumeLatest()
+    if (open) {
+      resumeLatest()
+      markAiExplored()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  // Explored via the dedicated /app/ai page instead of this popover --
+  // markAiExplored() there fires the same event, so the badge hides
+  // immediately here too rather than waiting for a reload.
+  useEffect(() => onAiExplored(() => setShowNewBadge(false)), [])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -118,6 +128,7 @@ export function AiAssistant() {
     <div className="notif-bell-wrap" ref={ref}>
       <button className="notif-bell" onClick={() => setOpen((v) => !v)} aria-label="PeopleBind AI" data-tooltip="Ask PeopleBind AI">
         <BotIcon size={19} />
+        {showNewBadge && <span className="ai-new-badge">New</span>}
       </button>
 
       {open && (

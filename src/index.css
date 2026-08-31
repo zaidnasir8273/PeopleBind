@@ -3827,6 +3827,45 @@ a.attention-item:hover {
   text-align: center;
 }
 
+/* "New" tag on the PeopleBind AI topbar icon -- pops in once per page
+   load and keeps a slow pulse going so the feature stays noticeable
+   without being an animated distraction; disappears for good once
+   someone's actually opened the assistant (see lib/aiFeatureBadge.js). */
+.ai-new-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: var(--gold);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 100px;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: ai-badge-pop 0.45s var(--ease-out) both, ai-badge-pulse 2.4s ease-in-out 0.45s infinite;
+}
+
+@keyframes ai-badge-pop {
+  0% { transform: scale(0); opacity: 0; }
+  65% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ai-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(180, 83, 9, 0.45); }
+  50% { box-shadow: 0 0 0 5px rgba(180, 83, 9, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-new-badge {
+    animation: none;
+  }
+}
+
 .notif-panel {
   position: absolute;
   top: calc(100% + 8px);
