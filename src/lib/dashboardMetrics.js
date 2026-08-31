@@ -65,6 +65,41 @@ function withEmployeeFilter(query, filters, column = 'employee_id') {
   return filters?.employeeIds ? query.in(column, filters.employeeIds) : query
 }
 
+function dayBefore(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`)
+  d.setDate(d.getDate() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
+// Point-in-time headcount used by the turnover/retention metrics below:
+// active as of `date` if they'd already joined by then and either
+// haven't exited yet or exit after `date`. Queries `employees` directly
+// (same reasoning as `headcount` itself) so it applies the raw picked
+// filters, not the resolved employeeIds list.
+async function countEmployeesAsOf(date, company, filters) {
+  let query = supabase.from('employees').select('id', { count: 'exact', head: true })
+    .eq('company_id', company.id).lte('joining_date', date)
+    .or(`exit_date.is.null,exit_date.gt.${date}`)
+  if (filters?.departmentId) query = query.eq('department_id', filters.departmentId)
+  if (filters?.teamId) query = query.eq('team_id', filters.teamId)
+  if (filters?.branchId) query = query.eq('branch_id', filters.branchId)
+  if (filters?.employeeId) query = query.eq('id', filters.employeeId)
+  const { count } = await query
+  return count ?? 0
+}
+
+async function countDepartures(from, to, company, filters, statuses) {
+  let query = supabase.from('employees').select('id', { count: 'exact', head: true })
+    .eq('company_id', company.id).in('employment_status', statuses)
+    .gte('exit_date', from).lte('exit_date', to)
+  if (filters?.departmentId) query = query.eq('department_id', filters.departmentId)
+  if (filters?.teamId) query = query.eq('team_id', filters.teamId)
+  if (filters?.branchId) query = query.eq('branch_id', filters.branchId)
+  if (filters?.employeeId) query = query.eq('id', filters.employeeId)
+  const { count } = await query
+  return count ?? 0
+}
+
 export const DASHBOARD_METRICS = {
   headcount: {
     label: 'Headcount', unit: '', trend: false,
@@ -78,6 +113,99 @@ export const DASHBOARD_METRICS = {
       if (filters?.employeeId) query = query.eq('id', filters.employeeId)
       const { count } = await query
       return { value: count ?? 0, series: [] }
+    },
+  },
+  // Turnover/retention/hiring-velocity -- period-aggregate rates and
+  // durations (trend: false, series: [], same shape as headcount above),
+  // not daily sums. A daily "turnover rate" would be a meaningless
+  // granularity no HR team actually reports at; these render as number/
+  // progress/gauge widgets exactly like headcount already does, including
+  // the existing target_value support on progress/gauge for free.
+  turnover_rate: {
+    label: 'Turnover rate', unit: '%', trend: false, higherIsBetter: false,
+    fetch: async (from, to, company, filters) => {
+      const [beginHC, endHC, departures] = await Promise.all([
+        countEmployeesAsOf(dayBefore(from), company, filters),
+        countEmployeesAsOf(to, company, filters),
+        countDepartures(from, to, company, filters, ['resigned', 'terminated']),
+      ])
+      const avgHC = (beginHC + endHC) / 2
+      return { value: avgHC > 0 ? Math.round((departures / avgHC) * 1000) / 10 : 0, series: [] }
+    },
+  },
+  voluntary_turnover_rate: {
+    label: 'Voluntary turnover rate', unit: '%', trend: false, higherIsBetter: false,
+    fetch: async (from, to, company, filters) => {
+      const [beginHC, endHC, departures] = await Promise.all([
+        countEmployeesAsOf(dayBefore(from), company, filters),
+        countEmployeesAsOf(to, company, filters),
+        countDepartures(from, to, company, filters, ['resigned']),
+      ])
+      const avgHC = (beginHC + endHC) / 2
+      return { value: avgHC > 0 ? Math.round((departures / avgHC) * 1000) / 10 : 0, series: [] }
+    },
+  },
+  involuntary_turnover_rate: {
+    label: 'Involuntary turnover rate', unit: '%', trend: false, higherIsBetter: false,
+    fetch: async (from, to, company, filters) => {
+      const [beginHC, endHC, departures] = await Promise.all([
+        countEmployeesAsOf(dayBefore(from), company, filters),
+        countEmployeesAsOf(to, company, filters),
+        countDepartures(from, to, company, filters, ['terminated']),
+      ])
+      const avgHC = (beginHC + endHC) / 2
+      return { value: avgHC > 0 ? Math.round((departures / avgHC) * 1000) / 10 : 0, series: [] }
+    },
+  },
+  // Deliberately a different denominator than turnover above (beginning
+  // headcount only, not the average) -- matches the standard HR
+  // retention-rate formula, not an inconsistency to reconcile.
+  retention_rate: {
+    label: 'Retention rate', unit: '%', trend: false,
+    fetch: async (from, to, company, filters) => {
+      const [beginHC, departures] = await Promise.all([
+        countEmployeesAsOf(dayBefore(from), company, filters),
+        countDepartures(from, to, company, filters, ['resigned', 'terminated']),
+      ])
+      const value = beginHC > 0 ? Math.round(((beginHC - departures) / beginHC) * 1000) / 10 : 100
+      return { value, series: [] }
+    },
+  },
+  // Department/branch filters only -- a job opening has no team or
+  // assigned-employee link, same reasoning as open_roles/
+  // headcount_by_department below.
+  time_to_hire: {
+    label: 'Time to hire (days)', unit: 'days', trend: false, higherIsBetter: false,
+    fetch: async (from, to, company, filters) => {
+      let query = supabase.from('employees')
+        .select('joining_date, application:applications!source_application_id(applied_at, job_openings(department_id, branch_id))')
+        .eq('company_id', company.id).not('source_application_id', 'is', null)
+        .gte('joining_date', from).lte('joining_date', to)
+      const { data } = await query
+      const rows = (data ?? []).filter((r) => {
+        if (!r.application?.applied_at) return false
+        const jo = r.application.job_openings
+        if (filters?.departmentId && jo?.department_id !== filters.departmentId) return false
+        if (filters?.branchId && jo?.branch_id !== filters.branchId) return false
+        return true
+      })
+      if (rows.length === 0) return { value: 0, series: [] }
+      const days = rows.map((r) => (new Date(r.joining_date) - new Date(r.application.applied_at.slice(0, 10))) / 86400000)
+      return { value: Math.round((days.reduce((s, d) => s + d, 0) / days.length) * 10) / 10, series: [] }
+    },
+  },
+  time_to_fill: {
+    label: 'Time to fill (days)', unit: 'days', trend: false, higherIsBetter: false,
+    fetch: async (from, to, company, filters) => {
+      let query = supabase.from('job_openings').select('opened_at, closed_at, department_id, branch_id')
+        .eq('company_id', company.id).eq('status', 'filled').not('closed_at', 'is', null)
+        .gte('closed_at', from).lte('closed_at', to)
+      if (filters?.departmentId) query = query.eq('department_id', filters.departmentId)
+      if (filters?.branchId) query = query.eq('branch_id', filters.branchId)
+      const { data } = await query
+      if (!data || data.length === 0) return { value: 0, series: [] }
+      const days = data.map((r) => (new Date(r.closed_at) - new Date(r.opened_at)) / 86400000)
+      return { value: Math.round((days.reduce((s, d) => s + d, 0) / days.length) * 10) / 10, series: [] }
     },
   },
   attendance_present: {

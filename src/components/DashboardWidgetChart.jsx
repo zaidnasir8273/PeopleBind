@@ -26,7 +26,9 @@ const FUNNEL_STAGE_LABELS = { applied: 'Applied', screening: 'Screening', interv
 function fmtValue(value, unit) {
   const n = Number(value ?? 0)
   const rounded = Math.abs(n) >= 1000 ? Math.round(n).toLocaleString('en-PK') : (Math.round(n * 10) / 10).toLocaleString('en-PK')
-  return unit === 'Rs' ? `Rs. ${rounded}` : unit ? `${rounded} ${unit}` : rounded
+  if (unit === 'Rs') return `Rs. ${rounded}`
+  if (unit === '%') return `${rounded}%`
+  return unit ? `${rounded} ${unit}` : rounded
 }
 
 // Resolves this widget's own metric/chart-type registry entry -- handles

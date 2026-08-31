@@ -163,8 +163,13 @@ function DashboardSettingsMenu({ isDefault, onRename, onSetDefault, onDelete }) 
       <button type="button" className="link-button" onClick={() => setOpen((v) => !v)} aria-label="Dashboard settings" data-tooltip="Dashboard settings">
         <SettingsIcon size={16} />
       </button>
+      {/* .account-menu-panel anchors right:0, which is correct for
+          AccountMenu's own far-right topbar trigger (opens leftward with
+          room to spare) but this trigger sits right next to the sidebar --
+          the same right:0 anchor would open the panel leftward straight
+          into it. Override to open rightward instead. */}
       {open && (
-        <div className="account-menu-panel" style={{ width: 170 }}>
+        <div className="account-menu-panel" style={{ width: 170, left: 0, right: 'auto', transformOrigin: 'top left' }}>
           <button type="button" className="account-menu-item" onClick={() => { setOpen(false); onRename() }}>
             <SquarePenIcon size={14} /> Rename
           </button>
