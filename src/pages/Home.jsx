@@ -18,6 +18,7 @@ import { UserPlusIcon } from '../components/ui/user-plus'
 import { TimerIcon } from '../components/ui/timer'
 import { UsersIcon } from '../components/ui/users'
 import { BriefcaseBusinessIcon } from '../components/ui/briefcase-business'
+import { ChartBarIncreasingIcon } from '../components/ui/chart-bar-increasing'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Avatar } from '../components/Avatar'
@@ -419,6 +420,10 @@ export default function Home() {
         <Link to="/app/expenses" className="quick-action">
           <ReceiptIcon size={18} />
           Add expense
+        </Link>
+        <Link to="/app/dashboards" className="quick-action">
+          <ChartBarIncreasingIcon size={18} />
+          Go to dashboards
         </Link>
       </div>
 
