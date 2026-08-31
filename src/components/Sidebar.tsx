@@ -22,6 +22,7 @@ import { SparklesIcon } from './ui/sparkles'
 import { RadioTowerIcon } from './ui/radio-tower'
 import { HeartHandshakeIcon } from './ui/heart-handshake'
 import { SettingsIcon } from './ui/settings'
+import { BotIcon } from './ui/bot'
 import { LogoutIcon } from './ui/logout'
 import { ShieldCheckIcon } from './ui/shield-check'
 import { CircleHelpIcon } from './ui/circle-help'
@@ -116,6 +117,7 @@ const NAV_ITEMS: NavItem[] = [
       { to: '/app/dashboards', label: 'Dashboards', icon: ChartBarIncreasingIcon },
     ],
   },
+  { key: 'ai', to: '/app/ai', label: 'PeopleBind AI', icon: BotIcon },
   { key: 'settings', to: '/app/settings', label: 'Settings', icon: SettingsIcon },
 ]
 

@@ -33,6 +33,7 @@ import Announcements from './pages/Announcements'
 import Kudos from './pages/Kudos'
 import CalendarPage from './pages/Calendar'
 import Dashboards from './pages/Dashboards'
+import AiChat from './pages/AiChat'
 import Help from './pages/Help'
 import { PlatformAdminGate } from './components/PlatformAdminGate'
 import PlatformAdminShell from './pages/PlatformAdminShell'
@@ -136,6 +137,7 @@ export default function App() {
             <Route path="announcements" element={<Announcements />} />
             <Route path="kudos" element={<Kudos />} />
             <Route path="calendar" element={<CalendarPage />} />
+            <Route path="ai" element={<AiChat />} />
             <Route path="help" element={<Help />} />
           </Route>
           <Route

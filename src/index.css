@@ -4238,6 +4238,191 @@ a.attention-item:hover {
   font-family: var(--font-mono);
 }
 
+/* ---------- PeopleBind AI: dedicated full-page module -- a Claude/
+   ChatGPT-style two-pane layout (conversation list + chat) living inside
+   a bordered card, sized against the page rather than the viewport so it
+   respects the topbar/impersonation-banner above it. Message bubbles,
+   the typing indicator, and the thread-row look all reuse the classes
+   above -- this block only adds the page-level scaffolding. ---------- */
+
+.ai-page-card {
+  display: flex;
+  height: calc(100vh - 230px);
+  min-height: 480px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+  overflow: hidden;
+  margin-top: 18px;
+}
+
+.ai-page-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  gap: 10px;
+  background: var(--paper-raised);
+}
+
+.ai-page-new-chat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.ai-page-thread-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-page-thread-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.ai-page-thread-item:hover {
+  border-color: var(--accent);
+}
+
+.ai-page-thread-item.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.ai-page-thread-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ai-page-thread-title {
+  font-size: 12.5px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-page-thread-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ai-page-thread-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.ai-page-thread-icon-btn:hover {
+  color: var(--teal-deep);
+  background: rgba(18, 63, 51, 0.06);
+}
+
+.ai-page-thread-icon-btn.danger:hover {
+  color: var(--danger);
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.ai-page-thread-rename-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  padding: 2px 4px;
+}
+
+.ai-page-thread-confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-page-chat {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-page-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.ai-page-messages-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ai-page-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--ink-soft);
+}
+
+.ai-page-input-row {
+  display: flex;
+  justify-content: center;
+  padding: 14px 24px;
+  border-top: 1px solid var(--line);
+}
+
+.ai-page-input-inner {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+  max-width: 720px;
+}
+
+.ai-page-input-inner textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  max-height: 160px;
+}
+
 /* ---------- account menu ---------- */
 
 .account-menu-wrap {
