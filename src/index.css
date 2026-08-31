@@ -3642,14 +3642,21 @@ a.attention-item:hover {
   animation: notif-pop var(--duration) var(--ease-out);
 }
 
+/* Free-form flex-wrap grid (not CSS grid) -- each widget's own inline
+   flexBasis (from its width_pct) and height (from height_px) drive the
+   layout, so widgets can be any continuous size via the corner resize
+   handle below rather than snapping to a fixed span. */
 .dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
 .dashboard-widget {
-  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 220px;
   background: var(--paper-raised);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -3661,16 +3668,9 @@ a.attention-item:hover {
   cursor: grabbing;
 }
 
-.dashboard-widget-small { grid-column: span 1; }
-.dashboard-widget-medium { grid-column: span 2; }
-.dashboard-widget-large { grid-column: span 4; }
-
 @media (max-width: 860px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-  .dashboard-widget-small, .dashboard-widget-medium, .dashboard-widget-large {
-    grid-column: span 1;
+  .dashboard-widget {
+    flex-basis: 100% !important;
   }
 }
 
@@ -3688,6 +3688,18 @@ a.attention-item:hover {
   color: var(--ink);
 }
 
+.dashboard-widget-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.dashboard-widget-number-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .dashboard-widget-number {
   font-family: var(--font-display);
   font-weight: 700;
@@ -3696,11 +3708,270 @@ a.attention-item:hover {
   padding: 12px 0 4px;
 }
 
+.dashboard-widget-delta {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.dashboard-widget-delta.is-good { color: var(--teal-deep); }
+.dashboard-widget-delta.is-bad { color: var(--danger); }
+
+/* Bottom-right corner handle -- mousedown starts the continuous resize
+   drag (see Dashboards.jsx's handleResizeStart). Faded by default like
+   the sidebar's own drag dot, brightens on hover to invite the drag. */
+.dashboard-widget-resize-handle {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  opacity: 0.35;
+  border-right: 2px solid var(--ink-soft);
+  border-bottom: 2px solid var(--ink-soft);
+  border-radius: 0 0 4px 0;
+}
+
+.dashboard-widget-resize-handle:hover {
+  opacity: 0.8;
+  border-color: var(--teal-deep);
+}
+
+.dashboard-leaderboard-row {
+  background: none;
+  border: none;
+  padding: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
 .dashboard-leaderboard {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding-top: 4px;
+}
+
+/* Small "this widget has its own date range" tag next to a widget's
+   title, only rendered when date_mode != 'inherit'. */
+.dashboard-widget-range-tag {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  font-weight: 400;
+  margin-left: 8px;
+}
+
+/* ---------- gauge / progress chart types ---------- */
+
+.dashboard-gauge {
+  position: relative;
+  height: 100%;
+}
+
+.dashboard-gauge-label {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dashboard-progress {
+  padding-top: 10px;
+}
+
+.dashboard-progress-track {
+  height: 10px;
+  border-radius: 100px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.dashboard-progress-fill {
+  height: 100%;
+  background: var(--teal);
+  border-radius: 100px;
+  transition: width var(--duration) var(--ease);
+}
+
+.dashboard-progress-label {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+/* ---------- heatmap / pivot cross-tab ---------- */
+
+.dashboard-crosstab {
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dashboard-crosstab th,
+.dashboard-crosstab td {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.dashboard-crosstab th {
+  background: var(--paper);
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-align: left;
+}
+
+.dashboard-crosstab td:first-child,
+.dashboard-crosstab th:first-child {
+  text-align: left;
+}
+
+/* ---------- funnel ---------- */
+
+.dashboard-funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.dashboard-funnel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.dashboard-funnel-label {
+  width: 80px;
+  flex-shrink: 0;
+  color: var(--ink-soft);
+}
+
+.dashboard-funnel-track {
+  flex: 1;
+  height: 18px;
+  border-radius: var(--radius);
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.dashboard-funnel-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal-deep), var(--teal));
+  border-radius: var(--radius);
+  transition: width var(--duration) var(--ease);
+}
+
+.dashboard-funnel-value {
+  width: 70px;
+  flex-shrink: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+/* ---------- calculated metrics drawer ---------- */
+
+.dashboard-calc-metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+
+/* ---------- richer dashboard picker (search / favorites / folders) ---------- */
+
+.dashboard-picker-panel-rich {
+  width: 280px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-picker-search {
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.dashboard-picker-list {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dashboard-picker-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 6px 8px 2px;
+}
+
+.dashboard-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius);
+}
+
+.dashboard-picker-row:hover {
+  background: var(--paper);
+}
+
+.dashboard-picker-row.active {
+  background: var(--accent-soft);
+}
+
+.dashboard-picker-row-select {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 7px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-picker-row-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  padding-right: 4px;
+}
+
+.dashboard-picker-row-actions .link-button {
+  padding: 3px;
+  font-size: 12px;
+}
+
+.dashboard-picker-folder-input {
+  flex: 1;
+  font-size: 12.5px;
+  margin: 2px 6px;
 }
 
 /* ---------- feed (announcements, kudos) ---------- */

@@ -1,24 +1,27 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { toast } from 'sonner'
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { ChevronDown } from 'lucide-react'
-import { DeleteIcon } from '../components/ui/delete'
 import { PlusIcon } from '../components/ui/plus'
-import { SquarePenIcon } from '../components/ui/square-pen'
+import { DeleteIcon } from '../components/ui/delete'
 import { CalendarDaysIcon } from '../components/ui/calendar-days'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonBlock } from '../components/Skeleton'
-import { DASHBOARD_METRICS, DASHBOARD_METRIC_KEYS, DASHBOARD_LEADERBOARDS, DASHBOARD_LEADERBOARD_KEYS } from '../lib/dashboardMetrics'
+import { DashboardPicker } from '../components/DashboardPicker'
+import { DashboardWidgetForm } from '../components/DashboardWidgetForm'
+import { DashboardCalculatedMetrics } from '../components/DashboardCalculatedMetrics'
+import { DashboardWidgetChart, DRILLABLE_CHART_TYPES, resolveWidgetFilters } from '../components/DashboardWidgetChart'
+import {
+  DASHBOARD_METRICS, DASHBOARD_LEADERBOARDS, DASHBOARD_STACKED, DASHBOARD_CROSSTABS, DASHBOARD_FUNNELS,
+  resolveEffectiveRange,
+} from '../lib/dashboardMetrics'
 
-const TEAL = '#1f7a63'
-const TEAL_DEEP = '#123f33'
-const GOLD = '#c98a2e'
-const LINE = '#e2ddd0'
-const PIE_COLORS = ['#123f33', '#1f7a63', '#c98a2e', '#7fa88f', '#4c7c5e', '#5c6b3f', '#b0473f', '#1c3a2e']
-
-const BREAKDOWN_CHART_TYPES = ['pie', 'donut', 'leaderboard']
+const DEFAULT_WIDTH_PCT = 50
+const DEFAULT_HEIGHT_PX = 220
+const MIN_WIDTH_PCT = 15
+const MAX_WIDTH_PCT = 100
+const MIN_HEIGHT_PX = 120
+const MAX_HEIGHT_PX = 600
 
 function defaultRange() {
   const to = new Date().toISOString().slice(0, 10)
@@ -26,202 +29,108 @@ function defaultRange() {
   return { from, to }
 }
 
-function fmtValue(value, unit) {
-  const n = Number(value ?? 0)
-  const rounded = Math.abs(n) >= 1000 ? Math.round(n).toLocaleString('en-PK') : (Math.round(n * 10) / 10).toLocaleString('en-PK')
-  return unit === 'Rs' ? `Rs. ${rounded}` : unit ? `${rounded} ${unit}` : rounded
+function widgetLabel(widget, calculatedMetrics) {
+  if (widget.title) return widget.title
+  if (widget.metric_key?.startsWith('calc:')) return calculatedMetrics.find((c) => `calc:${c.id}` === widget.metric_key)?.name ?? widget.metric_key
+  return DASHBOARD_METRICS[widget.metric_key]?.label
+    ?? DASHBOARD_LEADERBOARDS[widget.metric_key]?.label
+    ?? DASHBOARD_STACKED[widget.metric_key]?.label
+    ?? DASHBOARD_CROSSTABS[widget.metric_key]?.label
+    ?? DASHBOARD_FUNNELS[widget.metric_key]?.label
+    ?? widget.metric_key
 }
 
-function WidgetChart({ widget, company, filters }) {
-  const [state, setState] = useState({ loading: true, value: null, series: [], rows: [] })
-  const isBreakdown = BREAKDOWN_CHART_TYPES.includes(widget.chart_type)
-
-  useEffect(() => {
-    let active = true
-    setState({ loading: true, value: null, series: [], rows: [] })
-    async function load() {
-      if (isBreakdown) {
-        const def = DASHBOARD_LEADERBOARDS[widget.metric_key]
-        if (!def) return
-        const rows = await def.fetch(widget._from, widget._to, company, filters)
-        if (active) setState({ loading: false, value: null, series: [], rows })
-      } else {
-        const def = DASHBOARD_METRICS[widget.metric_key]
-        if (!def) return
-        const { value, series } = await def.fetch(widget._from, widget._to, company, filters)
-        if (active) setState({ loading: false, value, series, rows: [] })
-      }
-    }
-    load()
-    return () => { active = false }
-  }, [widget.metric_key, widget.chart_type, widget._from, widget._to, isBreakdown, company.id, filters])
-
-  const metricDef = isBreakdown ? DASHBOARD_LEADERBOARDS[widget.metric_key] : DASHBOARD_METRICS[widget.metric_key]
-  if (!metricDef) return <p className="muted">Unknown metric.</p>
-  if (state.loading) return <SkeletonBlock rows={3} />
-
-  if (widget.chart_type === 'number') {
-    return <div className="dashboard-widget-number">{fmtValue(state.value, metricDef.unit)}</div>
-  }
-
-  if (widget.chart_type === 'line') {
-    return (
-      <ResponsiveContainer width="100%" height={160}>
-        <LineChart data={state.series} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-          <CartesianGrid stroke={LINE} vertical={false} />
-          <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={{ stroke: LINE }} tickLine={false} />
-          <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-          <Tooltip contentStyle={{ fontSize: 12 }} />
-          <Line type="monotone" dataKey="value" stroke={TEAL_DEEP} strokeWidth={2} dot={{ r: 2 }} />
-        </LineChart>
-      </ResponsiveContainer>
-    )
-  }
-
-  if (widget.chart_type === 'bar') {
-    return (
-      <ResponsiveContainer width="100%" height={160}>
-        <BarChart data={state.series} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-          <CartesianGrid stroke={LINE} vertical={false} />
-          <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={{ stroke: LINE }} tickLine={false} />
-          <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-          <Tooltip contentStyle={{ fontSize: 12 }} />
-          <Bar dataKey="value" fill={TEAL} radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
-    )
-  }
-
-  if (widget.chart_type === 'pie' || widget.chart_type === 'donut') {
-    if (state.rows.length === 0) return <p className="muted">No data.</p>
-    return (
-      <ResponsiveContainer width="100%" height={180}>
-        <PieChart>
-          <Pie data={state.rows} dataKey="value" nameKey="label" innerRadius={widget.chart_type === 'donut' ? 40 : 0} outerRadius={70}>
-            {state.rows.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-          </Pie>
-          <Tooltip contentStyle={{ fontSize: 12 }} />
-        </PieChart>
-      </ResponsiveContainer>
-    )
-  }
-
-  if (widget.chart_type === 'leaderboard') {
-    if (state.rows.length === 0) return <p className="muted">No data.</p>
-    const max = Math.max(...state.rows.map((r) => r.value), 1)
-    return (
-      <div className="dashboard-leaderboard">
-        {state.rows.slice(0, 8).map((r, i) => (
-          <div key={i} className="attendance-bar-row">
-            <span className="attendance-bar-label" style={{ width: 110 }}>{r.label}</span>
-            <span className="attendance-bar-track">
-              <span className="attendance-bar-fill" style={{ width: `${(r.value / max) * 100}%`, background: PIE_COLORS[i % PIE_COLORS.length] }} />
-            </span>
-            <span className="attendance-bar-value">{Math.round(r.value * 10) / 10}</span>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  return null
-}
-
-function WidgetCard({ widget, company, filters, onEdit, onRemove, dragHandlers }) {
+function WidgetCard({ widget, company, dashboardFilters, dashboardRange, calculatedMetrics, onEdit, onRemove, onDuplicate, onDrill, dragHandlers, onResizeStart }) {
+  const isDrillable = DRILLABLE_CHART_TYPES.includes(widget.chart_type)
+  const isOverridden = widget.date_mode !== 'inherit'
+  const overrideRange = isOverridden ? resolveEffectiveRange(widget, dashboardRange) : null
   return (
-    <div className={`dashboard-widget dashboard-widget-${widget.size}`} draggable onDragStart={() => dragHandlers.onDragStart(widget)} onDragOver={(e) => dragHandlers.onDragOver(e, widget)} onDrop={dragHandlers.onDrop}>
+    <div
+      className="dashboard-widget"
+      style={{ flexBasis: `calc(${widget.width_pct ?? DEFAULT_WIDTH_PCT}% - 12px)`, height: `${widget.height_px ?? DEFAULT_HEIGHT_PX}px` }}
+      draggable
+      onDragStart={() => dragHandlers.onDragStart(widget)}
+      onDragOver={(e) => dragHandlers.onDragOver(e, widget)}
+      onDrop={dragHandlers.onDrop}
+    >
       <div className="dashboard-widget-head">
-        <span className="dashboard-widget-title">{widget.title || DASHBOARD_METRICS[widget.metric_key]?.label || DASHBOARD_LEADERBOARDS[widget.metric_key]?.label || widget.metric_key}</span>
+        <span className="dashboard-widget-title">
+          {widgetLabel(widget, calculatedMetrics)}
+          {isOverridden && overrideRange && <span className="dashboard-widget-range-tag" data-tooltip="This widget uses its own date range">📅 {overrideRange.from} → {overrideRange.to}</span>}
+        </span>
         <div className="icon-actions" style={{ display: 'flex', gap: 2 }}>
-          <button type="button" className="link-button" onClick={() => onEdit(widget)} aria-label="Edit widget" data-tooltip="Edit">
-            <SquarePenIcon size={13} />
+          <button type="button" className="link-button" onClick={() => onDuplicate(widget)} aria-label="Duplicate widget" data-tooltip="Duplicate">
+            <PlusIcon size={13} />
           </button>
+          <button type="button" className="link-button" onClick={() => onEdit(widget)} aria-label="Edit widget" data-tooltip="Edit">✎</button>
           <button type="button" className="link-button" onClick={() => onRemove(widget.id)} aria-label="Remove widget" data-tooltip="Remove">
             <DeleteIcon size={13} />
           </button>
         </div>
       </div>
-      <WidgetChart widget={widget} company={company} filters={filters} />
+      <div className="dashboard-widget-body">
+        <DashboardWidgetChart
+          widget={widget}
+          company={company}
+          dashboardFilters={dashboardFilters}
+          dashboardRange={dashboardRange}
+          calculatedMetrics={calculatedMetrics}
+          onDrill={isDrillable ? (label) => onDrill(widget, label) : null}
+        />
+      </div>
+      <span
+        className="dashboard-widget-resize-handle"
+        draggable={false}
+        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onResizeStart(e, widget) }}
+        aria-label="Resize widget"
+      />
     </div>
   )
 }
 
-const CHART_TYPE_OPTIONS = [
-  { value: 'number', label: 'Number (KPI card)' },
-  { value: 'line', label: 'Line chart' },
-  { value: 'bar', label: 'Bar chart' },
-  { value: 'pie', label: 'Pie chart' },
-  { value: 'donut', label: 'Donut chart' },
-  { value: 'leaderboard', label: 'Leaderboard' },
-]
+function WidgetDrillDrawer({ widget, label, company, dashboardFilters, dashboardRange, onClose }) {
+  const [rows, setRows] = useState(null)
 
-function WidgetForm({ dashboardId, companyId, editing, onDone }) {
-  const isBreakdown = editing ? BREAKDOWN_CHART_TYPES.includes(editing.chart_type) : false
-  const [chartType, setChartType] = useState(editing?.chart_type ?? 'number')
-  const [metricKey, setMetricKey] = useState(editing?.metric_key ?? (BREAKDOWN_CHART_TYPES.includes(chartType) ? DASHBOARD_LEADERBOARD_KEYS[0] : DASHBOARD_METRIC_KEYS[0]))
-  const [title, setTitle] = useState(editing?.title ?? '')
-  const [size, setSize] = useState(editing?.size ?? 'medium')
-  const [saving, setSaving] = useState(false)
-
-  function handleChartTypeChange(v) {
-    const wasBreakdown = BREAKDOWN_CHART_TYPES.includes(chartType)
-    const nowBreakdown = BREAKDOWN_CHART_TYPES.includes(v)
-    setChartType(v)
-    if (wasBreakdown !== nowBreakdown) setMetricKey(nowBreakdown ? DASHBOARD_LEADERBOARD_KEYS[0] : DASHBOARD_METRIC_KEYS[0])
-  }
-
-  async function save() {
-    setSaving(true)
-    const patch = { metric_key: metricKey, chart_type: chartType, title: title.trim() || null, size }
-    let error
-    if (editing) {
-      ({ error } = await supabase.from('custom_dashboard_widgets').update(patch).eq('id', editing.id))
-    } else {
-      ({ error } = await supabase.from('custom_dashboard_widgets').insert({ dashboard_id: dashboardId, company_id: companyId, ...patch }))
+  useEffect(() => {
+    let active = true
+    setRows(null)
+    async function load() {
+      const def = DASHBOARD_LEADERBOARDS[widget.metric_key]
+      if (!def?.drillFetch) { if (active) setRows([]); return }
+      const { from, to } = resolveEffectiveRange(widget, dashboardRange)
+      const filters = await resolveWidgetFilters(widget, dashboardFilters, company)
+      const data = await def.drillFetch(label, from, to, company, filters)
+      if (active) setRows(data)
     }
-    setSaving(false)
-    if (error) {
-      toast.error(error.message || 'Failed to save widget')
-      return
-    }
-    toast.success(editing ? 'Widget updated' : 'Widget added')
-    onDone()
-  }
+    load()
+    return () => { active = false }
+  }, [widget, label, company, dashboardFilters, dashboardRange])
 
-  const nowBreakdown = BREAKDOWN_CHART_TYPES.includes(chartType)
-  const registry = nowBreakdown ? DASHBOARD_LEADERBOARDS : DASHBOARD_METRICS
-  const keys = nowBreakdown ? DASHBOARD_LEADERBOARD_KEYS : DASHBOARD_METRIC_KEYS
+  const metricDef = DASHBOARD_LEADERBOARDS[widget.metric_key]
 
   return (
-    <div className="drawer-form">
-      <label className="field">
-        <span>Chart type</span>
-        <select value={chartType} onChange={(e) => handleChartTypeChange(e.target.value)}>
-          {CHART_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-      </label>
-      <label className="field">
-        <span>{nowBreakdown ? 'Breakdown' : 'Metric'}</span>
-        <select value={metricKey} onChange={(e) => setMetricKey(e.target.value)}>
-          {keys.map((k) => <option key={k} value={k}>{registry[k].label}</option>)}
-        </select>
-      </label>
-      <label className="field">
-        <span>Title (optional)</span>
-        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={registry[metricKey]?.label} />
-      </label>
-      <label className="field">
-        <span>Size</span>
-        <select value={size} onChange={(e) => setSize(e.target.value)}>
-          <option value="small">Small</option>
-          <option value="medium">Medium</option>
-          <option value="large">Large</option>
-        </select>
-      </label>
-      <button type="button" className="btn-primary" disabled={saving} onClick={save} style={{ alignSelf: 'flex-start' }}>
-        {saving ? 'Saving…' : editing ? 'Save changes' : 'Add widget'}
-      </button>
-    </div>
+    <Drawer open onClose={onClose} title={label}>
+      <div className="drawer-form">
+        <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>{metricDef?.label} — {label}</p>
+        {rows === null ? (
+          <SkeletonBlock rows={4} />
+        ) : rows.length === 0 ? (
+          <p className="muted">No records for this range.</p>
+        ) : (
+          <table className="data-table">
+            <thead><tr>{rows[0].date && <th>Date</th>}<th>Value</th></tr></thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i}>
+                  {r.date && <td className="mono">{r.date}</td>}
+                  <td>{typeof r.value === 'number' ? Math.round(r.value * 100) / 100 : r.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </Drawer>
   )
 }
 
@@ -230,17 +139,20 @@ export default function Dashboards() {
   const [dashboards, setDashboards] = useState([])
   const [activeId, setActiveId] = useState(null)
   const [widgets, setWidgets] = useState([])
+  const [calculatedMetrics, setCalculatedMetrics] = useState([])
   const [loading, setLoading] = useState(true)
   const [range, setRange] = useState(defaultRange())
   const [filters, setFilters] = useState({ departmentId: '', teamId: '', branchId: '', employeeId: '' })
   const [filterOptions, setFilterOptions] = useState({ departments: [], teams: [], branches: [], employees: [] })
   const [resolvedEmployeeIds, setResolvedEmployeeIds] = useState(null)
-  const [picker, setPicker] = useState(false)
   const [widgetDrawer, setWidgetDrawer] = useState(null) // null | 'new' | widget object
   const [nameDrawer, setNameDrawer] = useState(null) // null | 'create' | 'rename'
   const [nameInput, setNameInput] = useState('')
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [drilling, setDrilling] = useState(null) // null | { widget, label }
+  const [calcMetricsOpen, setCalcMetricsOpen] = useState(false)
   const dragRef = useRef(null)
+  const gridRef = useRef(null)
 
   const loadDashboards = useCallback(async () => {
     setLoading(true)
@@ -264,6 +176,15 @@ export default function Dashboards() {
     loadDashboards()
   }, [loadDashboards])
 
+  const loadCalculatedMetrics = useCallback(async () => {
+    const { data } = await supabase.from('custom_metrics').select('*').eq('company_id', company.id).order('name')
+    setCalculatedMetrics(data ?? [])
+  }, [company.id])
+
+  useEffect(() => {
+    loadCalculatedMetrics()
+  }, [loadCalculatedMetrics])
+
   // Filter picker options -- company-scoped, loaded once per company rather
   // than once per widget (every widget shares the same dashboard-wide
   // filters, so there's no reason to re-fetch these per widget).
@@ -282,9 +203,10 @@ export default function Dashboards() {
     return () => { active = false }
   }, [company.id])
 
-  // Most metrics only have an employee_id column, not department/team/branch
-  // directly -- resolve the picked filters into a concrete list of matching
-  // employee ids once here, so every widget doesn't repeat the same lookup.
+  // Most metrics only have an employee_id column, not department/team/
+  // branch directly -- resolve the picked filters into a concrete list of
+  // matching employee ids once here, so every widget doesn't repeat the
+  // same lookup.
   useEffect(() => {
     const { departmentId, teamId, branchId, employeeId } = filters
     if (!departmentId && !teamId && !branchId && !employeeId) {
@@ -312,6 +234,13 @@ export default function Dashboards() {
     employeeId: filters.employeeId || null,
     employeeIds: resolvedEmployeeIds,
   }), [filters.departmentId, filters.teamId, filters.branchId, filters.employeeId, resolvedEmployeeIds])
+
+  // Widgets resolve their own effective filters against this shape:
+  // the dashboard's own raw picks (for a per-widget override to fall
+  // back to a *different single dimension* than the dashboard) plus the
+  // dashboard's already-resolved employeeIds (for the common no-override
+  // case, so most widgets skip a redundant lookup).
+  const dashboardFiltersForWidgets = useMemo(() => ({ ...filters, _resolved: activeFilters }), [filters, activeFilters])
 
   const loadWidgets = useCallback(async () => {
     if (!activeId) { setWidgets([]); return }
@@ -371,6 +300,46 @@ export default function Dashboards() {
     loadDashboards()
   }
 
+  async function toggleFavorite(dashboard) {
+    await supabase.from('custom_dashboards').update({ is_favorite: !dashboard.is_favorite }).eq('id', dashboard.id)
+    loadDashboards()
+  }
+
+  async function setFolder(dashboard, folder) {
+    await supabase.from('custom_dashboards').update({ folder }).eq('id', dashboard.id)
+    loadDashboards()
+  }
+
+  async function duplicateDashboard(dashboard) {
+    const { data: newDash, error } = await supabase.from('custom_dashboards').insert({
+      company_id: company.id, name: `${dashboard.name} (copy)`, sort_order: dashboards.length,
+      date_from: dashboard.date_from, date_to: dashboard.date_to,
+      filter_department_id: dashboard.filter_department_id, filter_team_id: dashboard.filter_team_id,
+      filter_branch_id: dashboard.filter_branch_id, filter_employee_id: dashboard.filter_employee_id,
+    }).select().single()
+    if (error) { toast.error(error.message || 'Failed to duplicate dashboard'); return }
+
+    const { data: sourceWidgets } = await supabase.from('custom_dashboard_widgets').select('*').eq('dashboard_id', dashboard.id)
+    if (sourceWidgets && sourceWidgets.length > 0) {
+      const copies = sourceWidgets.map(({ id, dashboard_id, created_at, ...rest }) => ({ ...rest, dashboard_id: newDash.id }))
+      await supabase.from('custom_dashboard_widgets').insert(copies)
+    }
+    toast.success('Dashboard duplicated')
+    setActiveId(newDash.id)
+    loadDashboards()
+  }
+
+  function selectDashboard(d) {
+    setActiveId(d.id)
+    setRange({ from: d.date_from ?? defaultRange().from, to: d.date_to ?? defaultRange().to })
+    setFilters({
+      departmentId: d.filter_department_id ?? '',
+      teamId: d.filter_team_id ?? '',
+      branchId: d.filter_branch_id ?? '',
+      employeeId: d.filter_employee_id ?? '',
+    })
+  }
+
   async function saveRange() {
     if (!activeId) return
     await supabase.from('custom_dashboards').update({ date_from: range.from, date_to: range.to }).eq('id', activeId)
@@ -405,6 +374,19 @@ export default function Dashboards() {
     setWidgets((prev) => prev.filter((w) => w.id !== id))
   }
 
+  async function duplicateWidget(widget) {
+    const { id, dashboard_id, company_id, created_at, ...rest } = widget
+    const { error } = await supabase.from('custom_dashboard_widgets').insert({
+      dashboard_id, company_id,
+      ...rest,
+      title: widgetLabel(widget, calculatedMetrics) + ' (copy)',
+      sort_order: widgets.length,
+    })
+    if (error) { toast.error(error.message || 'Failed to duplicate widget'); return }
+    toast.success('Widget duplicated')
+    loadWidgets()
+  }
+
   function handleDragStart(widget) {
     dragRef.current = widget.id
   }
@@ -428,8 +410,41 @@ export default function Dashboards() {
     await Promise.all(widgets.map((w, i) => supabase.from('custom_dashboard_widgets').update({ sort_order: i }).eq('id', w.id)))
   }
 
+  // Continuous corner-drag resize, ported from PetroBind's custom-dashboard
+  // widgets: live local-state updates during the drag for immediate visual
+  // feedback (no network round trip per frame), one Supabase write on
+  // release.
+  function handleResizeStart(e, widget) {
+    const container = gridRef.current
+    if (!container) return
+    const containerWidth = container.getBoundingClientRect().width
+    const startX = e.clientX
+    const startY = e.clientY
+    const startWidthPct = widget.width_pct ?? DEFAULT_WIDTH_PCT
+    const startHeightPx = widget.height_px ?? DEFAULT_HEIGHT_PX
+    let finalWidthPct = startWidthPct
+    let finalHeightPx = startHeightPx
+
+    function onMove(ev) {
+      const deltaPct = ((ev.clientX - startX) / containerWidth) * 100
+      finalWidthPct = Math.min(MAX_WIDTH_PCT, Math.max(MIN_WIDTH_PCT, Math.round(startWidthPct + deltaPct)))
+      finalHeightPx = Math.min(MAX_HEIGHT_PX, Math.max(MIN_HEIGHT_PX, Math.round(startHeightPx + (ev.clientY - startY))))
+      setWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, width_pct: finalWidthPct, height_px: finalHeightPx } : w)))
+    }
+
+    function onUp() {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      supabase.from('custom_dashboard_widgets').update({ width_pct: finalWidthPct, height_px: finalHeightPx }).eq('id', widget.id).then(({ error }) => {
+        if (error) toast.error(error.message || 'Failed to save widget size')
+      })
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
   const activeDashboard = dashboards.find((d) => d.id === activeId)
-  const widgetsWithFilters = widgets.map((w) => ({ ...w, _from: range.from, _to: range.to }))
   const hasActiveFilters = !!(filters.departmentId || filters.teamId || filters.branchId || filters.employeeId)
 
   return (
@@ -451,41 +466,18 @@ export default function Dashboards() {
       ) : (
         <>
           <div className="dashboard-toolbar">
-            <div className="dashboard-tabs-wrap">
-              <button type="button" className="cmdk-trigger" onClick={() => setPicker((v) => !v)} style={{ width: 'auto' }}>
-                {activeDashboard?.is_default ? '★ ' : ''}{activeDashboard?.name ?? 'Select dashboard'}
-                <ChevronDown size={14} />
-              </button>
-              {picker && (
-                <div className="dashboard-picker-panel">
-                  {dashboards.map((d) => (
-                    <button
-                      key={d.id}
-                      type="button"
-                      className="account-menu-item"
-                      onClick={() => {
-                        setActiveId(d.id)
-                        setRange({ from: d.date_from ?? defaultRange().from, to: d.date_to ?? defaultRange().to })
-                        setFilters({
-                          departmentId: d.filter_department_id ?? '',
-                          teamId: d.filter_team_id ?? '',
-                          branchId: d.filter_branch_id ?? '',
-                          employeeId: d.filter_employee_id ?? '',
-                        })
-                        setPicker(false)
-                      }}
-                    >
-                      {d.is_default ? '★ ' : ''}{d.name}
-                    </button>
-                  ))}
-                  <button type="button" className="account-menu-item" onClick={() => { setPicker(false); setNameInput(''); setNameDrawer('create') }}>
-                    <PlusIcon size={14} /> New dashboard
-                  </button>
-                </div>
-              )}
-            </div>
+            <DashboardPicker
+              dashboards={dashboards}
+              activeId={activeId}
+              onSelect={selectDashboard}
+              onCreate={() => { setNameInput(''); setNameDrawer('create') }}
+              onToggleFavorite={toggleFavorite}
+              onSetFolder={setFolder}
+              onDuplicate={duplicateDashboard}
+            />
             <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={() => { setNameInput(activeDashboard?.name ?? ''); setNameDrawer('rename') }}>Rename</button>
             <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={setDefault}>Set default</button>
+            <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={() => setCalcMetricsOpen(true)}>∑ Calculated metrics</button>
             {confirmingDelete ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
                 <span className="muted">Delete this dashboard?</span>
@@ -531,16 +523,21 @@ export default function Dashboards() {
               <p className="muted">Add one to see a real number, chart, or leaderboard here.</p>
             </div>
           ) : (
-            <div className="dashboard-grid">
-              {widgetsWithFilters.map((w) => (
+            <div className="dashboard-grid" ref={gridRef}>
+              {widgets.map((w) => (
                 <WidgetCard
                   key={w.id}
                   widget={w}
                   company={company}
-                  filters={activeFilters}
+                  dashboardFilters={dashboardFiltersForWidgets}
+                  dashboardRange={range}
+                  calculatedMetrics={calculatedMetrics}
                   onEdit={setWidgetDrawer}
                   onRemove={removeWidget}
+                  onDuplicate={duplicateWidget}
+                  onDrill={(widget, label) => setDrilling({ widget, label })}
                   dragHandlers={{ onDragStart: handleDragStart, onDragOver: handleDragOver, onDrop: handleDrop }}
+                  onResizeStart={handleResizeStart}
                 />
               ))}
             </div>
@@ -550,10 +547,11 @@ export default function Dashboards() {
 
       <Drawer open={!!widgetDrawer} onClose={() => setWidgetDrawer(null)} title={widgetDrawer === 'new' ? 'Add widget' : 'Edit widget'}>
         {widgetDrawer && (
-          <WidgetForm
+          <DashboardWidgetForm
             dashboardId={activeId}
             companyId={company?.id}
             editing={widgetDrawer === 'new' ? null : widgetDrawer}
+            calculatedMetrics={calculatedMetrics}
             onDone={() => { setWidgetDrawer(null); loadWidgets() }}
           />
         )}
@@ -582,6 +580,24 @@ export default function Dashboards() {
           </button>
         </div>
       </Drawer>
+
+      <DashboardCalculatedMetrics
+        open={calcMetricsOpen}
+        onClose={() => setCalcMetricsOpen(false)}
+        metrics={calculatedMetrics}
+        onChanged={loadCalculatedMetrics}
+      />
+
+      {drilling && (
+        <WidgetDrillDrawer
+          widget={drilling.widget}
+          label={drilling.label}
+          company={company}
+          dashboardFilters={dashboardFiltersForWidgets}
+          dashboardRange={range}
+          onClose={() => setDrilling(null)}
+        />
+      )}
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { parseFormula, evalFormula, referencedMetrics } from './formulaEngine'
 
 // Each metric mirrors PetroBind's DASH_METRICS shape (see js/dashboard-engine.js
 // in that project): { label, unit, trend, fetch(from, to, company, filters) => { value, series } }.
@@ -232,6 +233,16 @@ export const DASHBOARD_LEADERBOARDS = {
       }
       return [...byEmployee.entries()].map(([label, value]) => ({ label, value: Math.round(value * 10) / 10 })).sort((a, b) => b.value - a.value).slice(0, 10)
     },
+    // Same query as fetch(), but the raw per-day rows for one clicked
+    // employee instead of the grouped total -- powers the drill-down
+    // click on a leaderboard row / pie slice.
+    drillFetch: async (label, from, to, company, filters) => {
+      const { data } = await withEmployeeFilter(supabase.from('overtime_records').select('minutes, work_date, employee_id, employees(full_name)').eq('company_id', company.id).gte('work_date', from).lte('work_date', to), filters)
+      return (data ?? [])
+        .filter((r) => (r.employees?.full_name ?? 'Unknown') === label)
+        .map((r) => ({ date: r.work_date, value: Math.round((Number(r.minutes ?? 0) / 60) * 10) / 10 }))
+        .sort((a, b) => a.date.localeCompare(b.date))
+    },
   },
   expenses_by_category: {
     label: 'Expenses by category',
@@ -244,6 +255,13 @@ export const DASHBOARD_LEADERBOARDS = {
         byCategory.set(name, (byCategory.get(name) ?? 0) + Number(r.amount ?? 0))
       }
       return [...byCategory.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value)
+    },
+    drillFetch: async (label, from, to, company, filters) => {
+      const { data } = await withEmployeeFilter(supabase.from('expense_claims').select('amount, expense_date, employee_id, expense_categories(name)').eq('company_id', company.id).in('status', ['approved', 'reimbursed']).gte('expense_date', from).lte('expense_date', to), filters)
+      return (data ?? [])
+        .filter((r) => (r.expense_categories?.name ?? 'Uncategorized') === label)
+        .map((r) => ({ date: r.expense_date, value: Number(r.amount ?? 0) }))
+        .sort((a, b) => a.date.localeCompare(b.date))
     },
   },
   headcount_by_department: {
@@ -268,6 +286,21 @@ export const DASHBOARD_LEADERBOARDS = {
       }
       return [...byDept.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value)
     },
+    // No natural "date" per row here (a headcount snapshot, not a time
+    // series) -- the drill-down instead lists the actual employees that
+    // make up the clicked department's bar.
+    drillFetch: async (label, _from, _to, company, filters) => {
+      let query = supabase.from('employees').select('full_name, department_id, departments!employees_department_id_fkey(name)').eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed'])
+      if (filters?.departmentId) query = query.eq('department_id', filters.departmentId)
+      if (filters?.teamId) query = query.eq('team_id', filters.teamId)
+      if (filters?.branchId) query = query.eq('branch_id', filters.branchId)
+      if (filters?.employeeId) query = query.eq('id', filters.employeeId)
+      const { data } = await query
+      return (data ?? [])
+        .filter((r) => (r.departments?.name ?? 'Unassigned') === label)
+        .map((r) => ({ date: null, value: r.full_name }))
+        .sort((a, b) => String(a.value).localeCompare(String(b.value)))
+    },
   },
   overall_rating_by_employee: {
     label: 'Performance rating by employee',
@@ -283,7 +316,201 @@ export const DASHBOARD_LEADERBOARDS = {
       }
       return [...byEmployee.entries()].map(([label, sum]) => ({ label, value: Math.round((sum / counts.get(label)) * 100) / 100 })).sort((a, b) => b.value - a.value).slice(0, 10)
     },
+    drillFetch: async (label, from, to, company, filters) => {
+      const { data } = await withEmployeeFilter(supabase.from('performance_reviews').select('overall_rating, submitted_at, employee_id, employees(full_name)').eq('company_id', company.id).in('status', ['submitted', 'acknowledged']).not('overall_rating', 'is', null).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`), filters)
+      return (data ?? [])
+        .filter((r) => (r.employees?.full_name ?? 'Unknown') === label)
+        .map((r) => ({ date: r.submitted_at.slice(0, 10), value: Number(r.overall_rating ?? 0) }))
+        .sort((a, b) => a.date.localeCompare(b.date))
+    },
   },
 }
 
 export const DASHBOARD_LEADERBOARD_KEYS = Object.keys(DASHBOARD_LEADERBOARDS)
+
+// Stacked-bar sources -- one row per date, one numeric key per series
+// (Recharts' stacked-bar wants wide format: {date, present, absent, ...}).
+// One concrete source rather than a generic "any metric x any dimension"
+// engine, same proportionate choice as the leaderboards above.
+export const DASHBOARD_STACKED = {
+  attendance_by_status: {
+    label: 'Attendance by status',
+    seriesKeys: ['present', 'absent', 'late', 'on_leave'],
+    fetch: async (from, to, company, filters) => {
+      if (noEmployeesMatch(filters)) return []
+      const { data } = await withEmployeeFilter(supabase.from('attendance').select('attendance_date, status, employee_id').eq('company_id', company.id).gte('attendance_date', from).lte('attendance_date', to), filters)
+      const byDate = new Map()
+      for (const r of data ?? []) {
+        const row = byDate.get(r.attendance_date) ?? { date: r.attendance_date, present: 0, absent: 0, late: 0, on_leave: 0 }
+        if (row[r.status] !== undefined) row[r.status] += 1
+        byDate.set(r.attendance_date, row)
+      }
+      return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))
+    },
+  },
+}
+
+export const DASHBOARD_STACKED_KEYS = Object.keys(DASHBOARD_STACKED)
+
+// 2D cross-tab sources shared by both the heatmap (color-scaled grid) and
+// pivot (plain numeric grid) chart types -- one data shape, two renderers.
+export const DASHBOARD_CROSSTABS = {
+  leave_days_by_type: {
+    label: 'Leave days by employee x type',
+    fetch: async (from, to, company, filters) => {
+      if (noEmployeesMatch(filters)) return { rows: [], columns: [], cells: [] }
+      const { data } = await withEmployeeFilter(supabase.from('leave_requests').select('days_requested, start_date, employee_id, employees(full_name), leave_types(name)').eq('company_id', company.id).eq('status', 'approved').gte('start_date', from).lte('start_date', to), filters)
+      const rowSet = new Set()
+      const colSet = new Set()
+      const totals = new Map()
+      for (const r of data ?? []) {
+        const row = r.employees?.full_name ?? 'Unknown'
+        const col = r.leave_types?.name ?? 'Unspecified'
+        rowSet.add(row)
+        colSet.add(col)
+        const key = `${row} ${col}`
+        totals.set(key, (totals.get(key) ?? 0) + Number(r.days_requested ?? 0))
+      }
+      const rows = [...rowSet].sort()
+      const columns = [...colSet].sort()
+      const cells = []
+      for (const row of rows) {
+        for (const col of columns) {
+          const value = totals.get(`${row} ${col}`) ?? 0
+          if (value > 0) cells.push({ row, col, value })
+        }
+      }
+      return { rows, columns, cells }
+    },
+  },
+}
+
+export const DASHBOARD_CROSSTAB_KEYS = Object.keys(DASHBOARD_CROSSTABS)
+
+// Funnel sources -- an ordered sequence of stages with a count each.
+export const DASHBOARD_FUNNELS = {
+  recruitment_pipeline: {
+    label: 'Recruitment pipeline',
+    stages: ['applied', 'screening', 'interview', 'offer', 'hired'],
+    fetch: async (from, to, company) => {
+      const { data } = await supabase.from('applications').select('stage, applied_at').eq('company_id', company.id).gte('applied_at', from).lte('applied_at', `${to}T23:59:59`)
+      const counts = new Map()
+      for (const r of data ?? []) counts.set(r.stage, (counts.get(r.stage) ?? 0) + 1)
+      // A candidate currently sitting in "offer" also passed through
+      // "applied"/"screening"/"interview" -- a funnel counts everyone who
+      // reached at least this stage, not just who's stuck there now, so
+      // each stage's count includes everyone at or past it.
+      const stages = ['applied', 'screening', 'interview', 'offer', 'hired']
+      const atLeast = stages.map((_, i) => stages.slice(i).reduce((sum, s) => sum + (counts.get(s) ?? 0), 0))
+      return stages.map((stage, i) => ({ stage, value: atLeast[i] }))
+    },
+  },
+}
+
+export const DASHBOARD_FUNNEL_KEYS = Object.keys(DASHBOARD_FUNNELS)
+
+// Calculated/formula metrics -- evaluates a formula (e.g. "expense_total
+// / payroll_gross * 100") over the built-in DASHBOARD_METRICS registry,
+// via the hand-rolled parser in lib/formulaEngine.js (no eval). Returns
+// the same {value, series} shape as a built-in metric so it drops
+// straight into number/line/bar/area/combo/progress/gauge widgets.
+export const DATE_PRESET_OPTIONS = [
+  { value: 'last_7', label: 'Last 7 days' },
+  { value: 'last_30', label: 'Last 30 days' },
+  { value: 'this_month', label: 'This month' },
+  { value: 'last_month', label: 'Last month' },
+  { value: 'ytd', label: 'Year to date' },
+]
+
+function isoRange(from, to) {
+  return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
+}
+
+function resolveDatePreset(preset) {
+  const now = new Date()
+  if (preset === 'last_7') return isoRange(new Date(now.getTime() - 6 * 86400000), now)
+  if (preset === 'last_30') return isoRange(new Date(now.getTime() - 29 * 86400000), now)
+  if (preset === 'this_month') return isoRange(new Date(now.getFullYear(), now.getMonth(), 1), now)
+  if (preset === 'last_month') return isoRange(new Date(now.getFullYear(), now.getMonth() - 1, 1), new Date(now.getFullYear(), now.getMonth(), 0))
+  if (preset === 'ytd') return isoRange(new Date(now.getFullYear(), 0, 1), now)
+  return null
+}
+
+// The immediately preceding period of equal length -- e.g. range Aug 1-30
+// (30 days) compares against Jul 2-31.
+export function priorPeriod(from, to) {
+  const fromDate = new Date(`${from}T00:00:00`)
+  const toDate = new Date(`${to}T00:00:00`)
+  const days = Math.round((toDate - fromDate) / 86400000) + 1
+  const priorTo = new Date(fromDate.getTime() - 86400000)
+  const priorFrom = new Date(priorTo.getTime() - (days - 1) * 86400000)
+  return isoRange(priorFrom, priorTo)
+}
+
+function shiftYearBack(dateStr) {
+  const d = new Date(`${dateStr}T00:00:00`)
+  d.setFullYear(d.getFullYear() - 1)
+  return d.toISOString().slice(0, 10)
+}
+
+// A widget inherits the dashboard's date range unless it sets its own
+// (preset or custom) -- same inherit-unless-overridden precedence used
+// for the filters below and, elsewhere in this app, for who gets a
+// notification (check_expiring_documents' permission-holder lookup).
+export function resolveEffectiveRange(widget, dashboardRange) {
+  if (widget.date_mode === 'custom' && widget.date_from && widget.date_to) return { from: widget.date_from, to: widget.date_to }
+  if (widget.date_mode === 'preset') {
+    const preset = resolveDatePreset(widget.date_preset)
+    if (preset) return preset
+  }
+  return dashboardRange
+}
+
+// null return means "no comparison" (comparison_mode: 'none').
+export function resolveComparisonRange(widget, effectiveRange) {
+  const mode = widget.comparison_mode === 'inherit' ? 'previous_period' : widget.comparison_mode
+  if (mode === 'none') return null
+  if (mode === 'custom' && widget.comparison_from && widget.comparison_to) return { from: widget.comparison_from, to: widget.comparison_to }
+  if (mode === 'yoy') return { from: shiftYearBack(effectiveRange.from), to: shiftYearBack(effectiveRange.to) }
+  return priorPeriod(effectiveRange.from, effectiveRange.to)
+}
+
+// A widget's own filter picks override the dashboard's, per dimension --
+// unset (undefined) on the widget means "inherit this one dimension".
+export function resolveEffectiveFilterValues(widget, dashboardFilters) {
+  const override = widget.filters || {}
+  return {
+    departmentId: override.departmentId ?? dashboardFilters.departmentId ?? '',
+    teamId: override.teamId ?? dashboardFilters.teamId ?? '',
+    branchId: override.branchId ?? dashboardFilters.branchId ?? '',
+    employeeId: override.employeeId ?? dashboardFilters.employeeId ?? '',
+  }
+}
+
+export async function evaluateCalculatedMetric(formula, from, to, company, filters) {
+  const ast = parseFormula(formula)
+  const keys = [...referencedMetrics(ast)]
+  const unknown = keys.filter((k) => !DASHBOARD_METRICS[k])
+  if (unknown.length > 0) throw new Error(`Unknown metric${unknown.length > 1 ? 's' : ''}: ${unknown.join(', ')}`)
+
+  const results = await Promise.all(keys.map((k) => DASHBOARD_METRICS[k].fetch(from, to, company, filters)))
+  const valueByKey = {}
+  const seriesByKey = {}
+  keys.forEach((k, i) => { valueByKey[k] = results[i].value; seriesByKey[k] = results[i].series })
+  const value = evalFormula(ast, valueByKey)
+
+  // Combined series: union every component metric's dates, evaluate the
+  // formula at each (0 for any metric with no row on that date).
+  const allDates = new Set()
+  keys.forEach((k) => seriesByKey[k].forEach((r) => allDates.add(r.date)))
+  const series = [...allDates].sort().map((date) => {
+    const rowValues = {}
+    keys.forEach((k) => {
+      const row = seriesByKey[k].find((r) => r.date === date)
+      rowValues[k] = row ? row.value : 0
+    })
+    return { date, value: evalFormula(ast, rowValues) }
+  })
+
+  return { value, series }
+}
