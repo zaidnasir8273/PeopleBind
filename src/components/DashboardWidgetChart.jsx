@@ -203,7 +203,8 @@ export function DashboardWidgetChart({ widget, company, dashboardFilters, dashbo
           <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={{ stroke: LINE }} tickLine={false} />
           <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={{ fontSize: 12 }} />
-          <Line type="monotone" dataKey="value" stroke={TEAL_DEEP} strokeWidth={2} dot={{ r: 2 }} />
+          <Legend wrapperStyle={{ fontSize: 11 }} height={20} />
+          <Line type="monotone" dataKey="value" name={metricDef.label} stroke={TEAL_DEEP} strokeWidth={2} dot={{ r: 2 }} />
         </LineChart>
       </ResponsiveContainer>
     )
@@ -217,7 +218,8 @@ export function DashboardWidgetChart({ widget, company, dashboardFilters, dashbo
           <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={{ stroke: LINE }} tickLine={false} />
           <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={{ fontSize: 12 }} />
-          <Area type="monotone" dataKey="value" stroke={TEAL_DEEP} fill={TEAL} fillOpacity={0.25} strokeWidth={2} />
+          <Legend wrapperStyle={{ fontSize: 11 }} height={20} />
+          <Area type="monotone" dataKey="value" name={metricDef.label} stroke={TEAL_DEEP} fill={TEAL} fillOpacity={0.25} strokeWidth={2} />
         </AreaChart>
       </ResponsiveContainer>
     )
@@ -231,7 +233,8 @@ export function DashboardWidgetChart({ widget, company, dashboardFilters, dashbo
           <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={{ stroke: LINE }} tickLine={false} />
           <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={{ fontSize: 12 }} />
-          <Bar dataKey="value" fill={TEAL} radius={[4, 4, 0, 0]} />
+          <Legend wrapperStyle={{ fontSize: 11 }} height={20} />
+          <Bar dataKey="value" name={metricDef.label} fill={TEAL} radius={[4, 4, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     )
@@ -242,6 +245,7 @@ export function DashboardWidgetChart({ widget, company, dashboardFilters, dashbo
     for (const r of data.series) byDate.set(r.date, { date: r.date, value: r.value })
     for (const r of data.comboSeries ?? []) byDate.set(r.date, { ...(byDate.get(r.date) ?? { date: r.date }), comboValue: r.value })
     const merged = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))
+    const comboLabel = DASHBOARD_METRICS[widget.combo_metric_key]?.label ?? widget.combo_metric_key
     return (
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={merged} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -250,8 +254,9 @@ export function DashboardWidgetChart({ widget, company, dashboardFilters, dashbo
           <YAxis yAxisId="left" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
           <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={{ fontSize: 12 }} />
-          <Bar yAxisId="left" dataKey="value" fill={TEAL} radius={[4, 4, 0, 0]} />
-          <Line yAxisId="right" dataKey="comboValue" stroke={GOLD} strokeWidth={2} dot={{ r: 2 }} />
+          <Legend wrapperStyle={{ fontSize: 11 }} height={20} />
+          <Bar yAxisId="left" dataKey="value" name={metricDef.label} fill={TEAL} radius={[4, 4, 0, 0]} />
+          <Line yAxisId="right" dataKey="comboValue" name={comboLabel} stroke={GOLD} strokeWidth={2} dot={{ r: 2 }} />
         </ComposedChart>
       </ResponsiveContainer>
     )
@@ -340,12 +345,13 @@ export function DashboardWidgetChart({ widget, company, dashboardFilters, dashbo
     return (
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Pie data={data.rows} dataKey="value" nameKey="label" innerRadius={widget.chart_type === 'donut' ? 40 : 0} outerRadius={70}>
+          <Pie data={data.rows} dataKey="value" nameKey="label" innerRadius={widget.chart_type === 'donut' ? 40 : 0} outerRadius={60}>
             {data.rows.map((r, i) => (
               <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} cursor={onDrill ? 'pointer' : undefined} onClick={onDrill ? () => onDrill(r.label) : undefined} />
             ))}
           </Pie>
           <Tooltip contentStyle={{ fontSize: 12 }} />
+          <Legend wrapperStyle={{ fontSize: 11 }} verticalAlign="bottom" height={28} />
         </PieChart>
       </ResponsiveContainer>
     )

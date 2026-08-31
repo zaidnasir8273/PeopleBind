@@ -3,6 +3,10 @@ import { toast } from 'sonner'
 import { PlusIcon } from '../components/ui/plus'
 import { DeleteIcon } from '../components/ui/delete'
 import { CalendarDaysIcon } from '../components/ui/calendar-days'
+import { MaximizeIcon } from '../components/ui/maximize'
+import { MinimizeIcon } from '../components/ui/minimize'
+import { SettingsIcon } from '../components/ui/settings'
+import { SquarePenIcon } from '../components/ui/square-pen'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -134,6 +138,56 @@ function WidgetDrillDrawer({ widget, label, company, dashboardFilters, dashboard
   )
 }
 
+// Gear-icon dropdown for the active dashboard's own settings (rename/set
+// default/delete) -- reuses AccountMenu's exact dropdown-panel CSS classes
+// (.account-menu-wrap/-panel/-item) for visual consistency with the app's
+// one other icon-triggered menu, rather than a new component family.
+// `key={activeId}` on the call site fully resets this component's local
+// state (including a pending delete-confirm) whenever the dashboard
+// switches, so a stale confirm never lingers across dashboards.
+function DashboardSettingsMenu({ isDefault, onRename, onSetDefault, onDelete }) {
+  const [open, setOpen] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setConfirmingDelete(false) }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  return (
+    <div className="account-menu-wrap" ref={ref}>
+      <button type="button" className="link-button" onClick={() => setOpen((v) => !v)} aria-label="Dashboard settings" data-tooltip="Dashboard settings">
+        <SettingsIcon size={16} />
+      </button>
+      {open && (
+        <div className="account-menu-panel" style={{ width: 170 }}>
+          <button type="button" className="account-menu-item" onClick={() => { setOpen(false); onRename() }}>
+            <SquarePenIcon size={14} /> Rename
+          </button>
+          <button type="button" className="account-menu-item" onClick={() => { setOpen(false); onSetDefault() }}>
+            <span style={{ width: 14, textAlign: 'center' }}>{isDefault ? '★' : '☆'}</span> Set default
+          </button>
+          {confirmingDelete ? (
+            <div className="account-menu-item" style={{ gap: 6 }}>
+              <span className="muted" style={{ fontSize: 12.5 }}>Sure?</span>
+              <button type="button" className="link-button" style={{ fontSize: 12.5, color: 'var(--danger)' }} onClick={() => { setOpen(false); onDelete() }}>Yes</button>
+              <button type="button" className="link-button" style={{ fontSize: 12.5 }} onClick={() => setConfirmingDelete(false)}>Cancel</button>
+            </div>
+          ) : (
+            <button type="button" className="account-menu-item" style={{ color: 'var(--danger)' }} onClick={() => setConfirmingDelete(true)}>
+              <DeleteIcon size={14} /> Delete
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboards() {
   const { company } = useAuth()
   const [dashboards, setDashboards] = useState([])
@@ -148,11 +202,34 @@ export default function Dashboards() {
   const [widgetDrawer, setWidgetDrawer] = useState(null) // null | 'new' | widget object
   const [nameDrawer, setNameDrawer] = useState(null) // null | 'create' | 'rename'
   const [nameInput, setNameInput] = useState('')
-  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [drilling, setDrilling] = useState(null) // null | { widget, label }
   const [calcMetricsOpen, setCalcMetricsOpen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const dragRef = useRef(null)
   const gridRef = useRef(null)
+  const fullscreenRef = useRef(null)
+
+  // Presentation-style fullscreen for the toolbar+grid only (not the page
+  // title) via the browser's own Fullscreen API -- fullscreening a DOM
+  // subtree natively hides everything outside it (sidebar, topbar, the
+  // browser's own chrome on supporting browsers), so this needs no
+  // changes to AppShell/Sidebar. Kept in sync with Escape / the browser's
+  // own exit control, not just an in-app button click.
+  useEffect(() => {
+    function onFullscreenChange() {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange)
+  }, [])
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      fullscreenRef.current?.requestFullscreen?.().catch(() => toast.error('Fullscreen isn’t supported in this browser'))
+    } else {
+      document.exitFullscreen?.()
+    }
+  }
 
   const loadDashboards = useCallback(async () => {
     setLoading(true)
@@ -252,10 +329,6 @@ export default function Dashboards() {
     loadWidgets()
   }, [loadWidgets])
 
-  useEffect(() => {
-    setConfirmingDelete(false)
-  }, [activeId])
-
   async function createDashboard(name) {
     if (!company || !name.trim()) return
     const def = defaultRange()
@@ -286,7 +359,6 @@ export default function Dashboards() {
     const { error } = await supabase.from('custom_dashboards').delete().eq('id', cur.id)
     if (error) { toast.error(error.message); return }
     toast.success('Dashboard deleted')
-    setConfirmingDelete(false)
     setActiveId(null)
     loadDashboards()
   }
@@ -464,7 +536,7 @@ export default function Dashboards() {
           <button type="button" className="btn-primary" onClick={() => { setNameInput(''); setNameDrawer('create') }} style={{ marginTop: 12 }}>Create your first dashboard</button>
         </div>
       ) : (
-        <>
+        <div className="dashboard-fullscreen-wrap" ref={fullscreenRef}>
           <div className="dashboard-toolbar">
             <DashboardPicker
               dashboards={dashboards}
@@ -475,35 +547,39 @@ export default function Dashboards() {
               onSetFolder={setFolder}
               onDuplicate={duplicateDashboard}
             />
-            <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={() => { setNameInput(activeDashboard?.name ?? ''); setNameDrawer('rename') }}>Rename</button>
-            <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={setDefault}>Set default</button>
+            <DashboardSettingsMenu
+              key={activeId}
+              isDefault={!!activeDashboard?.is_default}
+              onRename={() => { setNameInput(activeDashboard?.name ?? ''); setNameDrawer('rename') }}
+              onSetDefault={setDefault}
+              onDelete={deleteDashboard}
+            />
             <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={() => setCalcMetricsOpen(true)}>∑ Calculated metrics</button>
-            {confirmingDelete ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                <span className="muted">Delete this dashboard?</span>
-                <button type="button" className="link-button" style={{ fontSize: 12, color: 'var(--danger)' }} onClick={deleteDashboard}>Yes, delete</button>
-                <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={() => setConfirmingDelete(false)}>Cancel</button>
-              </span>
-            ) : (
-              <button type="button" className="link-button" style={{ fontSize: 12, color: 'var(--danger)' }} onClick={() => setConfirmingDelete(true)}>Delete</button>
-            )}
             <span style={{ flex: 1 }} />
-            <select value={filters.departmentId} onChange={(e) => updateFilter('departmentId', e.target.value)} style={{ fontSize: 12 }}>
-              <option value="">All departments</option>
-              {filterOptions.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-            <select value={filters.teamId} onChange={(e) => updateFilter('teamId', e.target.value)} style={{ fontSize: 12 }}>
-              <option value="">All teams</option>
-              {filterOptions.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-            <select value={filters.branchId} onChange={(e) => updateFilter('branchId', e.target.value)} style={{ fontSize: 12 }}>
-              <option value="">All branches</option>
-              {filterOptions.branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-            <select value={filters.employeeId} onChange={(e) => updateFilter('employeeId', e.target.value)} style={{ fontSize: 12 }}>
-              <option value="">All employees</option>
-              {filterOptions.employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
-            </select>
+            <div className="dashboard-filter-field">
+              <select value={filters.departmentId} onChange={(e) => updateFilter('departmentId', e.target.value)}>
+                <option value="">All departments</option>
+                {filterOptions.departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+            <div className="dashboard-filter-field">
+              <select value={filters.teamId} onChange={(e) => updateFilter('teamId', e.target.value)}>
+                <option value="">All teams</option>
+                {filterOptions.teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+            <div className="dashboard-filter-field">
+              <select value={filters.branchId} onChange={(e) => updateFilter('branchId', e.target.value)}>
+                <option value="">All branches</option>
+                {filterOptions.branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+            <div className="dashboard-filter-field">
+              <select value={filters.employeeId} onChange={(e) => updateFilter('employeeId', e.target.value)}>
+                <option value="">All employees</option>
+                {filterOptions.employees.map((emp) => <option key={emp.id} value={emp.id}>{emp.full_name}</option>)}
+              </select>
+            </div>
             {hasActiveFilters && <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={clearFilters}>Clear filters</button>}
             <div className="date-range-field" style={{ fontSize: 12 }}>
               <CalendarDaysIcon size={13} />
@@ -511,6 +587,9 @@ export default function Dashboards() {
               <span className="muted">to</span>
               <input type="date" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} onBlur={saveRange} />
             </div>
+            <button type="button" className="link-button" onClick={toggleFullscreen} aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} data-tooltip={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+              {isFullscreen ? <MinimizeIcon size={16} /> : <MaximizeIcon size={16} />}
+            </button>
             <button type="button" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setWidgetDrawer('new')}>
               <PlusIcon size={15} />
               Add widget
@@ -542,7 +621,7 @@ export default function Dashboards() {
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
 
       <Drawer open={!!widgetDrawer} onClose={() => setWidgetDrawer(null)} title={widgetDrawer === 'new' ? 'Add widget' : 'Edit widget'}>

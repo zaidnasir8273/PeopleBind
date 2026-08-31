@@ -22,14 +22,34 @@ import { parseFormula, evalFormula, referencedMetrics } from './formulaEngine'
 // underlying table only has an employee_id column, not department/team/
 // branch directly. A few exceptions are called out where they apply.
 
-function sumByDate(rows, dateKey, valueFn) {
+// Every calendar date in [from, to] inclusive, as YYYY-MM-DD strings.
+function eachDate(from, to) {
+  const start = new Date(`${from}T00:00:00`)
+  const end = new Date(`${to}T00:00:00`)
+  const dates = []
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) dates.push(d.toISOString().slice(0, 10))
+  return dates
+}
+
+// Zero-fills a {date,value} series to include every day in [from, to] --
+// without this, a line/area/bar/combo chart's x-axis silently compresses
+// to only the dates that happen to have data, which reads as "the chart
+// doesn't span the range I picked" even though the underlying fetch was
+// correctly scoped to it.
+function fillDateRange(series, from, to) {
+  const byDate = new Map(series.map((r) => [r.date, r.value]))
+  return eachDate(from, to).map((date) => ({ date, value: byDate.get(date) ?? 0 }))
+}
+
+function sumByDate(rows, dateKey, valueFn, from, to) {
   const byDate = new Map()
   for (const r of rows) {
     const d = r[dateKey]
     if (!d) continue
     byDate.set(d, (byDate.get(d) ?? 0) + valueFn(r))
   }
-  return [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, value }))
+  const series = [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, value }))
+  return from && to ? fillDateRange(series, from, to) : series
 }
 
 const EMPTY_METRIC = { value: 0, series: [] }
@@ -65,7 +85,7 @@ export const DASHBOARD_METRICS = {
     fetch: async (from, to, company, filters) => {
       if (noEmployeesMatch(filters)) return EMPTY_METRIC
       const { data } = await withEmployeeFilter(supabase.from('attendance').select('attendance_date, employee_id').eq('company_id', company.id).eq('status', 'present').gte('attendance_date', from).lte('attendance_date', to), filters)
-      const series = sumByDate(data ?? [], 'attendance_date', () => 1)
+      const series = sumByDate(data ?? [], 'attendance_date', () => 1, from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -74,7 +94,7 @@ export const DASHBOARD_METRICS = {
     fetch: async (from, to, company, filters) => {
       if (noEmployeesMatch(filters)) return EMPTY_METRIC
       const { data } = await withEmployeeFilter(supabase.from('attendance').select('attendance_date, employee_id').eq('company_id', company.id).eq('status', 'absent').gte('attendance_date', from).lte('attendance_date', to), filters)
-      const series = sumByDate(data ?? [], 'attendance_date', () => 1)
+      const series = sumByDate(data ?? [], 'attendance_date', () => 1, from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -83,7 +103,7 @@ export const DASHBOARD_METRICS = {
     fetch: async (from, to, company, filters) => {
       if (noEmployeesMatch(filters)) return EMPTY_METRIC
       const { data } = await withEmployeeFilter(supabase.from('attendance').select('attendance_date, employee_id').eq('company_id', company.id).eq('status', 'late').gte('attendance_date', from).lte('attendance_date', to), filters)
-      const series = sumByDate(data ?? [], 'attendance_date', () => 1)
+      const series = sumByDate(data ?? [], 'attendance_date', () => 1, from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -92,7 +112,7 @@ export const DASHBOARD_METRICS = {
     fetch: async (from, to, company, filters) => {
       if (noEmployeesMatch(filters)) return EMPTY_METRIC
       const { data } = await withEmployeeFilter(supabase.from('leave_requests').select('start_date, days_requested, employee_id').eq('company_id', company.id).eq('status', 'approved').gte('start_date', from).lte('start_date', to), filters)
-      const series = sumByDate(data ?? [], 'start_date', (r) => Number(r.days_requested ?? 0))
+      const series = sumByDate(data ?? [], 'start_date', (r) => Number(r.days_requested ?? 0), from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -102,7 +122,7 @@ export const DASHBOARD_METRICS = {
       if (noEmployeesMatch(filters)) return EMPTY_METRIC
       const { data } = await withEmployeeFilter(supabase.from('payroll_items').select('amount, component_type, created_at, employee_id').eq('company_id', company.id).gte('created_at', from).lte('created_at', `${to}T23:59:59`), filters)
       const rows = (data ?? []).map((r) => ({ date: r.created_at.slice(0, 10), value: (r.component_type === 'earning' ? 1 : -1) * Number(r.amount ?? 0) }))
-      const series = sumByDate(rows, 'date', (r) => r.value)
+      const series = sumByDate(rows, 'date', (r) => r.value, from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -112,7 +132,7 @@ export const DASHBOARD_METRICS = {
       if (noEmployeesMatch(filters)) return EMPTY_METRIC
       const { data } = await withEmployeeFilter(supabase.from('payroll_items').select('amount, created_at, employee_id').eq('company_id', company.id).eq('component_type', 'earning').gte('created_at', from).lte('created_at', `${to}T23:59:59`), filters)
       const rows = (data ?? []).map((r) => ({ date: r.created_at.slice(0, 10), amount: r.amount }))
-      const series = sumByDate(rows, 'date', (r) => Number(r.amount ?? 0))
+      const series = sumByDate(rows, 'date', (r) => Number(r.amount ?? 0), from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -121,7 +141,7 @@ export const DASHBOARD_METRICS = {
     fetch: async (from, to, company, filters) => {
       if (noEmployeesMatch(filters)) return EMPTY_METRIC
       const { data } = await withEmployeeFilter(supabase.from('expense_claims').select('amount, expense_date, employee_id').eq('company_id', company.id).in('status', ['approved', 'reimbursed']).gte('expense_date', from).lte('expense_date', to), filters)
-      const series = sumByDate(data ?? [], 'expense_date', (r) => Number(r.amount ?? 0))
+      const series = sumByDate(data ?? [], 'expense_date', (r) => Number(r.amount ?? 0), from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -145,7 +165,7 @@ export const DASHBOARD_METRICS = {
     fetch: async (from, to, company) => {
       const { data } = await supabase.from('candidates').select('created_at').eq('company_id', company.id).gte('created_at', from).lte('created_at', `${to}T23:59:59`)
       const rows = (data ?? []).map((r) => ({ date: r.created_at.slice(0, 10) }))
-      const series = sumByDate(rows, 'date', () => 1)
+      const series = sumByDate(rows, 'date', () => 1, from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -154,7 +174,7 @@ export const DASHBOARD_METRICS = {
     fetch: async (from, to, company, filters) => {
       if (noEmployeesMatch(filters)) return EMPTY_METRIC
       const { data } = await withEmployeeFilter(supabase.from('time_entries').select('duration_minutes, entry_date, employee_id').eq('company_id', company.id).gte('entry_date', from).lte('entry_date', to), filters)
-      const series = sumByDate(data ?? [], 'entry_date', (r) => Number(r.duration_minutes ?? 0) / 60)
+      const series = sumByDate(data ?? [], 'entry_date', (r) => Number(r.duration_minutes ?? 0) / 60, from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -163,7 +183,7 @@ export const DASHBOARD_METRICS = {
     fetch: async (from, to, company, filters) => {
       if (noEmployeesMatch(filters)) return EMPTY_METRIC
       const { data } = await withEmployeeFilter(supabase.from('overtime_records').select('minutes, work_date, employee_id').eq('company_id', company.id).gte('work_date', from).lte('work_date', to), filters)
-      const series = sumByDate(data ?? [], 'work_date', (r) => Number(r.minutes ?? 0) / 60)
+      const series = sumByDate(data ?? [], 'work_date', (r) => Number(r.minutes ?? 0) / 60, from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -209,7 +229,7 @@ export const DASHBOARD_METRICS = {
       if (noEmployeesMatch(filters)) return EMPTY_METRIC
       const { data } = await withEmployeeFilter(supabase.from('performance_reviews').select('submitted_at, employee_id').eq('company_id', company.id).in('status', ['submitted', 'acknowledged']).gte('submitted_at', from).lte('submitted_at', `${to}T23:59:59`), filters)
       const rows = (data ?? []).map((r) => ({ date: r.submitted_at.slice(0, 10) }))
-      const series = sumByDate(rows, 'date', () => 1)
+      const series = sumByDate(rows, 'date', () => 1, from, to)
       return { value: series.reduce((s, r) => s + r.value, 0), series }
     },
   },
@@ -345,6 +365,9 @@ export const DASHBOARD_STACKED = {
         if (row[r.status] !== undefined) row[r.status] += 1
         byDate.set(r.attendance_date, row)
       }
+      for (const date of eachDate(from, to)) {
+        if (!byDate.has(date)) byDate.set(date, { date, present: 0, absent: 0, late: 0, on_leave: 0 })
+      }
       return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))
     },
   },
@@ -368,7 +391,7 @@ export const DASHBOARD_CROSSTABS = {
         const col = r.leave_types?.name ?? 'Unspecified'
         rowSet.add(row)
         colSet.add(col)
-        const key = `${row} ${col}`
+        const key = `${row} ${col}`
         totals.set(key, (totals.get(key) ?? 0) + Number(r.days_requested ?? 0))
       }
       const rows = [...rowSet].sort()
@@ -376,7 +399,7 @@ export const DASHBOARD_CROSSTABS = {
       const cells = []
       for (const row of rows) {
         for (const col of columns) {
-          const value = totals.get(`${row} ${col}`) ?? 0
+          const value = totals.get(`${row} ${col}`) ?? 0
           if (value > 0) cells.push({ row, col, value })
         }
       }
