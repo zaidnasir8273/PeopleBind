@@ -14,12 +14,14 @@ import { ClipboardCheckIcon } from '../components/ui/clipboard-check'
 import { ShieldCheckIcon } from '../components/ui/shield-check'
 import { TrendingUpIcon } from '../components/ui/trending-up'
 import { BookTextIcon } from '../components/ui/book-text'
+import { WaypointsIcon } from '../components/ui/waypoints'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
 import { SkeletonBlock, SkeletonTable } from '../components/Skeleton'
 import { STANDARD_KPI_METRICS } from '../lib/kpiMetrics'
 import { HelpEditor } from '../components/HelpEditor'
+import { ClickUpIntegrationTab } from '../components/ClickUpIntegrationTab'
 
 // Modules group the existing tabs into a real hierarchy instead of one long
 // row that wraps -- the tab keys below are exactly the ones the render
@@ -94,6 +96,15 @@ const SETTINGS_MODULES = [
     color: 'teal',
     submodules: [
       { key: 'company_docs', label: 'Company documentation' },
+    ],
+  },
+  {
+    key: 'integrations',
+    label: 'Integrations',
+    icon: WaypointsIcon,
+    color: 'teal-deep',
+    submodules: [
+      { key: 'clickup', label: 'ClickUp' },
     ],
   },
 ]
@@ -223,6 +234,7 @@ export default function Settings() {
           {tab === 'support' && <SupportTab />}
           {tab === 'kpi_catalog' && <KpiCatalogTab />}
           {tab === 'company_docs' && <CompanyDocsTab />}
+          {tab === 'clickup' && <ClickUpIntegrationTab />}
         </div>
       </div>
     </div>

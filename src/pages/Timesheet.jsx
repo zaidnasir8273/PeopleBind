@@ -115,7 +115,7 @@ export default function Timesheet() {
     setLoading(true)
     let query = supabase
       .from('time_entries')
-      .select('id, entry_date, duration_minutes, billable, notes, status, created_at, employees(full_name, employee_code), projects(name, clients(name)), timesheet_tasks(name)')
+      .select('id, entry_date, duration_minutes, billable, notes, status, source, created_at, employees(full_name, employee_code), projects(name, clients(name)), timesheet_tasks(name)')
       .eq('company_id', company.id)
       .order('entry_date', { ascending: false })
     if (statusFilter !== 'all') query = query.eq('status', statusFilter)
@@ -317,7 +317,12 @@ export default function Timesheet() {
                     <td className="mono">{formatDate(e.entry_date)}</td>
                     <td className="mono">{minutesToHoursLabel(e.duration_minutes)}h</td>
                     <td>{e.billable ? <CheckIcon size={14} style={{ color: 'var(--accent)' }} /> : <span className="muted">—</span>}</td>
-                    <td><span className={`status-badge status-${e.status}`}>{e.status}</span></td>
+                    <td>
+                      <span className={`status-badge status-${e.status}`}>{e.status}</span>
+                      {e.source === 'clickup' && (
+                        <span className="muted mono" style={{ marginLeft: 6, fontSize: 11 }} data-tooltip="Synced from ClickUp">clickup</span>
+                      )}
+                    </td>
                     <td>
                       {e.status === 'pending' && (
                         <div style={{ display: 'flex', gap: 6 }}>

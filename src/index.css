@@ -5771,6 +5771,7 @@ a.attention-item:hover {
 .settings-module-icon-olive { background: rgba(92, 107, 63, 0.16); color: var(--green-olive); }
 .settings-module-icon-gold { background: rgba(180, 83, 9, 0.14); color: var(--gold); }
 .settings-module-icon-teal { background: rgba(31, 122, 99, 0.14); color: var(--teal); }
+.settings-module-icon-teal-deep { background: rgba(18, 63, 51, 0.14); color: var(--teal-deep); }
 
 .settings-module-label {
   flex: 1;

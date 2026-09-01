@@ -889,6 +889,196 @@ export type Database = {
           },
         ]
       }
+      clickup_connections: {
+        Row: {
+          clickup_team_id: string
+          clickup_team_name: string | null
+          company_id: string
+          connected_at: string
+          connected_by: string | null
+          id: string
+          last_error: string | null
+          last_sync_summary: Json | null
+          last_synced_at: string | null
+          status: string
+          token_vault_secret_name: string
+          updated_at: string
+        }
+        Insert: {
+          clickup_team_id: string
+          clickup_team_name?: string | null
+          company_id: string
+          connected_at?: string
+          connected_by?: string | null
+          id?: string
+          last_error?: string | null
+          last_sync_summary?: Json | null
+          last_synced_at?: string | null
+          status?: string
+          token_vault_secret_name: string
+          updated_at?: string
+        }
+        Update: {
+          clickup_team_id?: string
+          clickup_team_name?: string | null
+          company_id?: string
+          connected_at?: string
+          connected_by?: string | null
+          id?: string
+          last_error?: string | null
+          last_sync_summary?: Json | null
+          last_synced_at?: string | null
+          status?: string
+          token_vault_secret_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clickup_connections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clickup_connections_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "clickup_connections_connected_by_fkey"
+            columns: ["connected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clickup_project_links: {
+        Row: {
+          clickup_folder_name: string | null
+          clickup_list_id: string
+          clickup_list_name: string | null
+          clickup_space_name: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          project_id: string
+        }
+        Insert: {
+          clickup_folder_name?: string | null
+          clickup_list_id: string
+          clickup_list_name?: string | null
+          clickup_space_name?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          project_id: string
+        }
+        Update: {
+          clickup_folder_name?: string | null
+          clickup_list_id?: string
+          clickup_list_name?: string | null
+          clickup_space_name?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clickup_project_links_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clickup_project_links_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "clickup_project_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clickup_project_links_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clickup_user_links: {
+        Row: {
+          clickup_email: string | null
+          clickup_user_id: string
+          clickup_username: string | null
+          company_id: string
+          created_at: string
+          employee_id: string | null
+          id: string
+          matched_by: string
+          updated_at: string
+        }
+        Insert: {
+          clickup_email?: string | null
+          clickup_user_id: string
+          clickup_username?: string | null
+          company_id: string
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          matched_by?: string
+          updated_at?: string
+        }
+        Update: {
+          clickup_email?: string | null
+          clickup_user_id?: string
+          clickup_username?: string | null
+          company_id?: string
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          matched_by?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clickup_user_links_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clickup_user_links_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "clickup_user_links_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           company_id: string
@@ -988,39 +1178,142 @@ export type Database = {
         }
         Relationships: []
       }
+      company_events: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          end_time: string | null
+          event_date: string
+          id: string
+          start_time: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          end_time?: string | null
+          event_date: string
+          id?: string
+          start_time?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          end_time?: string | null
+          event_date?: string
+          id?: string
+          start_time?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "company_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_dashboard_widgets: {
         Row: {
           chart_type: string
+          combo_metric_key: string | null
           company_id: string
+          comparison_from: string | null
+          comparison_mode: string
+          comparison_to: string | null
           created_at: string
           dashboard_id: string
+          date_from: string | null
+          date_mode: string
+          date_preset: string | null
+          date_to: string | null
+          filters: Json
+          height_px: number
           id: string
           metric_key: string
           size: string
           sort_order: number
+          target_value: number | null
           title: string | null
+          width_pct: number
         }
         Insert: {
           chart_type?: string
+          combo_metric_key?: string | null
           company_id: string
+          comparison_from?: string | null
+          comparison_mode?: string
+          comparison_to?: string | null
           created_at?: string
           dashboard_id: string
+          date_from?: string | null
+          date_mode?: string
+          date_preset?: string | null
+          date_to?: string | null
+          filters?: Json
+          height_px?: number
           id?: string
           metric_key: string
           size?: string
           sort_order?: number
+          target_value?: number | null
           title?: string | null
+          width_pct?: number
         }
         Update: {
           chart_type?: string
+          combo_metric_key?: string | null
           company_id?: string
+          comparison_from?: string | null
+          comparison_mode?: string
+          comparison_to?: string | null
           created_at?: string
           dashboard_id?: string
+          date_from?: string | null
+          date_mode?: string
+          date_preset?: string | null
+          date_to?: string | null
+          filters?: Json
+          height_px?: number
           id?: string
           metric_key?: string
           size?: string
           sort_order?: number
+          target_value?: number | null
           title?: string | null
+          width_pct?: number
         }
         Relationships: [
           {
@@ -1057,8 +1350,10 @@ export type Database = {
           filter_department_id: string | null
           filter_employee_id: string | null
           filter_team_id: string | null
+          folder: string | null
           id: string
           is_default: boolean
+          is_favorite: boolean
           name: string
           sort_order: number
         }
@@ -1072,8 +1367,10 @@ export type Database = {
           filter_department_id?: string | null
           filter_employee_id?: string | null
           filter_team_id?: string | null
+          folder?: string | null
           id?: string
           is_default?: boolean
+          is_favorite?: boolean
           name: string
           sort_order?: number
         }
@@ -1087,8 +1384,10 @@ export type Database = {
           filter_department_id?: string | null
           filter_employee_id?: string | null
           filter_team_id?: string | null
+          folder?: string | null
           id?: string
           is_default?: boolean
+          is_favorite?: boolean
           name?: string
           sort_order?: number
         }
@@ -1141,6 +1440,45 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "teams"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_metrics: {
+        Row: {
+          company_id: string
+          created_at: string
+          formula: string
+          id: string
+          name: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          formula: string
+          id?: string
+          name: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          formula?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_metrics_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -2535,6 +2873,47 @@ export type Database = {
             columns: ["employment_type_id"]
             isOneToOne: false
             referencedRelation: "employment_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_chunks: {
+        Row: {
+          chunk_index: number
+          company_id: string | null
+          content: string
+          created_at: string
+          document_id: string
+          embedding: string
+          id: string
+          title: string
+        }
+        Insert: {
+          chunk_index?: number
+          company_id?: string | null
+          content: string
+          created_at?: string
+          document_id: string
+          embedding: string
+          id?: string
+          title: string
+        }
+        Update: {
+          chunk_index?: number
+          company_id?: string | null
+          content?: string
+          created_at?: string
+          document_id?: string
+          embedding?: string
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "help_articles"
             referencedColumns: ["id"]
           },
         ]
@@ -4919,11 +5298,13 @@ export type Database = {
           duration_minutes: number
           employee_id: string
           entry_date: string
+          external_id: string | null
           id: string
           notes: string | null
           project_id: string
           reviewed_at: string | null
           reviewed_by: string | null
+          source: string
           status: string
           submitted_by: string | null
           task_id: string | null
@@ -4936,11 +5317,13 @@ export type Database = {
           duration_minutes: number
           employee_id: string
           entry_date: string
+          external_id?: string | null
           id?: string
           notes?: string | null
           project_id: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          source?: string
           status?: string
           submitted_by?: string | null
           task_id?: string | null
@@ -4953,11 +5336,13 @@ export type Database = {
           duration_minutes?: number
           employee_id?: string
           entry_date?: string
+          external_id?: string | null
           id?: string
           notes?: string | null
           project_id?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          source?: string
           status?: string
           submitted_by?: string | null
           task_id?: string | null
@@ -5482,6 +5867,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      delete_clickup_token: {
+        Args: { p_company_id: string }
+        Returns: undefined
+      }
       employee_clock_in: {
         Args: never
         Returns: {
@@ -5548,6 +5937,43 @@ export type Database = {
         Args: { p_payroll_run_id: string }
         Returns: undefined
       }
+      get_attendance_anomalies: {
+        Args: { p_company_id: string; p_days_back?: number }
+        Returns: {
+          attendance_date: string
+          employee_id: string
+          employee_name: string
+          issue: string
+        }[]
+      }
+      get_attendance_anomalies_internal: {
+        Args: { p_company_id: string; p_days_back?: number }
+        Returns: {
+          attendance_date: string
+          employee_id: string
+          employee_name: string
+          issue: string
+        }[]
+      }
+      get_attrition_risk_signals: {
+        Args: { p_company_id: string }
+        Returns: {
+          employee_id: string
+          employee_name: string
+          signal: string
+        }[]
+      }
+      get_attrition_risk_signals_internal: {
+        Args: { p_company_id: string }
+        Returns: {
+          employee_id: string
+          employee_name: string
+          signal: string
+        }[]
+      }
+      get_clickup_sync_trigger_secret: { Args: never; Returns: string }
+      get_clickup_token: { Args: { p_company_id: string }; Returns: string }
+      get_embed_trigger_secret: { Args: never; Returns: string }
       get_invite_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -5579,6 +6005,19 @@ export type Database = {
         }
         Returns: string
       }
+      match_help_chunks: {
+        Args: {
+          match_company_id: string
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          similarity: number
+          title: string
+        }[]
+      }
       next_employee_code: { Args: { p_company_id: string }; Returns: string }
       notify_permission_holders: {
         Args: {
@@ -5600,6 +6039,16 @@ export type Database = {
         Args: { p_payroll_run_id: string }
         Returns: undefined
       }
+      send_ai_weekly_digest: { Args: never; Returns: undefined }
+      send_transactional_email: {
+        Args: { p_html: string; p_subject: string; p_to: string }
+        Returns: undefined
+      }
+      set_clickup_token: {
+        Args: { p_company_id: string; p_token: string }
+        Returns: undefined
+      }
+      sync_clickup_time_entries: { Args: never; Returns: undefined }
       update_my_employee_profile: {
         Args: {
           p_address?: string
