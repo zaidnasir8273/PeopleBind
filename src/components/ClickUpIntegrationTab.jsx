@@ -58,6 +58,11 @@ export function ClickUpIntegrationTab() {
 function ClickUpConnectedArea({ company }) {
   // undefined = still loading, null = no connection row yet
   const [connection, setConnection] = useState(undefined)
+  // ClickUp's own Lists, loaded on demand and shared between the project
+  // mapping and push-tasks cards below so "Load/Refresh ClickUp lists"
+  // only ever needs one fetch, not one per card.
+  const [clickupLists, setClickupLists] = useState(null)
+  const [loadingLists, setLoadingLists] = useState(false)
 
   const loadConnection = useCallback(async () => {
     const { data } = await supabase.from('clickup_connections').select('*').eq('company_id', company.id).maybeSingle()
@@ -67,6 +72,19 @@ function ClickUpConnectedArea({ company }) {
   useEffect(() => {
     loadConnection()
   }, [loadConnection])
+
+  async function loadClickupLists() {
+    setLoadingLists(true)
+    const { data, error } = await supabase.functions.invoke('clickup-sync', {
+      body: { action: 'list_clickup_resources', company_id: company.id },
+    })
+    setLoadingLists(false)
+    if (error) {
+      toast.error(await extractErrorMessage(error))
+      return
+    }
+    setClickupLists(data.lists ?? [])
+  }
 
   if (connection === undefined) return <SkeletonBlock rows={6} />
 
@@ -83,8 +101,9 @@ function ClickUpConnectedArea({ company }) {
 
       {connection && (
         <>
-          <ProjectMappingCard company={company} />
+          <ProjectMappingCard company={company} clickupLists={clickupLists} loadingLists={loadingLists} onLoadLists={loadClickupLists} />
           <UserMappingCard company={company} />
+          <PushTasksCard company={company} clickupLists={clickupLists} loadingLists={loadingLists} onLoadLists={loadClickupLists} />
         </>
       )}
     </div>
@@ -230,11 +249,9 @@ function ConnectedCard({ connection, company, onChanged }) {
   )
 }
 
-function ProjectMappingCard({ company }) {
+function ProjectMappingCard({ company, clickupLists, loadingLists, onLoadLists }) {
   const [links, setLinks] = useState([])
   const [projects, setProjects] = useState([])
-  const [clickupLists, setClickupLists] = useState(null) // null = not loaded from ClickUp yet this session
-  const [loadingLists, setLoadingLists] = useState(false)
   const [selectedListId, setSelectedListId] = useState('')
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [saving, setSaving] = useState(false)
@@ -253,19 +270,6 @@ function ProjectMappingCard({ company }) {
   useEffect(() => {
     loadLinks()
   }, [loadLinks])
-
-  async function loadClickupLists() {
-    setLoadingLists(true)
-    const { data, error } = await supabase.functions.invoke('clickup-sync', {
-      body: { action: 'list_clickup_resources', company_id: company.id },
-    })
-    setLoadingLists(false)
-    if (error) {
-      toast.error(await extractErrorMessage(error))
-      return
-    }
-    setClickupLists(data.lists ?? [])
-  }
 
   async function addMapping() {
     if (!selectedListId || !selectedProjectId) return
@@ -329,7 +333,7 @@ function ProjectMappingCard({ company }) {
       )}
 
       {clickupLists === null ? (
-        <button type="button" className="link-button" disabled={loadingLists} onClick={loadClickupLists} style={{ marginTop: 8 }}>
+        <button type="button" className="link-button" disabled={loadingLists} onClick={onLoadLists} style={{ marginTop: 8 }}>
           {loadingLists ? 'Loading ClickUp lists…' : 'Load ClickUp lists'}
         </button>
       ) : (
@@ -342,7 +346,7 @@ function ProjectMappingCard({ company }) {
             <button type="button" className="btn-primary" disabled={saving || !selectedListId || !selectedProjectId} onClick={addMapping}>
               Add mapping
             </button>
-            <button type="button" className="link-button" onClick={loadClickupLists} disabled={loadingLists}>
+            <button type="button" className="link-button" onClick={onLoadLists} disabled={loadingLists}>
               {loadingLists ? 'Refreshing…' : 'Refresh from ClickUp'}
             </button>
           </div>
@@ -466,6 +470,105 @@ function UserMappingCard({ company }) {
       <button type="button" className="link-button" disabled={loading} onClick={refreshFromClickup} style={{ marginTop: 8 }}>
         {loading ? 'Refreshing…' : 'Refresh from ClickUp'}
       </button>
+    </div>
+  )
+}
+
+// The outbound counterpart to the rest of this tab: instead of pulling
+// ClickUp time entries in, this pushes plain items OUT as ClickUp tasks
+// -- e.g. a feature backlog -- one per line, into a chosen List. Deliberately
+// title-only for v1 (no per-line description/priority) to keep the paste-and-go
+// flow simple; a single priority applies to the whole batch if set.
+function PushTasksCard({ company, clickupLists, loadingLists, onLoadLists }) {
+  const [selectedListId, setSelectedListId] = useState('')
+  const [text, setText] = useState('')
+  const [priority, setPriority] = useState('')
+  const [pushing, setPushing] = useState(false)
+  const [result, setResult] = useState(null)
+
+  const listOptions = (clickupLists ?? []).map((l) => ({
+    value: l.list_id, label: l.list_name, group: l.space_name,
+    sublabel: [l.space_name, l.folder_name].filter(Boolean).join(' / '),
+  }))
+  const lineCount = text.split('\n').map((l) => l.trim()).filter(Boolean).length
+
+  async function push() {
+    const tasks = text.split('\n').map((l) => l.trim()).filter(Boolean).map((name) => ({ name, priority: priority || undefined }))
+    if (!selectedListId || tasks.length === 0) return
+    setPushing(true)
+    setResult(null)
+    const { data, error } = await supabase.functions.invoke('clickup-sync', {
+      body: { action: 'create_tasks', company_id: company.id, clickup_list_id: selectedListId, tasks },
+    })
+    setPushing(false)
+    if (error) {
+      toast.error(await extractErrorMessage(error))
+      return
+    }
+    setResult(data)
+    if (data.failed?.length) {
+      toast.error(`${data.created.length} created, ${data.failed.length} failed`)
+    } else {
+      toast.success(`${data.created.length} task${data.created.length === 1 ? '' : 's'} created in ClickUp`)
+      setText('')
+    }
+  }
+
+  return (
+    <div className="report-section" style={{ marginBottom: 0 }}>
+      <p className="section-heading">Push tasks to ClickUp</p>
+      <p className="muted" style={{ marginTop: -6, fontSize: 12.5 }}>
+        One line = one ClickUp task. Useful for pushing a backlog or request list straight into a List.
+      </p>
+
+      {clickupLists === null ? (
+        <button type="button" className="link-button" disabled={loadingLists} onClick={onLoadLists}>
+          {loadingLists ? 'Loading ClickUp lists…' : 'Load ClickUp lists'}
+        </button>
+      ) : (
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div className="field-row" style={{ marginBottom: 0 }}>
+            <SearchableSelect options={listOptions} value={selectedListId} onChange={setSelectedListId} placeholder="— ClickUp list —" />
+            <select className="input-ghost" value={priority} onChange={(e) => setPriority(e.target.value)} style={{ maxWidth: 160 }}>
+              <option value="">No priority</option>
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="normal">Normal</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <textarea
+            className="input-ghost"
+            rows={6}
+            placeholder={'Revoke EXECUTE on platform_delete_company from anon/authenticated\nEnable leaked-password protection\n…one task per line'}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button type="button" className="btn-primary" disabled={pushing || !selectedListId || lineCount === 0} onClick={push}>
+              {pushing ? 'Pushing…' : `Push ${lineCount || ''} task${lineCount === 1 ? '' : 's'} to ClickUp`}
+            </button>
+            <button type="button" className="link-button" onClick={onLoadLists} disabled={loadingLists}>
+              {loadingLists ? 'Refreshing…' : 'Refresh lists'}
+            </button>
+          </div>
+          {result?.created?.length > 0 && (
+            <div className="lookup-list">
+              {result.created.map((t) => (
+                <div key={t.id} className="lookup-row">
+                  <span>{t.name}</span>
+                  {t.url && <a href={t.url} target="_blank" rel="noreferrer" className="link-button" style={{ fontSize: 12 }}>Open</a>}
+                </div>
+              ))}
+            </div>
+          )}
+          {result?.failed?.length > 0 && (
+            <p className="field-error">
+              Failed: {result.failed.map((f) => f.name).join(', ')}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
