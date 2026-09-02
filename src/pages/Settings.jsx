@@ -824,6 +824,7 @@ function LeaveTab() {
     carry_forward_enabled: false,
     carry_forward_max_days: '0',
     requires_approval: true,
+    min_notice_days: '0',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -834,7 +835,7 @@ function LeaveTab() {
       supabase.from('leave_types').select('id, name, is_paid, is_encashable, applicable_gender').eq('company_id', company.id).order('name'),
       supabase
         .from('leave_policies')
-        .select('id, name, annual_entitlement_days, carry_forward_enabled, carry_forward_max_days, requires_approval, leave_types(name), employment_types(name)')
+        .select('id, name, annual_entitlement_days, carry_forward_enabled, carry_forward_max_days, requires_approval, min_notice_days, leave_types(name), employment_types(name)')
         .eq('company_id', company.id)
         .order('name'),
       supabase.from('employment_types').select('id, name').eq('company_id', company.id).order('name'),
@@ -858,6 +859,7 @@ function LeaveTab() {
       carry_forward_enabled: false,
       carry_forward_max_days: '0',
       requires_approval: true,
+      min_notice_days: '0',
     })
     setError(null)
     setDrawerOpen(true)
@@ -881,6 +883,7 @@ function LeaveTab() {
       carry_forward_enabled: form.carry_forward_enabled,
       carry_forward_max_days: form.carry_forward_enabled ? Number(form.carry_forward_max_days || 0) : 0,
       requires_approval: form.requires_approval,
+      min_notice_days: Number(form.min_notice_days || 0),
     })
 
     setSaving(false)
@@ -951,6 +954,7 @@ function LeaveTab() {
               <th>Days/year</th>
               <th>Carry forward</th>
               <th>Approval</th>
+              <th>Min. notice</th>
               <th></th>
             </tr>
           </thead>
@@ -963,6 +967,7 @@ function LeaveTab() {
                 <td className="mono">{p.annual_entitlement_days}</td>
                 <td>{p.carry_forward_enabled ? `Up to ${p.carry_forward_max_days}` : 'No'}</td>
                 <td>{p.requires_approval ? 'Required' : 'Auto'}</td>
+                <td className="mono">{Number(p.min_notice_days) > 0 ? `${p.min_notice_days}d` : '—'}</td>
                 <td>
                   <button
                     type="button"
@@ -1010,6 +1015,14 @@ function LeaveTab() {
             <span>Annual entitlement (days)</span>
             <input type="number" min="0" step="0.5" required value={form.annual_entitlement_days} onChange={(e) => setForm({ ...form, annual_entitlement_days: e.target.value })} />
           </label>
+
+          <label className="field">
+            <span>Minimum notice (days, optional)</span>
+            <input type="number" min="0" step="1" value={form.min_notice_days} onChange={(e) => setForm({ ...form, min_notice_days: e.target.value })} />
+          </label>
+          <p className="muted" style={{ margin: 0, marginTop: -10, fontSize: 12 }}>
+            0 = no requirement. PeopleBind AI flags pending requests that fall short of this when a manager asks about them.
+          </p>
 
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
             <input type="checkbox" checked={form.requires_approval} onChange={(e) => setForm({ ...form, requires_approval: e.target.checked })} />
