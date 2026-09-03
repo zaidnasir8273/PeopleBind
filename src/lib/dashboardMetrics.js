@@ -241,6 +241,35 @@ export const DASHBOARD_METRICS = {
       return { value: Math.round((days.reduce((s, d) => s + d, 0) / days.length) * 10) / 10, series: [] }
     },
   },
+  // Requires salary bands to be configured (Settings > Payroll > Salary
+  // bands) -- an employee only counts if their designation has a band
+  // defined AND they have a basic_salary set; both are real gaps in a
+  // fresh company's data, not a bug, so a 0 here usually means "go set
+  // those up" rather than "everyone's underpaid". Queries `employees`
+  // directly (same reasoning as headcount), applying the raw picked
+  // filters rather than the resolved employeeIds list.
+  compa_ratio: {
+    label: 'Compa-ratio', unit: '%', trend: false,
+    fetch: async (_from, _to, company, filters) => {
+      let query = supabase.from('employees').select('id, designation_id, basic_salary')
+        .eq('company_id', company.id).in('employment_status', ['training', 'probation', 'confirmed'])
+        .not('basic_salary', 'is', null).not('designation_id', 'is', null)
+      if (filters?.departmentId) query = query.eq('department_id', filters.departmentId)
+      if (filters?.teamId) query = query.eq('team_id', filters.teamId)
+      if (filters?.branchId) query = query.eq('branch_id', filters.branchId)
+      if (filters?.employeeId) query = query.eq('id', filters.employeeId)
+      const [{ data: emps }, { data: bands }] = await Promise.all([
+        query,
+        supabase.from('salary_bands').select('designation_id, mid_salary').eq('company_id', company.id),
+      ])
+      const midByDesignation = new Map((bands ?? []).map((b) => [b.designation_id, Number(b.mid_salary)]))
+      const ratios = (emps ?? [])
+        .filter((e) => midByDesignation.get(e.designation_id) > 0)
+        .map((e) => (Number(e.basic_salary) / midByDesignation.get(e.designation_id)) * 100)
+      const value = ratios.length > 0 ? Math.round((ratios.reduce((s, r) => s + r, 0) / ratios.length) * 10) / 10 : 0
+      return { value, series: [] }
+    },
+  },
   attendance_present: {
     label: 'Present days', unit: '', trend: true,
     fetch: async (from, to, company, filters) => {

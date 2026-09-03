@@ -4871,6 +4871,61 @@ export type Database = {
           },
         ]
       }
+      salary_bands: {
+        Row: {
+          company_id: string
+          created_at: string
+          designation_id: string
+          id: string
+          max_salary: number
+          mid_salary: number
+          min_salary: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          designation_id: string
+          id?: string
+          max_salary: number
+          mid_salary: number
+          min_salary: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          designation_id?: string
+          id?: string
+          max_salary?: number
+          mid_salary?: number
+          min_salary?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_bands_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_bands_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "salary_bands_designation_id_fkey"
+            columns: ["designation_id"]
+            isOneToOne: false
+            referencedRelation: "designations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_inquiries: {
         Row: {
           company_name: string

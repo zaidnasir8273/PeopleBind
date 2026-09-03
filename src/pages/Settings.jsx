@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'motion/react'
 import { ChevronDown, Loader2, Copy } from 'lucide-react'
 import { DeleteIcon } from '../components/ui/delete'
+import { SquarePenIcon } from '../components/ui/square-pen'
 import { PlusIcon } from '../components/ui/plus'
 import { SendIcon } from '../components/ui/send'
 import { ClockIcon } from '../components/ui/clock'
@@ -59,6 +60,7 @@ const SETTINGS_MODULES = [
       { key: 'tax', label: 'Tax slabs' },
       { key: 'statutory', label: 'Statutory rates' },
       { key: 'proftax', label: 'Professional tax' },
+      { key: 'salary_bands', label: 'Salary bands' },
     ],
   },
   {
@@ -226,6 +228,7 @@ export default function Settings() {
           {tab === 'payroll' && <PayrollComponentsTab />}
           {tab === 'tax' && <TaxSlabsTab />}
           {tab === 'statutory' && <StatutoryRatesTab />}
+          {tab === 'salary_bands' && <SalaryBandsTab />}
           {tab === 'proftax' && <ProfessionalTaxTab />}
           {tab === 'roles' && <RolesTab />}
           {tab === 'audit' && <AuditLogTab />}
@@ -1768,6 +1771,194 @@ function TaxSlabsTab() {
           <button type="submit" className="btn-primary" disabled={saving}>
             {saving && <Loader2 size={14} className="btn-spinner" />}
             {saving ? 'Adding…' : 'Add bracket'}
+          </button>
+        </form>
+      </Drawer>
+    </>
+  )
+}
+
+/* =========================== SALARY BANDS =========================== */
+
+// The compa-ratio denominator: a min/mid/max compensation range per
+// designation. RLS gates on the real 'salary' permission resource, not
+// settings:manage -- same as employee_salary_components -- so this tab
+// follows the shifts/tax-slabs convention (shown to everyone, enforced by
+// RLS, errors surfaced via toast) rather than a client-side hasAccess
+// gate: a viewer without salary:view simply sees an empty list, and a
+// write without salary:edit fails with a toast, same as every other
+// ordinary settings tab in this app.
+const EMPTY_BAND_FORM = { id: null, designation_id: '', min_salary: '', mid_salary: '', max_salary: '' }
+
+function SalaryBandsTab() {
+  const { company } = useAuth()
+  const [designations, setDesignations] = useState([])
+  const [bands, setBands] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [form, setForm] = useState(EMPTY_BAND_FORM)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const [{ data: des }, { data: b }] = await Promise.all([
+      supabase.from('designations').select('id, name').eq('company_id', company.id).eq('status', 'active').order('name'),
+      supabase.from('salary_bands').select('id, designation_id, min_salary, mid_salary, max_salary').eq('company_id', company.id),
+    ])
+    setDesignations(des ?? [])
+    setBands(b ?? [])
+    setLoading(false)
+  }, [company.id])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const designationById = new Map(designations.map((d) => [d.id, d.name]))
+  const bandedIds = new Set(bands.map((b) => b.designation_id))
+  const unbandedDesignations = designations.filter((d) => !bandedIds.has(d.id))
+  const rows = bands
+    .map((b) => ({ ...b, designation_name: designationById.get(b.designation_id) ?? 'Unknown designation' }))
+    .sort((a, b) => a.designation_name.localeCompare(b.designation_name))
+
+  function openAdd() {
+    setForm({ ...EMPTY_BAND_FORM, designation_id: unbandedDesignations[0]?.id ?? '' })
+    setError(null)
+    setDrawerOpen(true)
+  }
+
+  function openEdit(band) {
+    setForm({ id: band.id, designation_id: band.designation_id, min_salary: String(band.min_salary), mid_salary: String(band.mid_salary), max_salary: String(band.max_salary) })
+    setError(null)
+    setDrawerOpen(true)
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
+    const min = Number(form.min_salary), mid = Number(form.mid_salary), max = Number(form.max_salary)
+    if (!(min <= mid && mid <= max)) {
+      setError('Min must be ≤ mid, and mid must be ≤ max.')
+      return
+    }
+    setSaving(true)
+    const payload = { company_id: company.id, designation_id: form.designation_id, min_salary: min, mid_salary: mid, max_salary: max }
+    const { error: saveError } = form.id
+      ? await supabase.from('salary_bands').update(payload).eq('id', form.id)
+      : await supabase.from('salary_bands').insert(payload)
+    setSaving(false)
+
+    if (saveError) {
+      setError(saveError.message)
+      toast.error(saveError.message)
+      return
+    }
+
+    toast.success(form.id ? 'Band updated' : 'Band added')
+    setDrawerOpen(false)
+    load()
+  }
+
+  async function handleDelete(id) {
+    const { error: deleteError } = await supabase.from('salary_bands').delete().eq('id', id)
+    setConfirmDeleteId(null)
+    if (deleteError) {
+      toast.error(deleteError.message || 'Failed to remove')
+      return
+    }
+    toast.success('Band removed')
+    load()
+  }
+
+  if (loading) return <SkeletonTable rows={4} columns={4} />
+
+  return (
+    <>
+      <p className="muted" style={{ marginTop: 0 }}>
+        Defines the expected compensation range per designation, used to compute the compa-ratio dashboard metric
+        (an employee's basic salary as a % of their designation's midpoint). Only designations with a band defined
+        are included in that metric.
+      </p>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <button className="btn-primary btn-icon" onClick={openAdd} disabled={unbandedDesignations.length === 0}>
+          <PlusIcon size={16} /> Add band
+        </button>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="empty-state" style={{ marginTop: 20 }}>
+          <p>No salary bands configured yet.</p>
+          <p className="muted">Add one per designation to start seeing the compa-ratio metric on dashboards.</p>
+        </div>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr><th>Designation</th><th>Min</th><th>Mid</th><th>Max</th><th /></tr>
+          </thead>
+          <tbody>
+            {rows.map((b) => (
+              <tr key={b.id} style={{ cursor: 'default' }}>
+                <td>{b.designation_name}</td>
+                <td className="mono">{fmtMoney(b.min_salary)}</td>
+                <td className="mono">{fmtMoney(b.mid_salary)}</td>
+                <td className="mono">{fmtMoney(b.max_salary)}</td>
+                <td>
+                  {confirmDeleteId === b.id ? (
+                    <span style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', fontSize: 12.5 }}>
+                      <button type="button" className="link-button" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(b.id)}>Yes</button>
+                      <button type="button" className="link-button" onClick={() => setConfirmDeleteId(null)}>Cancel</button>
+                    </span>
+                  ) : (
+                    <span style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                      <button type="button" className="link-button" onClick={() => openEdit(b)}><SquarePenIcon size={15} /></button>
+                      <button type="button" className="link-button" onClick={() => setConfirmDeleteId(b.id)}><DeleteIcon size={15} /></button>
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={form.id ? 'Edit salary band' : 'Add salary band'}>
+        <form onSubmit={handleSubmit} className="drawer-form">
+          <label className="field">
+            <span>Designation</span>
+            {form.id ? (
+              <input value={designationById.get(form.designation_id) ?? ''} disabled />
+            ) : (
+              <select required value={form.designation_id} onChange={(e) => setForm({ ...form, designation_id: e.target.value })}>
+                {unbandedDesignations.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            )}
+          </label>
+
+          <div className="field-row">
+            <label className="field">
+              <span>Min (Rs.)</span>
+              <input type="number" min="0" required value={form.min_salary} onChange={(e) => setForm({ ...form, min_salary: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Mid (Rs.)</span>
+              <input type="number" min="0" required value={form.mid_salary} onChange={(e) => setForm({ ...form, mid_salary: e.target.value })} />
+            </label>
+            <label className="field">
+              <span>Max (Rs.)</span>
+              <input type="number" min="0" required value={form.max_salary} onChange={(e) => setForm({ ...form, max_salary: e.target.value })} />
+            </label>
+          </div>
+
+          {error && <p className="field-error">{error}</p>}
+
+          <button type="submit" className="btn-primary" disabled={saving}>
+            {saving && <Loader2 size={14} className="btn-spinner" />}
+            {saving ? 'Saving…' : form.id ? 'Save changes' : 'Add band'}
           </button>
         </form>
       </Drawer>
