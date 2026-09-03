@@ -69,7 +69,7 @@ export function AuthProvider({ children }) {
 
     const { data: employeeRow, error: employeeError } = await supabase
       .from('employees')
-      .select('id, employee_code, full_name, gender, personal_email, phone, address, emergency_contact_name, emergency_contact_phone, bank_name, bank_account_number, bank_iban, joining_date, photo_url, department_id, designation_id, departments!employees_department_id_fkey(name), designations(name)')
+      .select('id, company_id, employee_code, full_name, gender, personal_email, phone, address, emergency_contact_name, emergency_contact_phone, bank_name, bank_account_number, bank_iban, joining_date, photo_url, department_id, designation_id, departments!employees_department_id_fkey(name), designations(name)')
       .eq('user_id', userId)
       .maybeSingle()
 
@@ -154,8 +154,14 @@ export function AuthProvider({ children }) {
     isImpersonating: !!impersonatedCompany,
     enterCompany,
     exitImpersonation,
-    // a platform admin viewing another company isn't an employee of it
-    employeeRecord: impersonatedCompany ? null : employeeRecord,
+    // Only expose the employee record when it actually belongs to the
+    // company currently in view (home or impersonated) -- a platform
+    // admin who happens to also be an employee somewhere shouldn't see
+    // that identity while impersonating a *different* company, but
+    // blanket-nulling on impersonation was also wrong the other way:
+    // it hid a genuine employee record even while impersonating the
+    // exact company that record belongs to.
+    employeeRecord: employeeRecord && employeeRecord.company_id === company?.id ? employeeRecord : null,
     loading,
     signOut,
     refreshProfile,
