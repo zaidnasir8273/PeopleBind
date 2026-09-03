@@ -168,7 +168,7 @@ export function AttendanceClock() {
       <div className="attendance-clock-row">
         <div className="attendance-clock-status">
           <span className={`attendance-clock-icon${hasCheckedIn && !hasCheckedOut ? ' live' : ''}`}>
-            <ClockIcon size={16} />
+            <ClockIcon size={16} spinning={hasCheckedIn && !hasCheckedOut} />
           </span>
           <div>
             {!hasCheckedIn ? (

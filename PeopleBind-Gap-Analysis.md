@@ -128,7 +128,7 @@ current exports as "right data, unverified exact layout" until then.
 | Mobile-first ESS (geo-tag + selfie clock-in) | ✅ Capture already existed (`AttendanceClock.jsx` + `employee_clock_in/out`); 3 Sep 2026 added the missing half — HR-visible verification (location link + photo on the Attendance admin page) and opt-in per-branch geofencing (`branches.office_lat/lng/geofence_radius_m`, `companies.geofence_enforcement`: off/flag/block) |
 | Notification delivery beyond in-app/email (WhatsApp/SMS) | ❌ Still missing — email exists (`send-email` edge function, used for payslips); no WhatsApp/SMS |
 
-### P2 — Differentiation / functional AI: **mostly built, and extended well past the original ask**
+### P2 — Differentiation / functional AI: **fully built**
 
 | Item | Status |
 |---|---|
@@ -137,7 +137,7 @@ current exports as "right data, unverified exact layout" until then.
 | Automated leave-policy compliance checks | ✅ `policy_flags` on pending leave requests |
 | Predictive attrition signals | ✅ |
 | NL "ask your HR data" assistant in the Command Palette | ✅ confirmed — `⌘K` falls through to "Ask PeopleBind AI" |
-| Resume screening / candidate ranking | ❌ Still missing — the one item from the original P2 list not yet built |
+| Resume screening / candidate ranking | ✅ `rank-candidates` edge function — sends each active candidate's actual resume PDF (Claude's native document support, not a text-extraction hack) + the job description to Claude, returns a ranked draft assessment. "Rank candidates" button on a job opening's pipeline page, `recruitment:manage`-gated via RLS. Not documented in `docs/ai-assistant.md` since it's a separate edge function from `ai-assistant`, not one of its 32 tools. |
 | *(beyond the original list)* Policy search with real citations, cross-domain business recommendations, historical metric trend comparisons, salary bands/compa-ratio | ✅ all shipped this session — see [docs/ai-assistant.md](docs/ai-assistant.md) |
 
 ### P3 — Optional: **fully built**
@@ -154,18 +154,20 @@ current exports as "right data, unverified exact layout" until then.
 ## 4. What's actually left (the real gap list)
 
 1. **WhatsApp/SMS notification delivery** — payslips/approvals currently
-   only go in-app or by email.
-2. **Resume screening / candidate ranking** — the one AI-suite item from
-   the original list still open.
-3. **Flip leaked-password-protection on** — a Supabase Auth dashboard
-   setting, not a code change.
-4. **Bank-file / statutory-report exact-format verification** — not a
+   only go in-app or by email. On hold: needs a Twilio (or equivalent)
+   account with real, billed usage — user's call on provider and timing.
+2. **Flip leaked-password-protection on** — a Supabase Auth dashboard
+   setting, not a code change. On hold: requires the paid Supabase tier.
+3. **Bank-file / statutory-report exact-format verification** — not a
    build task until a real bank spec or the regulator's current form is
    in hand (see the P0 caveat above).
 
-LMS, engagement surveys/eNPS, and mobile geo-tag/selfie clock-in
-verification + geofencing (formerly items 1, 4–5) shipped 3 Sep 2026 —
-see §3. Nothing else from the original doc's P0–P3 lists is still open.
+Everything else from the original doc's P0–P3 lists — including LMS,
+engagement surveys/eNPS, mobile geo-tag/selfie clock-in verification +
+geofencing, and resume screening/candidate ranking — is done; see §3.
+The 3 items above are the only ones still open, and all three are
+blocked on something outside a code change (a provider decision +
+billed usage, a paid plan, or an external spec), not on more building.
 
 ---
 
@@ -201,13 +203,12 @@ The original sequencing was "P0 compliance → P1 security → P2 AI, in that
 order, because nicer UX doesn't matter if you're disqualified on
 compliance." **That sequencing is now complete** — P0 and P1 are done.
 
-**What's left is narrower and lower-stakes than a launch blocker:**
-finish the mobile ESS story (geo-tag/selfie clock-in), add WhatsApp/SMS
-delivery, and close the one remaining AI-suite item (resume screening) —
-none of these gate a deal the way SESSI or a cross-tenant RLS leak would
-have. The honest next strategic question isn't "what's missing to
-compete" anymore; it's **"which of the 7 items in §4 earns the next
-sales conversation."**
+**What's left is narrower and lower-stakes than a launch blocker, and
+all three remaining items are blocked on something outside a code
+change** (a provider decision + billed usage for WhatsApp/SMS, the
+paid Supabase tier for leaked-password protection, a real external
+spec for bank/statutory file formats) — not on more building. None of
+these gate a deal the way SESSI or a cross-tenant RLS leak would have.
 
 **One-line pitch vs PayPeople, updated:** *"Full Pakistani payroll
 compliance — EOBI, all four provincial social security schemes,
@@ -220,7 +221,7 @@ click through, not a chatbot wearing an 'AI' badge."*
 
 ## 7. Immediate next actions
 
-- [ ] Pick one of the 7 items in §4 to build next
-- [ ] Flip leaked-password-protection on in the Supabase Auth dashboard (2 minutes, no code)
+- [ ] Decide on a WhatsApp/SMS provider (Twilio is the default suggestion) and open a real account when ready to pursue delivery beyond in-app/email
+- [ ] Flip leaked-password-protection on in the Supabase Auth dashboard once on a paid plan (2 minutes, no code)
 - [ ] If pursuing a specific bank's exact disbursement-file format: get that bank's spec from your corporate relationship manager and hand it over — don't build against a guess
 - [ ] Same for statutory report exact formats: pull the current EOBI/FBR/provincial prescribed form if byte-exact compliance output matters before those are relied on for a real filing
