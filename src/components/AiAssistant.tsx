@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { BotIcon } from './ui/bot'
 import { SendIcon } from './ui/send'
 import { PlusIcon } from './ui/plus'
@@ -190,6 +191,17 @@ export function AiAssistant() {
                     <div className="ai-chat-msg-body">{renderMarkdown(m.content)}</div>
                   ) : (
                     <p className="ai-chat-msg-body">{m.content}</p>
+                  )}
+                  {m.sources && m.sources.length > 0 && (
+                    <div className="ai-chat-sources">
+                      <span className="muted">Sources:</span>
+                      {m.sources.map((s, si) => (
+                        <span key={s.id}>
+                          <Link to={`/app/help?article=${s.id}`}>{s.title}</Link>
+                          {si < m.sources!.length - 1 ? ', ' : ''}
+                        </span>
+                      ))}
+                    </div>
                   )}
                   {m.pendingAction && (
                     <div className="ai-chat-action">

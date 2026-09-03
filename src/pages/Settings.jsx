@@ -1545,7 +1545,57 @@ function CompanyDocsTab() {
         published articles are shown to your users.
       </p>
       <HelpEditor companyId={company.id} />
+      <PolicySearchMisses companyId={company.id} />
     </>
+  )
+}
+
+// Queries the AI assistant genuinely couldn't answer from any published
+// article (neither semantic nor keyword search found a match) -- a direct
+// content-gap signal: what employees are actually asking that has nothing
+// written for it yet. Logged by searchPolicies in the ai-assistant edge
+// function; read-only here, same settings:manage gate as the rest of this
+// tab (CompanyDocsTab already checked hasAccess before rendering this).
+function PolicySearchMisses({ companyId }) {
+  const [misses, setMisses] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    supabase
+      .from('policy_search_misses')
+      .select('id, query, created_at')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        if (!cancelled) setMisses(data ?? [])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [companyId])
+
+  if (misses === null) return <SkeletonBlock rows={3} />
+  if (misses.length === 0) return null
+
+  return (
+    <div className="report-section" style={{ marginTop: 24 }}>
+      <p className="section-heading" style={{ marginTop: 0 }}>Recent unanswered questions</p>
+      <p className="muted" style={{ fontSize: 13, marginTop: -6, marginBottom: 12 }}>
+        Questions PeopleBind AI couldn't find a documented answer for — worth turning into an article above if they
+        keep coming up.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {misses.map((m) => (
+          <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 13.5, padding: '6px 0', borderBottom: '1px solid var(--line)' }}>
+            <span>"{m.query}"</span>
+            <span className="muted" style={{ whiteSpace: 'nowrap' }}>
+              {new Date(m.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 

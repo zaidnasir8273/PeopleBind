@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { SkeletonBlock } from '../components/Skeleton'
@@ -40,10 +41,14 @@ function HelpSection({ title, categories, selectedArticleId, onSelectArticle }) 
 
 export default function Help() {
   const { company } = useAuth()
+  const [searchParams] = useSearchParams()
   const [globalCategories, setGlobalCategories] = useState([])
   const [companyCategories, setCompanyCategories] = useState([])
   const [loading, setLoading] = useState(true)
-  const [selectedArticleId, setSelectedArticleId] = useState(null)
+  // A citation link from the AI assistant (/app/help?article=<id>) opens
+  // straight to that article -- takes priority over the "first article"
+  // default below, same way a direct link into any other page would.
+  const [selectedArticleId, setSelectedArticleId] = useState(() => searchParams.get('article'))
   const [article, setArticle] = useState(null)
 
   const load = useCallback(async () => {

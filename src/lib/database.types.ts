@@ -239,6 +239,7 @@ export type Database = {
           created_at: string
           id: string
           role: string
+          sources: Json | null
           tool_calls: Json | null
         }
         Insert: {
@@ -248,6 +249,7 @@ export type Database = {
           created_at?: string
           id?: string
           role: string
+          sources?: Json | null
           tool_calls?: Json | null
         }
         Update: {
@@ -257,6 +259,7 @@ export type Database = {
           created_at?: string
           id?: string
           role?: string
+          sources?: Json | null
           tool_calls?: Json | null
         }
         Relationships: [
@@ -4370,6 +4373,55 @@ export type Database = {
         }
         Relationships: []
       }
+      policy_search_misses: {
+        Row: {
+          best_similarity: number | null
+          company_id: string
+          created_at: string
+          id: string
+          query: string
+          user_id: string | null
+        }
+        Insert: {
+          best_similarity?: number | null
+          company_id: string
+          created_at?: string
+          id?: string
+          query: string
+          user_id?: string | null
+        }
+        Update: {
+          best_similarity?: number | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          query?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_search_misses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "policy_search_misses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "policy_search_misses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       professional_tax_slabs: {
         Row: {
           company_id: string
@@ -6025,6 +6077,7 @@ export type Database = {
         }
         Returns: {
           content: string
+          document_id: string
           similarity: number
           title: string
         }[]

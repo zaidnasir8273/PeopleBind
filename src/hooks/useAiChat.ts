@@ -8,7 +8,8 @@ export type PendingAction = {
   resolvedMessage?: string
 }
 
-export type ChatMessage = { role: 'user' | 'assistant'; content: string; isError?: boolean; pendingAction?: PendingAction }
+export type Source = { id: string; title: string }
+export type ChatMessage = { role: 'user' | 'assistant'; content: string; isError?: boolean; pendingAction?: PendingAction; sources?: Source[] | null }
 export type ThreadSummary = { id: string; title: string | null; updated_at: string }
 
 const WAITING_LABELS = ['Thinking', 'Checking the data', 'Almost there']
@@ -56,7 +57,7 @@ export function useAiChat(company: { id: string } | null) {
 
   const loadMessagesInto = useCallback(async (id: string) => {
     const [{ data: msgRows }, { data: actionRows }] = await Promise.all([
-      supabase.from('ai_messages').select('id, role, content').eq('conversation_id', id).order('created_at', { ascending: true }),
+      supabase.from('ai_messages').select('id, role, content, sources').eq('conversation_id', id).order('created_at', { ascending: true }),
       supabase.from('ai_actions').select('id, message_id, description, status').eq('conversation_id', id),
     ])
     const actionByMessageId = new Map((actionRows ?? []).filter((a) => a.message_id).map((a) => [a.message_id as string, a]))
@@ -70,7 +71,7 @@ export function useAiChat(company: { id: string } | null) {
             resolvedMessage: action.status === 'proposed' ? undefined : describeResolvedAction(action.status, action.description),
           }
         : undefined
-      return { role: m.role as 'user' | 'assistant', content: m.content, pendingAction }
+      return { role: m.role as 'user' | 'assistant', content: m.content, pendingAction, sources: (m as any).sources ?? null }
     })
     setMessages(loaded)
   }, [])
@@ -141,7 +142,7 @@ export function useAiChat(company: { id: string } | null) {
       const pendingAction: PendingAction | undefined = data.pendingAction
         ? { id: data.pendingAction.id, description: data.pendingAction.description }
         : undefined
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply, pendingAction }])
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply, pendingAction, sources: data.sources ?? null }])
     }
     setSending(false)
     loadThreads()
