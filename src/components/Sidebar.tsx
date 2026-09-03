@@ -12,6 +12,7 @@ import { ReceiptIcon } from './ui/receipt'
 import { FileTextIcon } from './ui/file-text'
 import { BriefcaseBusinessIcon } from './ui/briefcase-business'
 import { ClipboardCheckIcon } from './ui/clipboard-check'
+import { GraduationCapIcon } from './ui/graduation-cap'
 import { ChartColumnIncreasingIcon } from './ui/chart-column-increasing'
 import { ChartBarIncreasingIcon } from './ui/chart-bar-increasing'
 import { TrendingUpIcon } from './ui/trending-up'
@@ -21,6 +22,7 @@ import { GitBranchIcon } from './ui/git-branch'
 import { SparklesIcon } from './ui/sparkles'
 import { RadioTowerIcon } from './ui/radio-tower'
 import { HeartHandshakeIcon } from './ui/heart-handshake'
+import { MessageSquareIcon } from './ui/message-square'
 import { SettingsIcon } from './ui/settings'
 import { BotIcon } from './ui/bot'
 import { LogoutIcon } from './ui/logout'
@@ -66,6 +68,7 @@ const NAV_ITEMS: NavItem[] = [
       { to: '/app/people', label: 'Directory', icon: UsersIcon },
       { to: '/app/recruitment', label: 'Recruitment', icon: BriefcaseBusinessIcon },
       { to: '/app/onboarding', label: 'Onboarding', icon: ClipboardCheckIcon },
+      { to: '/app/learning', label: 'Learning', icon: GraduationCapIcon },
       { to: '/app/performance', label: 'Performance', icon: TrendingUpIcon },
       { to: '/app/org-chart', label: 'Org hierarchy', icon: GitBranchIcon },
     ],
@@ -105,6 +108,7 @@ const NAV_ITEMS: NavItem[] = [
     submodules: [
       { to: '/app/announcements', label: 'Announcements', icon: RadioTowerIcon },
       { to: '/app/kudos', label: 'Celebrate wins', icon: HeartHandshakeIcon },
+      { to: '/app/surveys', label: 'Surveys', icon: MessageSquareIcon },
     ],
   },
   { key: 'calendar', to: '/app/calendar', label: 'Calendar', icon: CalendarDaysIcon },

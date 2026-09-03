@@ -16,6 +16,7 @@ import { ShieldCheckIcon } from '../components/ui/shield-check'
 import { TrendingUpIcon } from '../components/ui/trending-up'
 import { BookTextIcon } from '../components/ui/book-text'
 import { WaypointsIcon } from '../components/ui/waypoints'
+import { MapPinIcon } from '../components/ui/map-pin'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Drawer } from '../components/Drawer'
@@ -265,6 +266,7 @@ function CompanyTab() {
         gratuity_min_years: company.gratuity_min_years ?? 0,
         payroll_run_day_of_month: company.payroll_run_day_of_month ?? '',
         require_clockin_photo: company.require_clockin_photo ?? false,
+        geofence_enforcement: company.geofence_enforcement ?? 'off',
       })
     }
   }, [company])
@@ -289,6 +291,7 @@ function CompanyTab() {
         gratuity_min_years: Number(form.gratuity_min_years),
         payroll_run_day_of_month: form.payroll_run_day_of_month === '' ? null : Number(form.payroll_run_day_of_month),
         require_clockin_photo: form.require_clockin_photo,
+        geofence_enforcement: form.geofence_enforcement,
       })
       .eq('id', company.id)
 
@@ -365,6 +368,19 @@ function CompanyTab() {
         teams can leave it off.
       </p>
 
+      <label className="field" style={{ marginTop: 6 }}>
+        <span>Geofence enforcement</span>
+        <select value={form.geofence_enforcement} onChange={(e) => setForm({ ...form, geofence_enforcement: e.target.value })}>
+          <option value="off">Off — don't check distance</option>
+          <option value="flag">Flag only — clock-in/out still succeeds, marked for review</option>
+          <option value="block">Block — reject a clock-in/out too far from the branch</option>
+        </select>
+      </label>
+      <p className="muted" style={{ marginTop: -4 }}>
+        Only applies to employees whose branch has a location and radius set under Organization → Branches.
+        An employee with no location captured (desktop, permission denied) is never blocked — there's nothing to check.
+      </p>
+
       <p className="section-heading" style={{ marginTop: 10, marginBottom: 4, fontSize: 14 }}>Gratuity</p>
       <p className="muted" style={{ marginTop: 0 }}>Used when offboarding an employee to compute their Full &amp; Final Settlement.</p>
 
@@ -407,7 +423,7 @@ function StructureTab() {
       supabase.from('designations').select('id, name, status').eq('company_id', company.id).order('name'),
       supabase.from('teams').select('id, name, status').eq('company_id', company.id).order('name'),
       supabase.from('employment_types').select('id, name').eq('company_id', company.id).order('name'),
-      supabase.from('branches').select('id, name, city, is_head_office').eq('company_id', company.id).order('name'),
+      supabase.from('branches').select('id, name, city, is_head_office, office_lat, office_lng, geofence_radius_m').eq('company_id', company.id).order('name'),
     ])
     setDepartments(d ?? [])
     setDesignations(des ?? [])
@@ -535,6 +551,11 @@ function BranchesCard({ rows, company, onChanged }) {
   const [saving, setSaving] = useState(false)
   const [removingId, setRemovingId] = useState(null)
 
+  const [locationBranch, setLocationBranch] = useState(null)
+  const [locationForm, setLocationForm] = useState({ office_lat: '', office_lng: '', geofence_radius_m: '' })
+  const [locating, setLocating] = useState(false)
+  const [savingLocation, setSavingLocation] = useState(false)
+
   async function add() {
     if (!form.name.trim()) return
     setSaving(true)
@@ -560,6 +581,61 @@ function BranchesCard({ rows, company, onChanged }) {
     onChanged()
   }
 
+  function openLocation(branch) {
+    setLocationBranch(branch)
+    setLocationForm({
+      office_lat: branch.office_lat ?? '',
+      office_lng: branch.office_lng ?? '',
+      geofence_radius_m: branch.geofence_radius_m ?? '',
+    })
+  }
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      toast.error('Location is not available in this browser')
+      return
+    }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false)
+        setLocationForm((f) => ({ ...f, office_lat: pos.coords.latitude.toFixed(6), office_lng: pos.coords.longitude.toFixed(6) }))
+      },
+      () => {
+        setLocating(false)
+        toast.error("Couldn't get your current location — check location permissions")
+      },
+      { timeout: 8000 }
+    )
+  }
+
+  async function saveLocation() {
+    const hasLat = locationForm.office_lat !== ''
+    const hasLng = locationForm.office_lng !== ''
+    const hasRadius = locationForm.geofence_radius_m !== ''
+    if ((hasLat || hasLng || hasRadius) && !(hasLat && hasLng && hasRadius)) {
+      toast.error('Set latitude, longitude, and radius together — or clear all three to turn geofencing off')
+      return
+    }
+    setSavingLocation(true)
+    const { error } = await supabase
+      .from('branches')
+      .update({
+        office_lat: hasLat ? Number(locationForm.office_lat) : null,
+        office_lng: hasLng ? Number(locationForm.office_lng) : null,
+        geofence_radius_m: hasRadius ? Number(locationForm.geofence_radius_m) : null,
+      })
+      .eq('id', locationBranch.id)
+    setSavingLocation(false)
+    if (error) {
+      toast.error(error.message || 'Failed to save location')
+      return
+    }
+    toast.success(hasRadius ? 'Geofence saved' : 'Geofence cleared')
+    setLocationBranch(null)
+    onChanged()
+  }
+
   return (
     <div className="report-section" style={{ marginBottom: 0 }}>
       <p className="section-heading">Branches</p>
@@ -569,16 +645,24 @@ function BranchesCard({ rows, company, onChanged }) {
         <div className="lookup-list">
           {rows.map((r) => (
             <div key={r.id} className="lookup-row">
-              <span>{r.name}{r.city ? ` · ${r.city}` : ''}{r.is_head_office ? ' · HQ' : ''}</span>
-              <button
-                type="button"
-                className="btn-icon-round reject lookup-row-remove"
-                onClick={() => remove(r.id)}
-                disabled={removingId === r.id}
-                aria-label="Remove"
-              >
-                <DeleteIcon size={14} />
-              </button>
+              <span>
+                {r.name}{r.city ? ` · ${r.city}` : ''}{r.is_head_office ? ' · HQ' : ''}
+                {r.geofence_radius_m && <span className="muted"> · geofenced ({r.geofence_radius_m}m)</span>}
+              </span>
+              <div style={{ display: 'flex', gap: 2 }}>
+                <button type="button" className="btn-icon-round lookup-row-remove" onClick={() => openLocation(r)} aria-label="Set location">
+                  <MapPinIcon size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon-round reject lookup-row-remove"
+                  onClick={() => remove(r.id)}
+                  disabled={removingId === r.id}
+                  aria-label="Remove"
+                >
+                  <DeleteIcon size={14} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -596,6 +680,36 @@ function BranchesCard({ rows, company, onChanged }) {
           {saving ? 'Adding…' : 'Add branch'}
         </button>
       </div>
+
+      <Drawer open={!!locationBranch} onClose={() => setLocationBranch(null)} title={locationBranch ? `${locationBranch.name} · location` : ''}>
+        <div className="drawer-form">
+          <p className="muted" style={{ margin: 0 }}>
+            Sets the office location used for geofence checks on this branch's clock-ins. Leave all three blank to
+            turn geofencing off for this branch.
+          </p>
+          <button type="button" className="btn-secondary btn-icon" style={{ alignSelf: 'flex-start' }} disabled={locating} onClick={useCurrentLocation}>
+            <MapPinIcon size={14} /> {locating ? 'Locating…' : 'Use my current location'}
+          </button>
+          <div className="field-row">
+            <label className="field">
+              <span>Latitude</span>
+              <input type="number" step="any" value={locationForm.office_lat} onChange={(e) => setLocationForm({ ...locationForm, office_lat: e.target.value })} placeholder="e.g. 24.8607" />
+            </label>
+            <label className="field">
+              <span>Longitude</span>
+              <input type="number" step="any" value={locationForm.office_lng} onChange={(e) => setLocationForm({ ...locationForm, office_lng: e.target.value })} placeholder="e.g. 67.0011" />
+            </label>
+          </div>
+          <label className="field">
+            <span>Geofence radius (meters)</span>
+            <input type="number" min="1" value={locationForm.geofence_radius_m} onChange={(e) => setLocationForm({ ...locationForm, geofence_radius_m: e.target.value })} placeholder="e.g. 150" />
+          </label>
+          <p className="muted" style={{ margin: 0 }}>Typical office radius: 100–300m.</p>
+          <button type="button" className="btn-primary" disabled={savingLocation} onClick={saveLocation}>
+            {savingLocation ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </Drawer>
     </div>
   )
 }

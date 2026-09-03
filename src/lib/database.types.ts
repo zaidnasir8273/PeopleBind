@@ -530,11 +530,13 @@ export type Database = {
           check_in_accuracy_m: number | null
           check_in_lat: number | null
           check_in_lng: number | null
+          check_in_outside_geofence: boolean
           check_in_photo_path: string | null
           check_out: string | null
           check_out_accuracy_m: number | null
           check_out_lat: number | null
           check_out_lng: number | null
+          check_out_outside_geofence: boolean
           check_out_photo_path: string | null
           company_id: string
           created_at: string
@@ -558,11 +560,13 @@ export type Database = {
           check_in_accuracy_m?: number | null
           check_in_lat?: number | null
           check_in_lng?: number | null
+          check_in_outside_geofence?: boolean
           check_in_photo_path?: string | null
           check_out?: string | null
           check_out_accuracy_m?: number | null
           check_out_lat?: number | null
           check_out_lng?: number | null
+          check_out_outside_geofence?: boolean
           check_out_photo_path?: string | null
           company_id: string
           created_at?: string
@@ -586,11 +590,13 @@ export type Database = {
           check_in_accuracy_m?: number | null
           check_in_lat?: number | null
           check_in_lng?: number | null
+          check_in_outside_geofence?: boolean
           check_in_photo_path?: string | null
           check_out?: string | null
           check_out_accuracy_m?: number | null
           check_out_lat?: number | null
           check_out_lng?: number | null
+          check_out_outside_geofence?: boolean
           check_out_photo_path?: string | null
           company_id?: string
           created_at?: string
@@ -826,27 +832,36 @@ export type Database = {
           city: string | null
           company_id: string
           created_at: string
+          geofence_radius_m: number | null
           id: string
           is_head_office: boolean
           name: string
+          office_lat: number | null
+          office_lng: number | null
         }
         Insert: {
           address?: string | null
           city?: string | null
           company_id: string
           created_at?: string
+          geofence_radius_m?: number | null
           id?: string
           is_head_office?: boolean
           name: string
+          office_lat?: number | null
+          office_lng?: number | null
         }
         Update: {
           address?: string | null
           city?: string | null
           company_id?: string
           created_at?: string
+          geofence_radius_m?: number | null
           id?: string
           is_head_office?: boolean
           name?: string
+          office_lat?: number | null
+          office_lng?: number | null
         }
         Relationships: [
           {
@@ -1150,6 +1165,7 @@ export type Database = {
           created_at: string
           eobi_minimum_wage_base: number
           fiscal_year_start: string | null
+          geofence_enforcement: string
           gratuity_days_per_year: number
           gratuity_min_years: number
           id: string
@@ -1170,6 +1186,7 @@ export type Database = {
           created_at?: string
           eobi_minimum_wage_base?: number
           fiscal_year_start?: string | null
+          geofence_enforcement?: string
           gratuity_days_per_year?: number
           gratuity_min_years?: number
           id?: string
@@ -1190,6 +1207,7 @@ export type Database = {
           created_at?: string
           eobi_minimum_wage_base?: number
           fiscal_year_start?: string | null
+          geofence_enforcement?: string
           gratuity_days_per_year?: number
           gratuity_min_years?: number
           id?: string
@@ -1314,6 +1332,157 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_company_health"
             referencedColumns: ["company_id"]
+          },
+        ]
+      }
+      course_enrollments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          completed_at: string | null
+          course_id: string
+          employee_id: string
+          id: string
+          status: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          completed_at?: string | null
+          course_id: string
+          employee_id: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          completed_at?: string | null
+          course_id?: string
+          employee_id?: string
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_enrollments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_lessons: {
+        Row: {
+          content_text: string | null
+          content_type: string
+          content_url: string | null
+          course_id: string
+          created_at: string
+          file_path: string | null
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          content_text?: string | null
+          content_type: string
+          content_url?: string | null
+          course_id: string
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          content_text?: string | null
+          content_type?: string
+          content_url?: string | null
+          course_id?: string
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_lessons_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          category: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "courses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -5379,6 +5548,152 @@ export type Database = {
           },
         ]
       }
+      survey_receipts: {
+        Row: {
+          employee_id: string
+          id: string
+          responded_at: string
+          survey_id: string
+        }
+        Insert: {
+          employee_id: string
+          id?: string
+          responded_at?: string
+          survey_id: string
+        }
+        Update: {
+          employee_id?: string
+          id?: string
+          responded_at?: string
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_receipts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_receipts_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_responses: {
+        Row: {
+          answers: Json
+          company_id: string
+          enps_comment: string | null
+          enps_score: number | null
+          id: string
+          submitted_at: string
+          survey_id: string
+        }
+        Insert: {
+          answers?: Json
+          company_id: string
+          enps_comment?: string | null
+          enps_score?: number | null
+          id?: string
+          submitted_at?: string
+          survey_id: string
+        }
+        Update: {
+          answers?: Json
+          company_id?: string
+          enps_comment?: string | null
+          enps_score?: number | null
+          id?: string
+          submitted_at?: string
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_responses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_responses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "survey_responses_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surveys: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          custom_questions: Json
+          description: string | null
+          id: string
+          include_enps: boolean
+          status: string
+          title: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          custom_questions?: Json
+          description?: string | null
+          id?: string
+          include_enps?: boolean
+          status?: string
+          title: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          custom_questions?: Json
+          description?: string | null
+          id?: string
+          include_enps?: boolean
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surveys_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "surveys_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "surveys_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tax_slabs: {
         Row: {
           company_id: string
@@ -6063,11 +6378,13 @@ export type Database = {
           check_in_accuracy_m: number | null
           check_in_lat: number | null
           check_in_lng: number | null
+          check_in_outside_geofence: boolean
           check_in_photo_path: string | null
           check_out: string | null
           check_out_accuracy_m: number | null
           check_out_lat: number | null
           check_out_lng: number | null
+          check_out_outside_geofence: boolean
           check_out_photo_path: string | null
           company_id: string
           created_at: string
@@ -6105,11 +6422,13 @@ export type Database = {
           check_in_accuracy_m: number | null
           check_in_lat: number | null
           check_in_lng: number | null
+          check_in_outside_geofence: boolean
           check_in_photo_path: string | null
           check_out: string | null
           check_out_accuracy_m: number | null
           check_out_lat: number | null
           check_out_lng: number | null
+          check_out_outside_geofence: boolean
           check_out_photo_path: string | null
           company_id: string
           created_at: string

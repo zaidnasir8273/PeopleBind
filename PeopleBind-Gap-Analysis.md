@@ -119,13 +119,13 @@ current exports as "right data, unverified exact layout" until then.
 | Payroll functions' internal permission gating | ✅ Confirmed — `run_payroll_calculation`/`finalize_payroll_run`/`get_payroll_exceptions` all check `payroll:run`/`payroll:approve` |
 | Leaked-password protection | ⚠️ Still off — one Supabase Auth-dashboard toggle, not fixable via migration |
 
-### P1 — Market-reality features: **half built**
+### P1 — Market-reality features: **3 of 4 built**
 
 | Item | Status |
 |---|---|
 | Biometric attendance (CSV/device import) | ✅ `ImportAttendanceDrawer.jsx` — explicit "upload from your biometric device" flow |
 | Document-expiry alerts | ✅ `Documents.tsx` — 30-day "expiring soon" banner off `expiry_date` |
-| Mobile-first ESS (geo-tag + selfie clock-in) | ❌ Still missing |
+| Mobile-first ESS (geo-tag + selfie clock-in) | ✅ Capture already existed (`AttendanceClock.jsx` + `employee_clock_in/out`); 3 Sep 2026 added the missing half — HR-visible verification (location link + photo on the Attendance admin page) and opt-in per-branch geofencing (`branches.office_lat/lng/geofence_radius_m`, `companies.geofence_enforcement`: off/flag/block) |
 | Notification delivery beyond in-app/email (WhatsApp/SMS) | ❌ Still missing — email exists (`send-email` edge function, used for payslips); no WhatsApp/SMS |
 
 ### P2 — Differentiation / functional AI: **mostly built, and extended well past the original ask**
@@ -140,34 +140,32 @@ current exports as "right data, unverified exact layout" until then.
 | Resume screening / candidate ranking | ❌ Still missing — the one item from the original P2 list not yet built |
 | *(beyond the original list)* Policy search with real citations, cross-domain business recommendations, historical metric trend comparisons, salary bands/compa-ratio | ✅ all shipped this session — see [docs/ai-assistant.md](docs/ai-assistant.md) |
 
-### P3 — Optional: **half built**
+### P3 — Optional: **fully built**
 
 | Item | Status |
 |---|---|
 | Benefits enrollment workflow | ✅ Real per-employee `BenefitsTab`, not just raw tables |
 | Org-chart visualization | ✅ |
-| Learning & training (LMS) | ❌ Still missing |
-| Engagement surveys / eNPS | ❌ Still missing |
+| Learning & training (LMS) | ✅ `courses`/`course_lessons`/`course_enrollments` + `Learning.jsx` (3 Sep 2026) — catalog, admin course/lesson builder, self-enroll + admin-assign, completion tracking |
+| Engagement surveys / eNPS | ✅ `surveys`/`survey_responses`/`survey_receipts` + `Surveys.jsx` (3 Sep 2026) — anonymous responses, standard eNPS formula |
 
 ---
 
 ## 4. What's actually left (the real gap list)
 
-1. **Mobile geo-tag/selfie clock-in** — the one piece of "mobile-first
-   ESS" not yet built.
-2. **WhatsApp/SMS notification delivery** — payslips/approvals currently
+1. **WhatsApp/SMS notification delivery** — payslips/approvals currently
    only go in-app or by email.
-3. **Resume screening / candidate ranking** — the one AI-suite item from
+2. **Resume screening / candidate ranking** — the one AI-suite item from
    the original list still open.
-4. **Learning & training (LMS)** — P3, no schema or UI exists.
-5. **Engagement surveys / eNPS** — P3, no schema or UI exists.
-6. **Flip leaked-password-protection on** — a Supabase Auth dashboard
+3. **Flip leaked-password-protection on** — a Supabase Auth dashboard
    setting, not a code change.
-7. **Bank-file / statutory-report exact-format verification** — not a
+4. **Bank-file / statutory-report exact-format verification** — not a
    build task until a real bank spec or the regulator's current form is
    in hand (see the P0 caveat above).
 
-Nothing else from the original doc's P0–P3 lists is still open.
+LMS, engagement surveys/eNPS, and mobile geo-tag/selfie clock-in
+verification + geofencing (formerly items 1, 4–5) shipped 3 Sep 2026 —
+see §3. Nothing else from the original doc's P0–P3 lists is still open.
 
 ---
 

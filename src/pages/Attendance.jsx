@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Camera, MapPin, AlertTriangle } from 'lucide-react'
 import { ChevronLeftIcon } from '../components/ui/chevron-left'
 import { ChevronRightIcon } from '../components/ui/chevron-right'
 import { CheckIcon } from '../components/ui/check'
@@ -86,7 +86,7 @@ export default function Attendance() {
       supabase.from('shifts').select('id, name').eq('company_id', company.id).eq('status', 'active').order('name'),
       supabase
         .from('attendance')
-        .select('id, employee_id, status, shift_id, check_in, check_out, worked_minutes, late_minutes, overtime_minutes, notes, source')
+        .select('id, employee_id, status, shift_id, check_in, check_out, worked_minutes, late_minutes, overtime_minutes, notes, source, check_in_lat, check_in_lng, check_in_accuracy_m, check_in_photo_path, check_in_outside_geofence, check_out_lat, check_out_lng, check_out_accuracy_m, check_out_photo_path, check_out_outside_geofence')
         .eq('company_id', company.id)
         .eq('attendance_date', date),
     ])
@@ -173,6 +173,15 @@ export default function Attendance() {
     toast.success('Attendance saved')
     setDrawerOpen(false)
     loadRoster()
+  }
+
+  async function viewPhoto(path) {
+    const { data, error } = await supabase.storage.from('attendance-photos').createSignedUrl(path, 60)
+    if (error || !data) {
+      toast.error("Couldn't open that photo")
+      return
+    }
+    window.open(data.signedUrl, '_blank')
   }
 
   async function reviewCorrection(id, status) {
@@ -270,8 +279,22 @@ export default function Attendance() {
                           <span className="muted mono" style={{ marginLeft: 6, fontSize: 11 }} data-tooltip="Marked automatically at end of day">auto</span>
                         )}
                       </td>
-                      <td className="mono">{rec?.check_in ? timeFromTimestamp(rec.check_in) : '—'}</td>
-                      <td className="mono">{rec?.check_out ? timeFromTimestamp(rec.check_out) : '—'}</td>
+                      <td className="mono">
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {rec?.check_in ? timeFromTimestamp(rec.check_in) : '—'}
+                          {rec?.check_in_outside_geofence && <AlertTriangle size={11} style={{ color: 'var(--danger)', flexShrink: 0 }} data-tooltip="Outside geofence" />}
+                          {rec?.check_in_lat != null && !rec?.check_in_outside_geofence && <MapPin size={11} className="muted" style={{ flexShrink: 0 }} data-tooltip="Location captured" />}
+                          {rec?.check_in_photo_path && <Camera size={11} className="muted" style={{ flexShrink: 0 }} data-tooltip="Photo captured" />}
+                        </span>
+                      </td>
+                      <td className="mono">
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {rec?.check_out ? timeFromTimestamp(rec.check_out) : '—'}
+                          {rec?.check_out_outside_geofence && <AlertTriangle size={11} style={{ color: 'var(--danger)', flexShrink: 0 }} data-tooltip="Outside geofence" />}
+                          {rec?.check_out_lat != null && !rec?.check_out_outside_geofence && <MapPin size={11} className="muted" style={{ flexShrink: 0 }} data-tooltip="Location captured" />}
+                          {rec?.check_out_photo_path && <Camera size={11} className="muted" style={{ flexShrink: 0 }} data-tooltip="Photo captured" />}
+                        </span>
+                      </td>
                       <td className="mono">
                         {rec?.worked_minutes ? `${(rec.worked_minutes / 60).toFixed(1)}h` : '—'}
                         {rec?.late_minutes > 0 && <span style={{ color: '#b0473f' }}> · {rec.late_minutes}m late</span>}
@@ -394,6 +417,40 @@ export default function Attendance() {
             Leaving status on "Auto" lets worked hours, lateness, and overtime calculate from the shift automatically.
           </p>
 
+          {(() => {
+            const existing = activeEmployee ? attendanceByEmployee[activeEmployee.id] : null
+            const hasCheckIn = existing && (existing.check_in_lat != null || existing.check_in_photo_path)
+            const hasCheckOut = existing && (existing.check_out_lat != null || existing.check_out_photo_path)
+            if (!hasCheckIn && !hasCheckOut) return null
+            return (
+              <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <p className="section-heading" style={{ margin: 0 }}>Verification</p>
+                {hasCheckIn && (
+                  <VerificationRow
+                    label="Check-in"
+                    lat={existing.check_in_lat}
+                    lng={existing.check_in_lng}
+                    accuracyM={existing.check_in_accuracy_m}
+                    photoPath={existing.check_in_photo_path}
+                    outside={existing.check_in_outside_geofence}
+                    onViewPhoto={() => viewPhoto(existing.check_in_photo_path)}
+                  />
+                )}
+                {hasCheckOut && (
+                  <VerificationRow
+                    label="Check-out"
+                    lat={existing.check_out_lat}
+                    lng={existing.check_out_lng}
+                    accuracyM={existing.check_out_accuracy_m}
+                    photoPath={existing.check_out_photo_path}
+                    outside={existing.check_out_outside_geofence}
+                    onViewPhoto={() => viewPhoto(existing.check_out_photo_path)}
+                  />
+                )}
+              </div>
+            )
+          })()}
+
           {error && <p className="field-error">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={saving}>
@@ -410,6 +467,38 @@ export default function Attendance() {
         employees={employees}
         onImported={loadRoster}
       />
+    </div>
+  )
+}
+
+function VerificationRow({ label, lat, lng, accuracyM, photoPath, outside, onViewPhoto }) {
+  const hasLocation = lat != null && lng != null
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12.5, flexWrap: 'wrap' }}>
+      <span className="muted" style={{ minWidth: 62, flexShrink: 0 }}>{label}</span>
+      {hasLocation ? (
+        <a
+          href={`https://www.google.com/maps?q=${lat},${lng}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link-button"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+        >
+          <MapPin size={12} /> View location{accuracyM != null ? ` (±${Math.round(accuracyM)}m)` : ''}
+        </a>
+      ) : (
+        <span className="muted">No location</span>
+      )}
+      {photoPath && (
+        <button type="button" className="link-button" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={onViewPhoto}>
+          <Camera size={12} /> View photo
+        </button>
+      )}
+      {outside && (
+        <span className="status-badge status-rejected" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <AlertTriangle size={11} /> Outside geofence
+        </span>
+      )}
     </div>
   )
 }

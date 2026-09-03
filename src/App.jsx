@@ -25,12 +25,14 @@ import Documents from './pages/Documents'
 import Assets from './pages/Assets'
 import Recruitment from './pages/Recruitment'
 import EmployeeOnboardingTasks from './pages/EmployeeOnboardingTasks'
+import Learning from './pages/Learning'
 import Performance from './pages/Performance'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import OrgChart from './pages/OrgChart'
 import Announcements from './pages/Announcements'
 import Kudos from './pages/Kudos'
+import Surveys from './pages/Surveys'
 import CalendarPage from './pages/Calendar'
 import Dashboards from './pages/Dashboards'
 import AiChat from './pages/AiChat'
@@ -129,6 +131,7 @@ export default function App() {
             <Route path="assets" element={<Assets />} />
             <Route path="recruitment" element={<Recruitment />} />
             <Route path="onboarding" element={<EmployeeOnboardingTasks />} />
+            <Route path="learning" element={<Learning />} />
             <Route path="performance" element={<Performance />} />
             <Route path="reports" element={<Reports />} />
             <Route path="dashboards" element={<Dashboards />} />
@@ -136,6 +139,7 @@ export default function App() {
             <Route path="org-chart" element={<OrgChart />} />
             <Route path="announcements" element={<Announcements />} />
             <Route path="kudos" element={<Kudos />} />
+            <Route path="surveys" element={<Surveys />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="ai" element={<AiChat />} />
             <Route path="help" element={<Help />} />
