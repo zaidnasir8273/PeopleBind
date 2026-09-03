@@ -527,7 +527,15 @@ export type Database = {
         Row: {
           attendance_date: string
           check_in: string | null
+          check_in_accuracy_m: number | null
+          check_in_lat: number | null
+          check_in_lng: number | null
+          check_in_photo_path: string | null
           check_out: string | null
+          check_out_accuracy_m: number | null
+          check_out_lat: number | null
+          check_out_lng: number | null
+          check_out_photo_path: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -547,7 +555,15 @@ export type Database = {
         Insert: {
           attendance_date: string
           check_in?: string | null
+          check_in_accuracy_m?: number | null
+          check_in_lat?: number | null
+          check_in_lng?: number | null
+          check_in_photo_path?: string | null
           check_out?: string | null
+          check_out_accuracy_m?: number | null
+          check_out_lat?: number | null
+          check_out_lng?: number | null
+          check_out_photo_path?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -567,7 +583,15 @@ export type Database = {
         Update: {
           attendance_date?: string
           check_in?: string | null
+          check_in_accuracy_m?: number | null
+          check_in_lat?: number | null
+          check_in_lng?: number | null
+          check_in_photo_path?: string | null
           check_out?: string | null
+          check_out_accuracy_m?: number | null
+          check_out_lat?: number | null
+          check_out_lng?: number | null
+          check_out_photo_path?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
@@ -1134,6 +1158,7 @@ export type Database = {
           next_employee_seq: number
           payroll_run_day_of_month: number | null
           plan: string
+          require_clockin_photo: boolean
           slug: string
           standard_monthly_days: number
           standard_monthly_hours: number
@@ -1153,6 +1178,7 @@ export type Database = {
           next_employee_seq?: number
           payroll_run_day_of_month?: number | null
           plan?: string
+          require_clockin_photo?: boolean
           slug: string
           standard_monthly_days?: number
           standard_monthly_hours?: number
@@ -1172,6 +1198,7 @@ export type Database = {
           next_employee_seq?: number
           payroll_run_day_of_month?: number | null
           plan?: string
+          require_clockin_photo?: boolean
           slug?: string
           standard_monthly_days?: number
           standard_monthly_hours?: number
@@ -1245,6 +1272,48 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_metric_snapshots: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          metric_key: string
+          snapshot_date: string
+          value: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          metric_key: string
+          snapshot_date: string
+          value?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          metric_key?: string
+          snapshot_date?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_metric_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_metric_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
           },
         ]
       }
@@ -5982,11 +6051,24 @@ export type Database = {
         Returns: undefined
       }
       employee_clock_in: {
-        Args: never
+        Args: {
+          p_accuracy_m?: number
+          p_lat?: number
+          p_lng?: number
+          p_photo_path?: string
+        }
         Returns: {
           attendance_date: string
           check_in: string | null
+          check_in_accuracy_m: number | null
+          check_in_lat: number | null
+          check_in_lng: number | null
+          check_in_photo_path: string | null
           check_out: string | null
+          check_out_accuracy_m: number | null
+          check_out_lat: number | null
+          check_out_lng: number | null
+          check_out_photo_path: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -6011,11 +6093,24 @@ export type Database = {
         }
       }
       employee_clock_out: {
-        Args: never
+        Args: {
+          p_accuracy_m?: number
+          p_lat?: number
+          p_lng?: number
+          p_photo_path?: string
+        }
         Returns: {
           attendance_date: string
           check_in: string | null
+          check_in_accuracy_m: number | null
+          check_in_lat: number | null
+          check_in_lng: number | null
+          check_in_photo_path: string | null
           check_out: string | null
+          check_out_accuracy_m: number | null
+          check_out_lat: number | null
+          check_out_lng: number | null
+          check_out_photo_path: string | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -6079,6 +6174,17 @@ export type Database = {
           employee_id: string
           employee_name: string
           signal: string
+        }[]
+      }
+      get_business_recommendations: {
+        Args: { p_company_id: string; p_days_back?: number }
+        Returns: {
+          recommendation: string
+          scenario: string
+          signal_summary: string
+          subject_id: string
+          subject_label: string
+          subject_type: string
         }[]
       }
       get_clickup_sync_trigger_secret: { Args: never; Returns: string }
@@ -6167,6 +6273,7 @@ export type Database = {
         Args: { p_company_id: string; p_token: string }
         Returns: undefined
       }
+      snapshot_company_metrics: { Args: never; Returns: undefined }
       sync_clickup_time_entries: { Args: never; Returns: undefined }
       update_my_employee_profile: {
         Args: {

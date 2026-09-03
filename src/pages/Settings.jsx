@@ -264,6 +264,7 @@ function CompanyTab() {
         gratuity_days_per_year: company.gratuity_days_per_year ?? 30,
         gratuity_min_years: company.gratuity_min_years ?? 0,
         payroll_run_day_of_month: company.payroll_run_day_of_month ?? '',
+        require_clockin_photo: company.require_clockin_photo ?? false,
       })
     }
   }, [company])
@@ -287,6 +288,7 @@ function CompanyTab() {
         gratuity_days_per_year: Number(form.gratuity_days_per_year),
         gratuity_min_years: Number(form.gratuity_min_years),
         payroll_run_day_of_month: form.payroll_run_day_of_month === '' ? null : Number(form.payroll_run_day_of_month),
+        require_clockin_photo: form.require_clockin_photo,
       })
       .eq('id', company.id)
 
@@ -351,6 +353,17 @@ function CompanyTab() {
         />
       </label>
       <p className="muted" style={{ marginTop: -4 }}>A company-wide announcement is posted a week before, so people review timesheets and attendance in time.</p>
+
+      <p className="section-heading" style={{ marginTop: 10, marginBottom: 4, fontSize: 14 }}>Attendance</p>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+        <input type="checkbox" checked={form.require_clockin_photo} onChange={(e) => setForm({ ...form, require_clockin_photo: e.target.checked })} />
+        Require a photo on web/mobile clock-in and clock-out
+      </label>
+      <p className="muted" style={{ marginTop: -4 }}>
+        Off by default. Location is always captured silently in the background when available (never blocks
+        clocking in). Turn this on for field, retail, or factory staff where photo verification matters — desk-based
+        teams can leave it off.
+      </p>
 
       <p className="section-heading" style={{ marginTop: 10, marginBottom: 4, fontSize: 14 }}>Gratuity</p>
       <p className="muted" style={{ marginTop: 0 }}>Used when offboarding an employee to compute their Full &amp; Final Settlement.</p>

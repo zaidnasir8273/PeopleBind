@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 import { LogInIcon } from './ui/login'
 import { LogoutIcon } from './ui/logout'
@@ -22,12 +22,35 @@ function elapsed(fromTs) {
   return `${h}h ${m}m`
 }
 
+// Best-effort, silent, never blocks clock-in/out -- denied permission, no
+// GPS (desktop), or a slow fix all just resolve to null and the action
+// proceeds without coordinates, same as it always has.
+function getLocation() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+      () => resolve(null),
+      { timeout: 8000, maximumAge: 60000 }
+    )
+  })
+}
+
 export function AttendanceClock() {
   const { employeeRecord, company } = useAuth()
   const [record, setRecord] = useState(null)
   const [loading, setLoading] = useState(true)
   const [working, setWorking] = useState(false)
   const [now, setNow] = useState(Date.now())
+
+  // Only used when company.require_clockin_photo is on -- clockIn/clockOut
+  // open the (hidden) file input instead of calling the RPC directly, and
+  // this remembers which action to resume once a photo comes back.
+  const fileInputRef = useRef(null)
+  const pendingActionRef = useRef(null)
 
   const load = useCallback(async () => {
     if (!employeeRecord) return
@@ -52,9 +75,26 @@ export function AttendanceClock() {
     return () => clearInterval(id)
   }, [record])
 
-  async function clockIn() {
+  async function uploadPhoto(file, action) {
+    const today = todayInTimezone(company?.timezone)
+    const path = `${company.id}/${employeeRecord.id}/${today}-${action}-${Date.now()}.jpg`
+    const { error } = await supabase.storage.from('attendance-photos').upload(path, file)
+    if (error) {
+      toast.error(`Photo upload failed, clocking in without it: ${error.message}`)
+      return null
+    }
+    return path
+  }
+
+  async function doClockIn(photoFile) {
     setWorking(true)
-    const { error } = await supabase.rpc('employee_clock_in')
+    const [loc, photoPath] = await Promise.all([
+      getLocation(),
+      photoFile ? uploadPhoto(photoFile, 'checkin') : Promise.resolve(null),
+    ])
+    const { error } = await supabase.rpc('employee_clock_in', {
+      p_lat: loc?.lat ?? null, p_lng: loc?.lng ?? null, p_accuracy_m: loc?.accuracy ?? null, p_photo_path: photoPath,
+    })
     setWorking(false)
     if (error) {
       toast.error(error.message || 'Failed to clock in')
@@ -64,9 +104,15 @@ export function AttendanceClock() {
     load()
   }
 
-  async function clockOut() {
+  async function doClockOut(photoFile) {
     setWorking(true)
-    const { error } = await supabase.rpc('employee_clock_out')
+    const [loc, photoPath] = await Promise.all([
+      getLocation(),
+      photoFile ? uploadPhoto(photoFile, 'checkout') : Promise.resolve(null),
+    ])
+    const { error } = await supabase.rpc('employee_clock_out', {
+      p_lat: loc?.lat ?? null, p_lng: loc?.lng ?? null, p_accuracy_m: loc?.accuracy ?? null, p_photo_path: photoPath,
+    })
     setWorking(false)
     if (error) {
       toast.error(error.message || 'Failed to clock out')
@@ -76,6 +122,34 @@ export function AttendanceClock() {
     load()
   }
 
+  function clockIn() {
+    if (company?.require_clockin_photo) {
+      pendingActionRef.current = 'in'
+      fileInputRef.current?.click()
+    } else {
+      doClockIn(null)
+    }
+  }
+
+  function clockOut() {
+    if (company?.require_clockin_photo) {
+      pendingActionRef.current = 'out'
+      fileInputRef.current?.click()
+    } else {
+      doClockOut(null)
+    }
+  }
+
+  function handlePhotoSelected(e) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // reset so picking the same file again still fires onChange next time
+    const action = pendingActionRef.current
+    pendingActionRef.current = null
+    if (!file || !action) return // cancelled the picker -- no photo, no action taken
+    if (action === 'in') doClockIn(file)
+    else doClockOut(file)
+  }
+
   if (loading) return null
 
   const hasCheckedIn = !!record?.check_in
@@ -83,6 +157,14 @@ export function AttendanceClock() {
 
   return (
     <div className="report-section attendance-clock" style={{ marginBottom: 0 }}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="user"
+        style={{ display: 'none' }}
+        onChange={handlePhotoSelected}
+      />
       <div className="attendance-clock-row">
         <div className="attendance-clock-status">
           <span className={`attendance-clock-icon${hasCheckedIn && !hasCheckedOut ? ' live' : ''}`}>
