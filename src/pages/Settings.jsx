@@ -2923,6 +2923,7 @@ function OnboardingTemplatesTab() {
 
   const [newTemplateName, setNewTemplateName] = useState('')
   const [creating, setCreating] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   const [taskDrawerOpen, setTaskDrawerOpen] = useState(false)
   const [taskForm, setTaskForm] = useState(EMPTY_TEMPLATE_TASK)
@@ -2972,6 +2973,21 @@ function OnboardingTemplatesTab() {
     }
   }
 
+  async function deleteTemplate(id) {
+    const { error } = await supabase.from('onboarding_templates').delete().eq('id', id)
+    if (error) {
+      toast.error(error.message || 'Failed to delete template')
+      return
+    }
+    toast.success('Template deleted')
+    setConfirmDeleteId(null)
+    if (selectedId === id) {
+      setSelectedId(null)
+      setTasks([])
+    }
+    loadTemplates()
+  }
+
   function openAddTask() {
     setTaskForm({ ...EMPTY_TEMPLATE_TASK })
     setTaskDrawerOpen(true)
@@ -3015,14 +3031,33 @@ function OnboardingTemplatesTab() {
       <div>
         <p className="section-heading">Templates</p>
         {templates.map((t) => (
-          <button
-            key={t.id}
-            className={`tab-button${selectedId === t.id ? ' active' : ''}`}
-            style={{ display: 'block', width: '100%', textAlign: 'left', marginRight: 0, borderBottom: 'none', padding: '8px 6px', borderRadius: 'var(--radius)' }}
-            onClick={() => selectTemplate(t)}
-          >
-            {t.name}
-          </button>
+          <div key={t.id}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <button
+                type="button"
+                className={`tab-button${selectedId === t.id ? ' active' : ''}`}
+                style={{ display: 'block', flex: 1, minWidth: 0, textAlign: 'left', marginRight: 0, borderBottom: 'none', padding: '8px 6px', borderRadius: 'var(--radius)' }}
+                onClick={() => selectTemplate(t)}
+              >
+                {t.name}
+              </button>
+              <button
+                type="button"
+                className="btn-icon-round reject"
+                onClick={() => setConfirmDeleteId(confirmDeleteId === t.id ? null : t.id)}
+                aria-label="Delete template"
+              >
+                <DeleteIcon size={13} />
+              </button>
+            </div>
+            {confirmDeleteId === t.id && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 6px 8px', fontSize: 12 }}>
+                <span className="muted">Delete this template and its tasks?</span>
+                <button type="button" className="link-button" style={{ color: 'var(--danger)', fontSize: 12 }} onClick={() => deleteTemplate(t.id)}>Yes, delete</button>
+                <button type="button" className="link-button" style={{ fontSize: 12 }} onClick={() => setConfirmDeleteId(null)}>Cancel</button>
+              </div>
+            )}
+          </div>
         ))}
         <div className="lookup-add">
           <input placeholder="New template" value={newTemplateName} onChange={(e) => setNewTemplateName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && createTemplate()} />
