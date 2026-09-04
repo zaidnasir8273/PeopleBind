@@ -740,6 +740,91 @@ export type Database = {
           },
         ]
       }
+      attendance_sessions: {
+        Row: {
+          attendance_date: string
+          check_in: string
+          check_in_accuracy_m: number | null
+          check_in_lat: number | null
+          check_in_lng: number | null
+          check_in_outside_geofence: boolean
+          check_in_photo_path: string | null
+          check_out: string | null
+          check_out_accuracy_m: number | null
+          check_out_lat: number | null
+          check_out_lng: number | null
+          check_out_outside_geofence: boolean
+          check_out_photo_path: string | null
+          company_id: string
+          created_at: string
+          employee_id: string
+          id: string
+          source: string
+        }
+        Insert: {
+          attendance_date: string
+          check_in: string
+          check_in_accuracy_m?: number | null
+          check_in_lat?: number | null
+          check_in_lng?: number | null
+          check_in_outside_geofence?: boolean
+          check_in_photo_path?: string | null
+          check_out?: string | null
+          check_out_accuracy_m?: number | null
+          check_out_lat?: number | null
+          check_out_lng?: number | null
+          check_out_outside_geofence?: boolean
+          check_out_photo_path?: string | null
+          company_id: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          source?: string
+        }
+        Update: {
+          attendance_date?: string
+          check_in?: string
+          check_in_accuracy_m?: number | null
+          check_in_lat?: number | null
+          check_in_lng?: number | null
+          check_in_outside_geofence?: boolean
+          check_in_photo_path?: string | null
+          check_out?: string | null
+          check_out_accuracy_m?: number | null
+          check_out_lat?: number | null
+          check_out_lng?: number | null
+          check_out_outside_geofence?: boolean
+          check_out_photo_path?: string | null
+          company_id?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_sessions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "v_company_health"
+            referencedColumns: ["company_id"]
+          },
+          {
+            foreignKeyName: "attendance_sessions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -6535,6 +6620,7 @@ export type Database = {
           issue: string
         }[]
       }
+      get_send_email_trigger_secret: { Args: never; Returns: string }
       get_support_draft_trigger_secret: { Args: never; Returns: string }
       is_company_working_day: {
         Args: { p_company_id: string; p_date: string; p_employee_id: string }

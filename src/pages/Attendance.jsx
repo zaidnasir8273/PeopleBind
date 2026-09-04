@@ -37,6 +37,11 @@ function timestampFromTime(dateStr, timeStr) {
   return new Date(`${dateStr}T${timeStr}:00`).toISOString()
 }
 
+function sessionDuration(checkIn, checkOut) {
+  const mins = Math.max(0, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 60000))
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`
+}
+
 function formatDateLong(dateStr) {
   return new Date(`${dateStr}T00:00:00`).toLocaleDateString('en-GB', {
     weekday: 'short',
@@ -73,6 +78,8 @@ export default function Attendance() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [importOpen, setImportOpen] = useState(false)
+  const [sessions, setSessions] = useState([])
+  const [sessionsLoading, setSessionsLoading] = useState(false)
 
   const loadRoster = useCallback(async () => {
     const loadingTimer = setTimeout(() => setLoading(true), LOADING_DELAY)
@@ -129,6 +136,7 @@ export default function Attendance() {
   function openEdit(emp) {
     const existing = attendanceByEmployee[emp.id]
     setActiveEmployee(emp)
+    setSessions([])
     setForm({
       status: existing?.status ?? '',
       shift_id: existing?.shift_id ?? emp.shift_id ?? '',
@@ -138,7 +146,20 @@ export default function Attendance() {
     })
     setError(null)
     setDrawerOpen(true)
+    loadSessions(emp.id)
   }
+
+  const loadSessions = useCallback(async (employeeId) => {
+    setSessionsLoading(true)
+    const { data } = await supabase
+      .from('attendance_sessions')
+      .select('id, check_in, check_out')
+      .eq('employee_id', employeeId)
+      .eq('attendance_date', date)
+      .order('check_in')
+    setSessions(data ?? [])
+    setSessionsLoading(false)
+  }, [date])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -416,6 +437,23 @@ export default function Attendance() {
           <p className="muted" style={{ margin: 0 }}>
             Leaving status on "Auto" lets worked hours, lateness, and overtime calculate from the shift automatically.
           </p>
+
+          {sessions.length > 1 && (
+            <div style={{ borderTop: '1px solid var(--line)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <p className="section-heading" style={{ margin: 0 }}>
+                Sessions ({sessions.length}) — {sessionsLoading ? '…' : `multiple clock-ins/outs this day`}
+              </p>
+              {sessions.map((s, i) => (
+                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5 }}>
+                  <span className="muted">Session {i + 1}</span>
+                  <span className="mono">
+                    {timeFromTimestamp(s.check_in)} – {s.check_out ? timeFromTimestamp(s.check_out) : 'in progress'}
+                    {s.check_out && <span className="muted"> ({sessionDuration(s.check_in, s.check_out)})</span>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {(() => {
             const existing = activeEmployee ? attendanceByEmployee[activeEmployee.id] : null
