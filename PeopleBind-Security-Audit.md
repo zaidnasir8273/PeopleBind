@@ -6,6 +6,12 @@ core payroll/leave/attendance calculation engines. Every finding below was
 confirmed by reading the actual deployed function/policy — nothing here is
 inferred.*
 
+*Second pass, 4 Sep 2026 — closed the "not covered in this pass" gap from
+§4 below: every write policy across all ~97 tables (up from ~90 at the
+first pass — Surveys, LMS, Company Events, ClickUp integration, and Salary
+Bands all shipped in between), plus a deeper look at Recruitment,
+Timesheets/ClickUp, and Employee Settlements. Findings in §1.6–1.9.*
+
 ---
 
 ## 1. Fixed during this audit
@@ -127,6 +133,73 @@ all three as intended) and confirmed a second recalculation stays
 idempotent (9 items, not 18). All test data deleted afterward — zero
 residue in the real database.
 
+### 1.6 `audit_log` accepted a forged INSERT from any employee — **fixed, 4 Sep 2026**
+
+Every legitimate write to `audit_log` (~40 tables' worth of INSERT/UPDATE/
+DELETE triggers) goes through `log_audit_event()`, a `SECURITY DEFINER`
+trigger function — and both it and the `audit_log` table are owned by
+`postgres`, so table-owner writes bypass RLS entirely regardless of any
+policy. But the table also had a separate `authenticated`-facing INSERT
+policy checking only `company_id = auth_company_id()` — no restriction on
+`user_id`, `table_name`, `record_id`, `action`, `old_data`, or `new_data`.
+Real writes never used this path (confirmed: no frontend code inserts into
+`audit_log` directly), but it was still reachable — any signed-in employee
+could `POST /rest/v1/audit_log` with an arbitrary forged entry (including
+misattributing it to a different `user_id`) for their own company, which
+defeats the point of an audit trail meant to be a trustworthy compliance
+record once real clients are relying on it. **Fix:** dropped the policy —
+legitimate logging is entirely unaffected since it never depended on it.
+
+### 1.7 `feedback_notes` let anyone impersonate the note's author — **fixed, 4 Sep 2026**
+
+The Performance → Feedback tab is deliberately open — any employee can
+leave an informal note about any colleague ("quick, informal notes...
+separate from formal reviews," no permission gate, by design, same spirit
+as Kudos). But unlike `kudos_insert` (which correctly requires
+`from_employee_id = auth_employee_id()`), `feedback_notes_insert` never
+checked that `given_by` matched the caller — so anyone could insert a note
+about a colleague and attribute it to a different employee (e.g. writing a
+harsh note and making it look like it came from that colleague's manager).
+**Fix:** added `given_by = auth.uid()` to the insert check, mirroring
+Kudos' existing pattern exactly. The open "anyone can leave a note about
+anyone" design is untouched — only the forged-authorship path is closed.
+
+### 1.8 Self-reported time entries could spoof a ClickUp-verified badge — **fixed, 4 Sep 2026**
+
+The Timesheets → ClickUp sync integration (shipped since the first pass)
+tags automatically-imported entries `source: 'clickup'`, and the Entries
+tab shows a badge based on that column so a reviewing manager can tell a
+machine-verified entry from a self-reported one. But `time_entries`'
+self-service INSERT policy (an employee logging their own time) never
+restricted the `source`/`external_id` columns — an employee could self-
+insert a fabricated entry tagged `source: 'clickup'` to make it read as
+verified. **Fix:** the self-service branch now also requires
+`source = 'manual'`; only the `clickup-sync` Edge Function's service-role
+client (which bypasses RLS by design, same as `clickup_connections`) can
+write `source: 'clickup'` rows. The manager-approval branch — also how
+CSV-imported rows get their `source` set — is untouched.
+
+### 1.9 Finalizing a settlement overwrote a recorded resignation as a termination — **fixed, 4 Sep 2026**
+
+`finalize_employee_settlement()` unconditionally set
+`employees.employment_status = 'terminated'` on every exit, even when HR
+had already recorded the real reason via the Edit Employee form (a
+supported path — the Offboard card's own copy already branches on
+"is marked resigned" vs "is marked terminated" *before* a settlement is
+run). Since running a Full & Final Settlement is the normal step for
+every departing employee regardless of exit reason, this meant a
+voluntary resignation was silently reclassified as an involuntary
+termination the moment the settlement was finalized — corrupting the
+`voluntary_turnover_rate` / `involuntary_turnover_rate` split in Dashboards
+and the resigned-employee query `dashboardMetrics.js` already runs.
+**Fix:** the function now preserves an already-recorded `'resigned'`
+status and only defaults to `'terminated'` when no exit reason was set
+yet (the common case the existing copy describes). **Verified against real
+execution**: a throwaway employee pre-marked `resigned` stayed `resigned`
+after finalization; one left at the default `confirmed` status correctly
+defaulted to `terminated` — both run through the actual (test-copy of the)
+finalize logic, not just read from the source. Test data fully cleaned up.
+
 ---
 
 ## 2. Findings not yet fixed — for you to prioritize
@@ -139,6 +212,22 @@ so Postgres re-evaluates per-row instead of once per query) and 305
 `multiple_permissive_policies`. Neither is wrong, both add planner
 overhead that will matter more at real client scale than today's handful
 of rows. Worth a dedicated pass before heavy usage, not before launch.
+
+### 2.2 `onboarding_tasks_self_complete` allows more than "complete" — not fixed, low severity
+
+The RLS policy letting an employee (or their manager) update their own
+onboarding task is row-scoped correctly (only their own/their report's
+tasks), but not column-scoped — it permits changing any column on that
+row, not just marking it done, so a crafted direct request could let an
+employee retitle or reschedule their own onboarding task, not just
+complete it. Real-world impact is low (worst case is an employee editing
+their own onboarding checklist item's text/due date) and this mirrors a
+pattern already accepted elsewhere in this app (RLS enforces row
+ownership; the frontend, not a column-level grant, is what limits *which*
+fields get edited through the UI). Flagging rather than fixing — closing
+it properly needs column-level privileges or a dedicated
+`complete_onboarding_task()` RPC, which is a disproportionate change for
+the actual risk here.
 
 ---
 
@@ -189,17 +278,52 @@ of rows. Worth a dedicated pass before heavy usage, not before launch.
   early-departure minutes only compute once both check-in *and* check-out
   are present, so a still-clocked-in late arrival won't show as "late" on
   the roster until they clock out.
+- **Second pass (4 Sep 2026) — every write policy on all ~97 tables**,
+  re-checked for a company-scope + (permission check or self-scope)
+  shape. The only gaps found are §1.6–1.9 (fixed) and §2.2 (flagged,
+  low severity); everything else — including the newer Surveys, LMS,
+  Company Events, Salary Bands, and ClickUp-integration tables — already
+  followed the established pattern correctly, including deliberately
+  anonymous `survey_responses` (no employee-identifying column exists on
+  the table at all, so nothing to spoof) and the intentionally
+  company-wide (not per-employee) `support_threads` design, confirmed by
+  reading `SupportChat.tsx` — a company shares one running support
+  conversation with PeopleBind, so any employee updating its status is
+  by design, not a gap.
+- **`clickup-sync` Edge Function** (live since the first pass, now with a
+  real connected workspace): read the full deployed source. Every action
+  branch resolves `companyId` from one of the two trusted paths (Vault
+  secret for the cron path, `auth.getUser()` + `auth_has_permission`
+  for the admin path) *before* any action runs — no action bypasses
+  this. The `create_tasks` (push-to-ClickUp) action, added since the
+  original plan, is correctly restricted to the admin-JWT path only.
+- **`convert_candidate_to_employee`**: authorization-gated
+  (`employee:create`), blocks converting the same application twice,
+  requires a real accepted offer to exist first. No gap found.
+- **`calculate_employee_settlement`**: authorization-gated (`payroll:run`
+  or `payroll:approve`), correctly re-derives gratuity/leave-encashment/
+  loan-recovery from live data on every recalculation of a still-`draft`
+  settlement rather than accumulating; doesn't touch or duplicate regular
+  payroll (settlement is end-of-service benefits only, the final period's
+  ordinary salary still runs through the now-correctly-prorated normal
+  payroll run). No gap found beyond §1.9.
+- **`salary_bands`**: new table (0 rows, unused so far), gated on a
+  `salary:view`/`salary:edit` permission pair — confirmed those
+  permissions actually exist and are granted to `company_admin`/
+  `Administrator` by default, so the feature isn't silently unusable.
 
 ---
 
 ## 4. Not covered in this pass
 
-This audit went deep on tenant isolation/RBAC/edge-function auth
-(the core "can Company A ever see Company B's data" question) and on the
-three highest-stakes calculation engines (payroll, leave, attendance). It
-did **not** do a line-by-line logic review of every module — Recruitment
-pipeline stages, Performance review cycles, Onboarding task sequencing,
-Documents/Assets, Timesheets/ClickUp sync, Reports, Dashboards, and the
-LMS/Surveys/geofencing features shipped this session were not re-audited
-individually beyond what their own build already verified. Worth a
-follow-up pass, or tell me which module to go deep on next.
+The two passes together cover tenant isolation/RBAC/edge-function auth
+across every table and edge function, the four highest-stakes calculation
+engines (payroll, leave, attendance, employee settlements), Recruitment's
+conversion step, and the ClickUp integration. Still **not** given a
+line-by-line logic review: Documents/Assets business rules (expiry
+reminders, asset assignment/return correctness), Reports
+(`reportCatalog.js`), the newer Dashboards metric formulas beyond the RLS
+layer (turnover/retention/time-to-hire math itself, not just who can write
+to the tables), LMS course/lesson/enrollment completion tracking, and
+Surveys' eNPS scoring logic. Worth a follow-up pass, or tell me which
+module to go deep on next.
